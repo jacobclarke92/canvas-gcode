@@ -1056,6 +1056,11 @@
   dependencies:
     "@types/node" "*"
 
+"@types/js-clipper@^0.0.29":
+  version "0.0.29"
+  resolved "https://registry.yarnpkg.com/@types/js-clipper/-/js-clipper-0.0.29.tgz#01374e0322eb4ce2a64562e9947b8ae9f273a84a"
+  integrity sha512-S1+HDjkQr3BWyQzXKhyN+lZ9MIZXsYkAP/ffy6nBV7WqRUeCyz3PSUMoYfnlk3KKrfGThlg0DjBUGzr6TKWsNA==
+
 "@types/json-schema@*", "@types/json-schema@^7.0.5", "@types/json-schema@^7.0.8", "@types/json-schema@^7.0.9":
   version "7.0.11"
   resolved "https://registry.yarnpkg.com/@types/json-schema/-/json-schema-7.0.11.tgz#d421b6c527a3037f7c84433fd2c4229e016863d3"
