@@ -1,11 +1,13 @@
+import GCanvas from './GCanvas'
+
 export interface SketchConfig {
-  ctx: CanvasRenderingContext2D
+  ctx: CanvasRenderingContext2D | GCanvas
   width: number
   height: number
 }
 
 export class Sketch {
-  public ctx: CanvasRenderingContext2D
+  public ctx: CanvasRenderingContext2D | GCanvas
   public canvasWidth: number
   public canvasHeight: number
 

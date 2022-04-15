@@ -3,6 +3,8 @@ import Point from './Point'
 import Path, { Bounds, WindingRule } from './Path'
 import SubPath, { ArcAction, BezierCurveToAction, QuadraticCurveToAction } from './SubPath'
 import { arcToPoints, pointsToArc } from './utils/pathUtils'
+import Motion from './Motion'
+import GCode from './GCode'
 
 export interface GCanvasConfig {
   width: number
@@ -11,6 +13,7 @@ export interface GCanvasConfig {
   output?: HTMLTextAreaElement
 }
 
+export type Unit = 'mm' | 'inch'
 export type StrokeAlign = 'outer' | 'inner' | 'center'
 
 export type CanvasStackItem = {
@@ -33,11 +36,10 @@ export default class GCanvas {
   public outputElement?: HTMLTextAreaElement
   public canvasElement?: HTMLCanvasElement
   public ctx?: CanvasRenderingContext2D
+  public motion: Motion
+  public driver: GCode
 
   public canvas: { width: number; height: number }
-  public font: string = '7pt Helvetica'
-  public strokeStyle: string = '#000000'
-  public fillStyle: string = '#000000'
 
   // cnc-specific stuff
   public precision: number = 20
@@ -47,18 +49,27 @@ export default class GCanvas {
   public depthOfCut: number = 0
   public retract = 0
   public speed = 10
+  public feed = 10
+  public act = 0
+  public unit: Unit = 'mm'
   public top: number = 0
   public toolDiameter: number = 0.25
 
   private matrix: Matrix = new Matrix()
-  private prevSubPaths: SubPath[] = []
   private clipRegion?: Path
   private path?: Path
   private subPaths: SubPath[] = []
   private filters: any[] = [] // no idea hey
   private stack: CanvasStackItem[] = []
 
+  // vars that get relayed to canvas
+  private _strokeStyle: string = '#000000'
+  private _fillStyle: string = '#000000'
+  private _font: string = '7pt Helvetica'
+
   constructor(config: GCanvasConfig) {
+    this.driver = new GCode()
+    this.motion = new Motion(this)
     this.canvasWidth = config.width
     this.canvasHeight = config.height
     if (config.canvas) {
@@ -66,6 +77,30 @@ export default class GCanvas {
       this.ctx = this.canvasElement.getContext('2d')
     }
     if (config.output) this.outputElement = config.output
+  }
+
+  public get strokeStyle() {
+    return this._strokeStyle
+  }
+  public set strokeStyle(value: string) {
+    this._strokeStyle = value
+    if (this.ctx) this.ctx.strokeStyle = value
+  }
+
+  public get fillStyle() {
+    return this._fillStyle
+  }
+  public set fillStyle(value: string) {
+    this._fillStyle = value
+    if (this.ctx) this.ctx.fillStyle = value
+  }
+
+  public get font() {
+    return this._fillStyle
+  }
+  public set font(value: string) {
+    this._font = value
+    if (this.ctx) this.ctx.font = value
   }
 
   public save() {
@@ -81,6 +116,7 @@ export default class GCanvas {
       fillStyle: this.fillStyle,
       filters: this.filters.slice(),
     })
+    this.ctx?.save()
   }
   public restore() {
     const prev = this.stack.pop()
@@ -88,41 +124,42 @@ export default class GCanvas {
       //@ts-ignore
       this[key] = prev[key]
     })
+    this.ctx?.restore()
   }
 
   public beginPath() {
     this.path = new Path()
-  }
-
-  private restorePath() {
-    this.subPaths = this.prevSubPaths
-    // dunno how they got away with treating subpath as a path
-    // @ts-ignore
-    this.path = this.subPaths[this.subPaths.length - 1] || new Path()
+    this.ctx?.beginPath()
   }
 
   public transform(a?: number, b?: number, c?: number, d?: number, e?: number, f?: number) {
     this.matrix = this.matrix.concat(new Matrix(a, b, c, d, e, f))
+    this.ctx?.transform(a, b, c, d, e, f)
   }
 
   public setTransform(a?: number, b?: number, c?: number, d?: number, e?: number, f?: number) {
     this.matrix = new Matrix(a, b, c, d, e, f)
+    this.ctx?.setTransform(a, b, c, d, e, f)
   }
 
   public resetTransform() {
     this.matrix = new Matrix()
+    this.ctx?.resetTransform()
   }
 
   public rotate(theta: number) {
     this.matrix = this.matrix.rotate(theta)
+    this.ctx?.rotate(theta)
   }
 
   public translate(x: number, y: number) {
     this.matrix = this.matrix.scale(x, y)
+    this.ctx?.translate(x, y)
   }
 
   public scale(x: number, y?: number) {
     this.matrix = this.matrix.scale(x, y)
+    this.ctx?.scale(x, y)
   }
 
   // Note: this was marked as to-tidy by OG author
@@ -153,12 +190,14 @@ export default class GCanvas {
   public moveTo(_x: number, _y: number) {
     const { x, y } = this.transformPoint([_x, _y])
     this.path.moveTo(x, y)
+    this.ctx?.moveTo(x, y)
   }
 
   public lineTo(_x: number, _y: number) {
     const { x, y } = this.transformPoint([_x, _y])
     this.ensurePath(x, y)
     this.path.lineTo(x, y)
+    this.ctx?.lineTo(x, y)
   }
 
   public arcTo(_x1: number, _y1: number, _x2: number, _y2: number, radius: number) {
@@ -210,6 +249,8 @@ export default class GCanvas {
 
     this.path.lineTo(startPoint.x, startPoint.y)
     this.path.arc(centerPoint.x, centerPoint.y, arc.radius, arc.start, arc.end, cross > 0)
+
+    this.ctx?.arcTo(x1, y1, x2, y2, radius)
   }
 
   public arc(...args: ArcAction['args']) {
@@ -244,9 +285,12 @@ export default class GCanvas {
     // tmp.getPoints(40).forEach(function(p) {
     //   this.lineTo(p.x,p.y);
     // },this);
+
+    this.ctx?.arc(x, y, radius, aStartAngle, aEndAngle, antiClockwise)
   }
   public circle(x: number, y: number, rad: number, ccw: boolean = false) {
     this.arc(x, y, rad, 0, Math.PI * 2, ccw)
+    // NOTE: not native so do not need to call canvas api
   }
   public bezierCurveTo(...args: BezierCurveToAction['args']) {
     // let [aCP1x, aCP1y, aCP2x, aCP2y, aX, aY] = args
@@ -254,15 +298,20 @@ export default class GCanvas {
     const { x: aCP2x, y: aCP2y } = this.transformPoint([args[2], args[3]])
     const { x: aX, y: aY } = this.transformPoint([args[4], args[5]])
     this.path.bezierCurveTo(aCP1x, aCP1y, aCP2x, aCP2y, aX, aY)
+
+    this.ctx?.bezierCurveTo(aCP1x, aCP1y, aCP2x, aCP2y, aX, aY)
   }
   public quadraticCurveTo(...args: QuadraticCurveToAction['args']) {
     // const [aCPx, aCPy, aX, aY] = args
     const { x: aCPx, y: aCPy } = this.transformPoint([args[0], args[1]])
     const { x: aX, y: aY } = this.transformPoint([args[2], args[3]])
     this.path.quadraticCurveTo(aCPx, aCPy, aX, aY)
+
+    this.ctx?.quadraticCurveTo(aCPx, aCPy, aX, aY)
   }
   public clip() {
     this.clipRegion = this.path
+    this.ctx?.clip()
   }
   public rect(x: number, y: number, w: number, h: number) {
     this.moveTo(x, y)
@@ -270,6 +319,7 @@ export default class GCanvas {
     this.lineTo(x + w, y + h)
     this.lineTo(x, y + h)
     this.closePath()
+    this.ctx?.rect(x, y, w, h)
   }
   public fillRect(x: number, y: number, w: number, h: number, depth?: number) {
     this.save()
@@ -278,6 +328,7 @@ export default class GCanvas {
     this.rect(x, y, w, h)
     this.fill()
     this.restore()
+    this.ctx?.fillRect(x, y, w, h)
   }
   public fillCircle(x: number, y: number, rad: number, depth?: number) {
     this.save()
@@ -286,6 +337,7 @@ export default class GCanvas {
     this.circle(x, y, rad)
     this.fill()
     this.restore()
+    // NOTE: not native so do not need to call canvas api
   }
   public clone() {}
   public measureText(text: string): Bounds {
@@ -327,17 +379,19 @@ export default class GCanvas {
       path = path.offset(offset) || path
     }
 
-    // if (path.subPaths)
-    //   path.subPaths.forEach((subPath) => {
-    //     // Climb milling
-    //     if (align == 'inner') subPath = subPath.reverse()
-    //     this.layer(subPath, (z) => {
-    //       this.motion.followPath(subPath, z)
-    //     })
-    //   })
-    // this.motion.retract()
+    if (path.subPaths)
+      path.subPaths.forEach((subPath) => {
+        // Climb milling
+        if (align == 'inner') subPath = subPath.reverse()
+        this.layer(subPath, (z) => {
+          this.motion.followPath(subPath, z)
+        })
+      })
+    this.motion.retract()
 
     this.restore()
+
+    this.ctx?.stroke()
   }
 
   public fill(windingRule?: WindingRule, depth?: number) {
@@ -354,20 +408,25 @@ export default class GCanvas {
     path = path.clip(this.clipRegion, 0, this.precision)
     path = path.fillPath(this.toolDiameter, this.precision)
 
-    // if (path.subPaths)
-    //   path.subPaths.forEach((subPath) => {
-    //     this.layer(subPath, (z) => {
-    //       this.motion.followPath(subPath, z)
-    //     })
-    //   }, this)
+    if (path.subPaths)
+      path.subPaths.forEach((subPath) => {
+        this.layer(subPath, (z) => {
+          this.motion.followPath(subPath, z)
+        })
+      }, this)
 
-    // this.motion.retract();
+    this.motion.retract()
 
     this.restore()
+
+    this.ctx?.fill()
   }
-  public clearRect() {}
+  public clearRect(x: number, y: number, width: number, height: number) {
+    this.ctx?.clearRect(x, y, width, height)
+  }
   public closePath() {
     this.path.close()
+    this.ctx?.closePath()
   }
 
   // public fillText(text: string, x: number, y: number, params: any) {
@@ -378,36 +437,37 @@ export default class GCanvas {
   //     this.text(text, x, y, params);
   //     this.stroke();
   //   }
-  //   private layer(subPath: SubPath, fn: (z: number) => void) {
-  //     let depthOfCut = this.depthOfCut || this.depth;
 
-  //     if(depthOfCut === 0) {
-  //       fn.call(this, -this.top);
-  //       return;
-  //     }
+  private layer(subPath: SubPath, fn: (z: number) => void) {
+    let depthOfCut = this.depthOfCut || this.depth
 
-  //     const invertedZ = this.depth < 0;
-  //     if (invertedZ && depthOfCut > 0) depthOfCut = -depthOfCut;
+    if (depthOfCut === 0) {
+      fn.call(this, -this.top)
+      return
+    }
 
-  //     let steps = Math.ceil(Math.abs(this.depth/depthOfCut));
-  //     let offset = -this.top;
-  //     while(steps--) {
-  //       offset -= depthOfCut;
+    const invertedZ = this.depth < 0
+    if (invertedZ && depthOfCut > 0) depthOfCut = -depthOfCut
 
-  //       // Clip to actual depth
-  //       if (invertedZ) {
-  //         offset = Math.max(offset, this.top+this.depth);
-  //       } else {
-  //         offset = Math.max(offset, -this.top-this.depth);
-  //       }
+    let steps = Math.ceil(Math.abs(this.depth / depthOfCut))
+    let offset = -this.top
+    while (steps--) {
+      offset -= depthOfCut
 
-  //       // Remove the material at this depth
-  //       fn.call(this, offset);
-  //     }
+      // Clip to actual depth
+      if (invertedZ) {
+        offset = Math.max(offset, this.top + this.depth)
+      } else {
+        offset = Math.max(offset, -this.top - this.depth)
+      }
 
-  //     // Finishing pass
-  //     if(this.ramping && subPath.isClosed()) {
-  //       fn.call(this, offset);
-  //     }
-  //   }
+      // Remove the material at this depth
+      fn.call(this, offset)
+    }
+
+    // Finishing pass
+    if (this.ramping && subPath.isClosed()) {
+      fn.call(this, offset)
+    }
+  }
 }

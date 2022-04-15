@@ -1,18 +1,13 @@
 export default class Point {
   public x: number
   public y: number
-  // public z: number
-  // public a:number
-  constructor(
-    x: number = 0,
-    y: number = 0
-    // z: number,
-    // a:number
-  ) {
+  public z: number
+  public a: number
+  constructor(x: number = 0, y: number = 0, z?: number, a?: number) {
     this.x = x
     this.y = y
-    // this.z = z
-    // this.a = a
+    this.z = z
+    this.a = a
   }
   static distance(point1: Point, point2: Point) {
     return Math.sqrt(Math.pow(point2.x - point1.x, 2) + Math.pow(point2.y - point1.y, 2))

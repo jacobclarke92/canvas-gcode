@@ -96,8 +96,8 @@ export default class Path {
 
     this.subPaths = []
 
-    for (var i = 0, l = polygons.length; i < l; ++i) {
-      var subPath = new SubPath()
+    for (let i = 0, l = polygons.length; i < l; ++i) {
+      const subPath = new SubPath()
       subPath.fromPolys(polygons[i], scale)
       this.subPaths.push(subPath)
       this.current = subPath
@@ -111,23 +111,17 @@ export default class Path {
     clipType = clipType || 0
 
     const scale = 1000
-
-    // this.close();
-    // clipRegion.close();
-
     const subjPolys = this.toPolys(scale, divisions)
     const clipPolys = clipRegion.toPolys(scale, divisions)
 
     // Clean both
-    // var subjPolys = ClipperLib.Clipper.CleanPolygons(subjPolys, 1);
-    // var clipPolys = ClipperLib.Clipper.CleanPolygons(clipPolys, 1);
-
-    // var subjPolys = ClipperLib.Clipper.SimplifyPolygons(subjPolys, ClipperLib.PolyFillType.pftNonZero);
-
-    // var clipPolys = ClipperLib.Clipper.SimplifyPolygons(clipPolys, ClipperLib.PolyFillType.pftNonZero);
+    // const subjPolys = ClipperLib.Clipper.CleanPolygons(subjPolys, 1);
+    // const clipPolys = ClipperLib.Clipper.CleanPolygons(clipPolys, 1);
+    // const subjPolys = ClipperLib.Clipper.SimplifyPolygons(subjPolys, ClipperLib.PolyFillType.pftNonZero);
+    // const clipPolys = ClipperLib.Clipper.SimplifyPolygons(clipPolys, ClipperLib.PolyFillType.pftNonZero);
 
     const cpr = new ClipperLib.Clipper()
-    // var cpr = new Clipper()
+    // const cpr = new Clipper()
     // cpr.PreserveCollinear = true;
     // cpr.ReverseSolution = true;
 
@@ -139,7 +133,7 @@ export default class Path {
     const clipped: any[] = []
     cpr.Execute(clipType, clipped)
 
-    var path = new Path()
+    const path = new Path()
     path.fromPolys(clipped, scale)
     return path
   }
@@ -162,7 +156,7 @@ export default class Path {
     let p0u = p0.clone()
     let p1u: Point
 
-    this.subPaths.forEach(function (subPath) {
+    this.subPaths.forEach((subPath) => {
       const pts = subPath.getPoints()
 
       pts.forEach(function (p1, i) {
@@ -177,35 +171,34 @@ export default class Path {
         // }
 
         if (p1.y < bounds.top) {
-          var m = (p1.x - p0.x) / (p1.y - p0.y)
+          const m = (p1.x - p0.x) / (p1.y - p0.y)
           p1.x += m * (bounds.top - p1.y) || 0
           p1.y = bounds.top
         } else if (p0u.y < bounds.top) {
-          var m = (p1.x - p0u.x) / (p1.y - p0u.y)
-          var x = m * (bounds.top - p1.y) || 0
+          const m = (p1.x - p0u.x) / (p1.y - p0u.y)
+          const x = m * (bounds.top - p1.y) || 0
 
           result.moveTo(p1.x + x, bounds.top)
         }
 
         // if(p1.x < bounds.left) {
-        //   var m = (p1.y - p0.y) / (p1.x - p0.x);
+        //   const m = (p1.y - p0.y) / (p1.x - p0.x);
         //   p1.y += m * (bounds.left - p1.x);
         //   p1.x = bounds.left;
         // }
         // else if(p0u.x < bounds.left) {
-        //   var m = (p1.y - p0u.y) / (p1.x - p0u.x);
-        //   var y = m * (bounds.left - p1.x);
+        //   const m = (p1.y - p0u.y) / (p1.x - p0u.x);
+        //   const y = m * (bounds.left - p1.x);
         //   // result.moveTo(bounds.left, bounds.top);
         // }
 
         if (p1.x > bounds.right) {
-          var m = (p1.y - p0.y) / (p1.x - p0.x)
+          const m = (p1.y - p0.y) / (p1.x - p0.x)
           p1.y += m * (bounds.right - p1.x)
           p1.x = bounds.right
         } else if (p0u.x > bounds.right) {
-          var m = (p1.y - p0u.y) / (p1.x - p0u.x)
-          var y = m * (bounds.right - p1.x)
-
+          // const m = (p1.y - p0u.y) / (p1.x - p0u.x)
+          // const y = m * (bounds.right - p1.x)
           // result.moveTo(bounds.right, p1.y-y);
         }
 
@@ -221,12 +214,10 @@ export default class Path {
   }
 
   public simplify(windingRule?: WindingRule, divisions?: number) {
-    // Special case for single ellipse
-    // just change the radius.
+    // Special case for single ellipse just change the radius.
     // if(this.is('ellipse')) {
-    //     var result = new Path();
-    //     var args = this.subPaths[0].actions[1].args;
-
+    //     const result = new Path();
+    //     const args = this.subPaths[0].actions[1].args;
     //     result.ellipse(
     //       args[0],
     //       args[1],
@@ -236,7 +227,6 @@ export default class Path {
     //       args[5],
     //       args[6]
     //     );
-
     //     return result;
     // }
 
@@ -287,9 +277,9 @@ export default class Path {
     const polygons = this.toPolys(scale, divisions)
 
     // offset
-    // var miterLimit = 1000 * scale
+    // const miterLimit = 1000 * scale
 
-    var co = new ClipperLib.ClipperOffset()
+    const co = new ClipperLib.ClipperOffset()
     // co.PreserveCollinear = true;
     // co.ReverseSolution = true;
 
@@ -306,7 +296,7 @@ export default class Path {
 
     if (!solution || solution.length === 0 || solution[0].length === 0) return false
 
-    var result = new Path()
+    const result = new Path()
     result.fromPolys(solution, scale)
 
     result.close() // Not sure why I need to do this now
@@ -340,9 +330,6 @@ export default class Path {
   public fillPath(diameter: number, divisions: number) {
     const result = new Path()
     const overlap = Math.sin(Math.PI / 4)
-
-    // this.subPaths.forEach(function(sp) {
-    // var path = sp.toPath();
     const path = this
 
     let max = path.estimateMaxOffset(5).lt
@@ -445,7 +432,7 @@ export default class Path {
   }
 
   public getPoints(divisions?: number): Point[] {
-    var pts: Point[] = []
+    const pts: Point[] = []
     this.subPaths.forEach((sp) => {
       pts.push(...sp.getPoints(divisions))
     })
@@ -472,6 +459,3 @@ export default class Path {
     return res
   }
 }
-
-// var NON_ZERO = ClipperLib.PolyFillType.pftNonZero
-// var EVEN_ODD = ClipperLib.PolyFillType.pftEvenOdd

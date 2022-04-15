@@ -51,7 +51,7 @@ export type Action =
   | LineToAction
   | QuadraticCurveToAction
   | BezierCurveToAction
-  | ArcAction
+  // | ArcAction
   | EllipseAction
 
 export default class SubPath {
@@ -118,10 +118,6 @@ export default class SubPath {
         p = arcToPoints(action.args[0], action.args[1], action.args[4], action.args[5], action.args[2]).start
         break
 
-      case 'ARC':
-        // TODO ?? JACOB
-        break
-
       default:
         p.x = action.args[action.args.length - 2]
         p.y = action.args[action.args.length - 1]
@@ -138,10 +134,6 @@ export default class SubPath {
     switch (action.type) {
       case 'ELLIPSE':
         p = arcToPoints(action.args[0], action.args[1], action.args[4], action.args[5], action.args[2]).end
-        break
-
-      case 'ARC':
-        // TODO ?? JACOB
         break
 
       default:
@@ -170,11 +162,11 @@ export default class SubPath {
         // TODO: this seems a bit too simplistic to be real
         return (aEndAngle - aStartAngle) * yRadius
       }
-      case 'ARC': {
-        const [aX, aY, aRadius, aStartAngle, aEndAngle, antiClockwise] = action.args
-        // TODO: this seems a bit too simplistic to be real
-        return (aEndAngle - aStartAngle) * aRadius
-      }
+      // case 'ARC': {
+      //   const [aX, aY, aRadius, aStartAngle, aEndAngle, antiClockwise] = action.args
+      //   // TODO: this seems a bit too simplistic to be real
+      //   return (aEndAngle - aStartAngle) * aRadius
+      // }
       default: {
         const args = action.args
         const x = args[args.length - 2]
@@ -187,28 +179,17 @@ export default class SubPath {
   }
 
   public getLength() {
-    let x1 = 0,
-      y1 = 0,
-      x2 = 0,
-      y2 = 0,
-      xo = 0,
-      yo = 0,
-      len = 0
-
+    let len = 0
     const first = this.firstPoint()
-    x2 = first.x
-    y2 = first.y
-
     const pts = this.getPoints(10000)
     for (let i = 1, l = pts.length; i < l; ++i) {
-      var p = pts[i]
-      x1 = x2
-      y1 = y2
-      x2 = p.x
-      y2 = p.y
-      xo = x2 - x1
-      yo = y2 - y1
-
+      const p = pts[i]
+      const x1 = first.x
+      const y1 = first.y
+      const x2 = p.x
+      const y2 = p.y
+      const xo = x2 - x1
+      const yo = y2 - y1
       len += Math.sqrt(xo * xo + yo * yo)
     }
     return len
@@ -216,7 +197,6 @@ export default class SubPath {
 
   public nearestPoint(p1: Point) {
     let p2 = new Point()
-    let args: typeof this.actions[number]
     let rn: number
     let rp: Point
     let rd: number = Infinity
@@ -229,12 +209,12 @@ export default class SubPath {
           p2.y = aY + yRadius * Math.sin(aStartAngle) // copilot suggested the rad*sin
           break
         }
-        case 'ARC': {
-          const [aX, aY, aRadius, aStartAngle, aEndAngle, antiClockwise] = action.args
-          p2.x = aX + aRadius * Math.cos(aStartAngle) // copilot suggested the rad*cos
-          p2.y = aY + aRadius * Math.sin(aStartAngle) // copilot suggested the rad*sin
-          break
-        }
+        // case 'ARC': {
+        //   const [aX, aY, aRadius, aStartAngle, aEndAngle, antiClockwise] = action.args
+        //   p2.x = aX + aRadius * Math.cos(aStartAngle) // copilot suggested the rad*cos
+        //   p2.y = aY + aRadius * Math.sin(aStartAngle) // copilot suggested the rad*sin
+        //   break
+        // }
         default: {
           p2.x = action.args[action.args.length - 2]
           p2.y = action.args[action.args.length - 1]
@@ -320,20 +300,16 @@ export default class SubPath {
 
     const points: Point[] = []
 
-    var i, il
-
-    for (i = 0, il = this.actions.length; i < il; i++) {
+    for (let i = 0, il = this.actions.length; i < il; i++) {
       const action = this.actions[i]
 
       switch (action.type) {
         case 'MOVE_TO':
           points.push(new Point(action.args[0], action.args[1]))
-
           break
 
         case 'LINE_TO':
           points.push(new Point(action.args[0], action.args[1]))
-
           break
 
         case 'QUADRATIC_CURVE_TO': {
@@ -349,7 +325,7 @@ export default class SubPath {
             // TODO: this doesn't make much sense ....
             const lastAction = this.actions[i - 1]
 
-            if (lastAction.type !== 'ARC' && lastAction.type !== 'ELLIPSE') {
+            if (/*lastAction.type !== 'ARC' && */ lastAction.type !== 'ELLIPSE') {
               const lastE = lastAction.args
 
               cpx0 = lastE[lastE.length - 2]
@@ -385,7 +361,7 @@ export default class SubPath {
             cpy0 = lastE.y
           } else {
             const lastAction = this.actions[i - 1]
-            if (lastAction.type !== 'ARC' && lastAction.type !== 'ELLIPSE') {
+            if (/*lastAction.type !== 'ARC' && */ lastAction.type !== 'ELLIPSE') {
               const lastE = lastAction.args
 
               cpx0 = lastE[lastE.length - 2]
@@ -448,21 +424,25 @@ export default class SubPath {
     // this.pointsCache[divisions] = points;
     return points
   }
+
   public toPoly(scale: number, divisions?: number) {
     return this.getPoints(divisions).map((p) => {
       return { X: p.x * scale, Y: p.y * scale }
     })
   }
+
   // public fromPoly(poly: {X: number; Y: number}, scale: number) {
   //   scale = 1/scale
-
   // }
+
   public fromPolys(poly: { X: number; Y: number }[], scale: number) {
     scale = 1 / scale
 
     this.moveTo(poly[0].X * scale, poly[0].Y * scale)
 
-    for (var i = 1, l = poly.length; i < l; ++i) this.lineTo(poly[i].X * scale, poly[i].Y * scale)
+    for (let i = 1, l = poly.length; i < l; ++i) {
+      this.lineTo(poly[i].X * scale, poly[i].Y * scale)
+    }
 
     this.close()
     // todo: close properly (closePath())

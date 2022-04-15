@@ -1,10 +1,12 @@
+import GCanvas from './GCanvas'
 import { Sketch } from './Sketch'
 import InitialSketch from './sketches/01_InitialSketch'
+import GCodeTest from './sketches/02_GCodeTest'
 
 const CANVAS_WIDTH = 1000
 const CANVAS_HEIGHT = 1400
 const CANVAS_BACKGROUND = '#fff'
-const DRAW_STEPS_PER_FRAME = 100
+const DRAW_STEPS_PER_FRAME = 10
 
 const canvas = document.createElement('canvas')
 const ctx = canvas.getContext('2d')
@@ -26,7 +28,9 @@ const init = () => {
   ctx.fillStyle = CANVAS_BACKGROUND
   ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
 
-  CurrentSketch = new InitialSketch({ ctx, width: CANVAS_WIDTH, height: CANVAS_HEIGHT })
+  const gCanvas = new GCanvas({ canvas, width: CANVAS_WIDTH, height: CANVAS_HEIGHT })
+
+  CurrentSketch = new InitialSketch({ ctx: gCanvas, width: CANVAS_WIDTH, height: CANVAS_HEIGHT })
   CurrentSketch.init()
   // begin animation loop
   animate()
