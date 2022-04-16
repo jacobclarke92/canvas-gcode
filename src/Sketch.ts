@@ -16,6 +16,7 @@ export class Sketch {
   public cx: number
   public cy: number
   public vs: { [key: string]: Range } = {}
+  static generateGCode: boolean = true
 
   constructor(config: SketchConfig) {
     this.ctx = config.ctx

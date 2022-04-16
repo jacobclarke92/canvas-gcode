@@ -78,17 +78,15 @@ const initSketch = (SketchClass: typeof Sketch) => {
     rafRef = 0
   }
 
-  gcodeTextarea.innerHTML = ''
+  gcodeTextarea.innerHTML = SketchClass.generateGCode ? '' : '(GCode disabled for this sketch)'
 
   // for now just recreate things each initSketch, will probably have memory issue later
-  const driver = new GCode({
-    reset: () => {
-      gcodeTextarea.innerHTML = ''
-    },
-    write: (line: string) => {
-      gcodeTextarea.innerHTML += line + '\n'
-    },
-  })
+  const driver = !SketchClass.generateGCode
+    ? undefined
+    : new GCode({
+        reset: () => { gcodeTextarea.innerHTML = '' }, // prettier-ignore
+        write: (line: string) => { gcodeTextarea.innerHTML += line + '\n' }, // prettier-ignore
+      })
   const gCanvas = new GCanvas({
     canvas,
     driver,

@@ -102,6 +102,7 @@ export default class GCanvas {
       this.ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0)
       this.ctx.fillStyle = this._background
       this.ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight)
+      this.ctx.strokeStyle = '#000000'
     }
   }
 

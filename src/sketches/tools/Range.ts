@@ -36,7 +36,8 @@ export default class Range {
     if (updateInput) this.inputElem.value = String(this.value)
   }
   public randomize() {
-    this.value = Math.random() * (this.max - this.min) + this.min
-    if (this.inputElem) this.inputElem.value = String(this.value)
+    let value = Math.random() * (this.max - this.min) + this.min
+    if (this.step >= 1) value = Math.round(value)
+    this.setValue(value, true)
   }
 }
