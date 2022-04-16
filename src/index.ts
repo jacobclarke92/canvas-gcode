@@ -55,11 +55,13 @@ const init = () => {
   // bind main function buttons
   resetButton.addEventListener('click', () => {
     if (!CurrentSketch) return
+    animateIncrement = 0
     CurrentSketch.reset()
     CurrentSketch.initDraw()
   })
   randomizeButton.addEventListener('click', () => {
     if (!CurrentSketch) return
+    animateIncrement = 0
     Object.keys(CurrentSketch.vs).forEach((key) => {
       CurrentSketch.vs[key].randomize()
     })
@@ -110,6 +112,7 @@ const initSketch = (SketchClass: typeof Sketch) => {
     slider.value = String(valueRange.value)
 
     const handleUpdate = () => {
+      animateIncrement = 0
       const v = slider.value
       CurrentSketch.vs[key].value = Number(v)
       CurrentSketch.reset()

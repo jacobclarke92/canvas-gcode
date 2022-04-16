@@ -1,7 +1,7 @@
 import Point from '../../Point'
 
 interface OscOptions {
-  radius?: number | Point | ((i: number) => Point)
+  radius?: number | Point | ((i: number) => Point | number)
   offset?: Point
   speed?: number | ((i: number) => number)
   phase?: number
@@ -23,12 +23,12 @@ export default class Osc {
       this.speedFunc = options.speed
       this.speed = this.speedFunc(0)
     } else this.speed = options.speed || Math.PI / 180
-    console.log('SPPED', this.speed)
 
-    if (options.radius === undefined) this.radius = new Point(10, 10)
+    if (options.radius === undefined) this.radius = new Point(1, 1)
     else if (typeof options.radius === 'function') {
       this.radiusFunc = options.radius
-      this.radius = this.radiusFunc(0)
+      const radius = this.radiusFunc(0)
+      this.radius = typeof radius === 'number' ? new Point(radius, radius) : radius
     } else
       this.radius =
         typeof options.radius === 'number' ? new Point(options.radius, options.radius) : options.radius.clone()
@@ -53,7 +53,10 @@ export default class Osc {
       const val = this.speedFunc(increment)
       if (typeof val === 'number' && !isNaN(val)) this.speed = val
     }
-    if (this.radiusFunc) this.radius = this.radiusFunc(increment)
+    if (this.radiusFunc) {
+      const val = this.radiusFunc(increment)
+      this.radius = typeof val === 'number' ? new Point(val, val) : val
+    }
     this.theta.x = this.theta.x + this.speed
     this.theta.y = this.theta.y + this.speed
     this.process()

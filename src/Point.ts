@@ -24,6 +24,9 @@ export default class Point {
   add(point: Point) {
     return new Point(this.x + point.x, this.y + point.y)
   }
+  midpoint(point: Point) {
+    return new Point((this.x + point.x) / 2, (this.y + point.y) / 2)
+  }
   subtract(point: Point) {
     return new Point(this.x - point.x, this.y - point.y)
   }
@@ -48,11 +51,14 @@ export default class Point {
     this.x = x
     this.y = y
   }
-  dot(point: Point) {
+  dot(point: Point): number {
     return this.x * point.x + this.y * point.y
   }
   translate(x: number, y: number) {
     return new Point(this.x + x, this.y + y)
+  }
+  moveAlongAngle(angle: number, distance: number) {
+    return this.translate(Math.cos(angle) * distance, Math.sin(angle) * distance)
   }
   rotate(angle: number) {
     const x = this.x * Math.cos(angle) - this.y * Math.sin(angle)

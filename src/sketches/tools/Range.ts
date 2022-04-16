@@ -8,6 +8,7 @@ interface RangeOptions {
   min: number
   max: number
   step?: number
+  disableRandomize?: boolean
 }
 
 export default class Range {
@@ -17,6 +18,7 @@ export default class Range {
   public step: number
   public inputElem: HTMLInputElement
   private _value: number
+  private _disableRandomize: boolean
 
   constructor(options: RangeOptions) {
     this.name = options.name || `Var-${counter++}`
@@ -24,6 +26,7 @@ export default class Range {
     this.max = options.max
     this.step = options.step || 0.01
     this._value = options.initialValue || options.min
+    this._disableRandomize = options.disableRandomize || false
   }
   public get value() {
     return this._value
@@ -36,6 +39,7 @@ export default class Range {
     if (updateInput) this.inputElem.value = String(this.value)
   }
   public randomize() {
+    if (this._disableRandomize) return
     let value = Math.random() * (this.max - this.min) + this.min
     if (this.step >= 1) value = Math.round(value)
     this.setValue(value, true)
