@@ -10,8 +10,22 @@
   </head>
 
   <body>
-    <!-- Add your site or application content here -->
-    <!-- <p>Hello world! This is HTML5 Boilerplate.</p> -->
+    <div id="app">
+      <div id="canvas-area" class="left-area"></div>
+      <div class="right-area">
+        <div class="control-area">
+          <div class="button-area">
+            <button type="button" id="reset">Reset</button>
+            <button type="button" id="randomize">Randomize</button>
+            <div id="sketch-buttons-area" class="sketch-buttons-area"></div>
+          </div>
+          <div id="slider-area" class="slider-area"></div>
+        </div>
+        <div class="gcode-area">
+          <textarea id="gcode"></textarea>
+        </div>
+      </div>
+    </div>
     <script src="bundle.js"></script>
   </body>
 </html>

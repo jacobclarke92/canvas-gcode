@@ -25,6 +25,15 @@ export default class Motion {
     this.ctx = ctx
   }
 
+  public reset() {
+    this.currentUnit = undefined
+    this.currentToolDiameter = undefined
+    this.currentSpeed = undefined
+    this.currentFeed = undefined
+    this.currentAtc = undefined
+    this.position = new Point()
+  }
+
   public retract() {
     this.rapid({ z: this.ctx.retract })
   }
@@ -59,7 +68,7 @@ export default class Motion {
     return this.arc(params, true)
   }
   public arc(params: ArcParams, ccw: boolean = false) {
-    const newPosition = this.postProcess(params)
+    const newPosition = this.postProcess({ ...params, z: this.position.z || 0 })
     // Note: Can be cyclic so we don't ignore it if the position is the same
     const cx = this.position.x + (params.i || 0)
     const cy = this.position.y + (params.j || 0)
@@ -155,7 +164,9 @@ export default class Motion {
     // Gotta accept that there's no we're that precise.
     for (let k in params) {
       const key = k as keyof AllCommandParams
-      if (typeof params[key] === 'number') params[key] = Math.round(params[key] * 100000) / 100000
+      if (typeof params[key] === 'number') {
+        params[key] = Math.round(params[key] * 100000) / 100000
+      }
     }
 
     return v1

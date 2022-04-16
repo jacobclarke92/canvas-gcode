@@ -9,8 +9,10 @@ import GCode from './GCode'
 export interface GCanvasConfig {
   width: number
   height: number
+  background?: string
   canvas?: HTMLCanvasElement
   output?: HTMLTextAreaElement
+  driver?: GCode
 }
 
 export type Unit = 'mm' | 'inch'
@@ -66,9 +68,10 @@ export default class GCanvas {
   private _strokeStyle: string = '#000000'
   private _fillStyle: string = '#000000'
   private _font: string = '7pt Helvetica'
+  private _background: string = '#ffffff'
 
   constructor(config: GCanvasConfig) {
-    this.driver = new GCode()
+    this.driver = config.driver || new GCode()
     this.motion = new Motion(this)
     this.canvasWidth = config.width
     this.canvasHeight = config.height
@@ -77,6 +80,29 @@ export default class GCanvas {
       this.ctx = this.canvasElement.getContext('2d')
     }
     if (config.output) this.outputElement = config.output
+    if (config.background) this._background = config.background
+
+    this.reset()
+  }
+
+  public reset() {
+    console.clear()
+    this.driver.reset()
+    this.motion.reset()
+    this.path = undefined
+    this.clipRegion = undefined
+    this.subPaths = []
+    this.filters = []
+    this.stack = []
+    this.matrix = new Matrix()
+    if (this.ctx) {
+      this.ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight)
+      this.ctx.resetTransform()
+      // scale drawable area to match device pixel ratio
+      this.ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0)
+      this.ctx.fillStyle = this._background
+      this.ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight)
+    }
   }
 
   public get strokeStyle() {
@@ -274,8 +300,9 @@ export default class GCanvas {
 
     const res = pointsToArc(center, points.start, points.end)
 
-    // this._ensurePath(points.start.x, points.start.y);
+    // this.ensurePath(points.start.x, points.start.y)
 
+    if (!this.path) throw 'beginPath not called yet'
     this.path.arc(center.x, center.y, res.radius, res.start, res.end, antiClockwise)
 
     // var tmp = new Path();

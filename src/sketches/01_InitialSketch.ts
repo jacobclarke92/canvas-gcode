@@ -1,6 +1,6 @@
 import { Sketch } from '../Sketch'
 import { Vector } from '../types'
-import { randFloat, randInt, wrap } from '../utils/numberUtils'
+import { randFloatRange, randIntRange, wrap } from '../utils/numberUtils'
 
 export default class InitialSketch extends Sketch {
   pos: Vector
@@ -13,12 +13,12 @@ export default class InitialSketch extends Sketch {
     this.pos.x = wrap(this.pos.x, this.canvasWidth)
     this.pos.y = wrap(this.pos.y, this.canvasHeight)
 
-    if (increment % 100 === 0) this.ctx.strokeStyle = `#${(randInt(128) * 65793).toString(16)}`
+    if (increment % 100 === 0) this.ctx.strokeStyle = `#${(randIntRange(128) * 65793).toString(16)}`
 
     this.ctx.beginPath()
     this.ctx.moveTo(this.pos.x, this.pos.y)
-    this.pos.x += randFloat(5, -5)
-    this.pos.y += randFloat(5, -5)
+    this.pos.x += randFloatRange(5, -5)
+    this.pos.y += randFloatRange(5, -5)
     this.ctx.lineTo(this.pos.x, this.pos.y)
     this.ctx.stroke()
     this.ctx.closePath()
@@ -27,9 +27,9 @@ export default class InitialSketch extends Sketch {
       const prevFillStyle = this.ctx.fillStyle
       const prevStrokeStyle = this.ctx.strokeStyle
       this.ctx.strokeStyle = `#000`
-      this.ctx.fillStyle = `#${Math.floor(16777215 / 2 + randInt(16777215 / 2)).toString(16)}`
+      this.ctx.fillStyle = `#${Math.floor(16777215 / 2 + randIntRange(16777215 / 2)).toString(16)}`
       this.ctx.beginPath()
-      this.ctx.circle(this.pos.x + randInt(30, -30), this.pos.y + randInt(30, -30), randFloat(12, 3))
+      this.ctx.circle(this.pos.x + randIntRange(30, -30), this.pos.y + randIntRange(30, -30), randFloatRange(12, 3))
       this.ctx.fill()
       this.ctx.stroke()
       this.ctx.closePath()

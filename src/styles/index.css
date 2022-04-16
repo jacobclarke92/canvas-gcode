@@ -1,0 +1,66 @@
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #222;
+  color: white;
+}
+
+button {
+  color: black;
+  background-color: #eee;
+  &.active {
+    color: white;
+    background-color: #003399;
+  }
+}
+
+#app {
+  width: 100vw;
+  display: flex;
+  & > .left-area {
+    flex: none;
+  }
+  & > .right-area {
+    flex: 1 1 auto;
+    max-height: 100vh;
+    & > .control-area {
+      display: flex;
+      & > .button-area {
+        padding-left: 10px;
+        & > .sketch-buttons-area {
+          display: flex;
+          flex-direction: column;
+          padding-top: 10px;
+        }
+      }
+      & > .slider-area {
+        flex: 1 1 auto;
+        padding-left: 10px;
+        & label {
+          display: flex;
+
+          & span {
+            flex: none;
+            width: 120px;
+          }
+          & input {
+            flex: 1 1 auto;
+          }
+        }
+      }
+    }
+    & > .gcode-area {
+      padding: 10px;
+      & textarea {
+        width: 100%;
+        resize: vertical;
+        min-height: 300px;
+      }
+    }
+  }
+}

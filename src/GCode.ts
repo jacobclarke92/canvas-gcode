@@ -20,13 +20,23 @@ export type RapidParams = Partial<Pick<AllCommandParams, 'x' | 'y' | 'z' | 'f'>>
 export type LinearParams = Partial<Pick<AllCommandParams, 'x' | 'y' | 'z' | 'f' | 'a'>>
 export type ZeroParams = Partial<Pick<AllCommandParams, 'a'>>
 
-export default class GCode {
-  public stream: { write: (str: string) => void }
+type Stream = {
+  write: (str: string) => void
+  reset: () => void
+}
 
-  constructor(stream?: any) {
+export default class GCode {
+  public stream: Stream
+
+  constructor(stream?: Stream) {
     this.stream = stream || {
       write: (str) => console.log(str),
+      reset: () => {},
     }
+  }
+
+  public reset() {
+    this.stream.reset()
   }
 
   public send(code: string, params?: Partial<AllCommandParams>) {
@@ -34,7 +44,7 @@ export default class GCode {
     if (params) {
       const keys = 'xyzabcijkft'.split('') as (keyof AllCommandParams)[]
       keys.forEach((k) => {
-        if (params[k] === undefined || params[k] === null) return
+        if (params[k] === undefined || params[k] === null || isNaN(params[k])) return
         command += ` ${k.toUpperCase()}${params[k]}`
       })
     }
