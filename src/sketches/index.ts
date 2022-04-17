@@ -6,4 +6,5 @@ export default [
   require('./05_Spiraling').default,
   require('./06_SpiralingProportional').default,
   require('./07_ConcentricCircles').default,
+  require('./08_BubblesInCircle').default,
 ]

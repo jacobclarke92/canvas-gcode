@@ -12,6 +12,9 @@ export default class Point {
   static distance(point1: Point, point2: Point) {
     return Math.sqrt(Math.pow(point2.x - point1.x, 2) + Math.pow(point2.y - point1.y, 2))
   }
+  static angleBetween(point1: Point, point2: Point) {
+    return Math.acos(point1.dot(point2) / (point1.magnitude() * point2.magnitude()))
+  }
   clone() {
     return new Point(this.x, this.y)
   }
