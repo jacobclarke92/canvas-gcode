@@ -5,4 +5,5 @@ export default [
   require('./04_BezierScribbles').default,
   require('./05_Spiraling').default,
   require('./06_SpiralingProportional').default,
+  require('./07_ConcentricCircles').default,
 ]
