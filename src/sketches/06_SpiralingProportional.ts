@@ -8,21 +8,21 @@ import Osc from './tools/Osc'
 import Range from './tools/Range'
 
 export default class SpiralingProportional extends Sketch {
-  static generateGCode = false
+  // static generateGCode = false
   osc1: Osc
   osc2: Osc
   osc3: Osc
   lastPoint: Point
 
   init() {
-    this.vs.speedUp = new Range({ initialValue: 10, min: 1, max: 100, step: 1, disableRandomize: true })
-    this.vs.stopAfter = new Range({ initialValue: 100000, min: 1, max: 500000, step: 1, disableRandomize: true })
-    this.vs.oscSpeed = new Range({ initialValue: 0.1, min: -Math.PI / 8, max: Math.PI / 8, step: 0.005 })
-    this.vs.oscSpeedMulti = new Range({ initialValue: 1, min: 0.5, max: 5, step: 0.0001 })
-    this.vs.oscDist = new Range({ initialValue: 1, min: 1, max: 50, step: 0.25 })
-    this.vs.osc1phase = new Range({ initialValue: 0, min: 0, max: Math.PI * 2, step: 0.01 })
-    this.vs.osc2phase = new Range({ initialValue: 0, min: 0, max: Math.PI * 2, step: 0.01 })
-    this.vs.osc3phase = new Range({ initialValue: 0, min: 0, max: Math.PI * 2, step: 0.01 })
+    this.vs.speedUp = new Range({ initialValue: 15, min: 1, max: 100, step: 1, disableRandomize: true })
+    this.vs.stopAfter = new Range({ initialValue: 1000, min: 1, max: 20000, step: 1, disableRandomize: true })
+    this.vs.oscSpeed = new Range({ initialValue: 0.1825, min: -Math.PI / 8, max: Math.PI / 8, step: 0.005 })
+    this.vs.oscSpeedMulti = new Range({ initialValue: 2.994, min: 0.5, max: 5, step: 0.0001 })
+    this.vs.oscDist = new Range({ initialValue: 50, min: 1, max: 75, step: 0.25 })
+    this.vs.osc1phase = new Range({ initialValue: 5.9, min: 0, max: Math.PI * 2, step: 0.01 })
+    this.vs.osc2phase = new Range({ initialValue: 1.8, min: 0, max: Math.PI * 2, step: 0.01 })
+    this.vs.osc3phase = new Range({ initialValue: 2, min: 0, max: Math.PI * 2, step: 0.01 })
     this.osc1 = new Osc({
       speed: (i) => (this.vs.oscSpeed.value * this.vs.oscSpeedMulti.value) / 2,
       radius: (i) => this.vs.oscDist.value,
