@@ -87,6 +87,9 @@ export default class GCode {
   public arcCCW(params: ArcParams) {
     this.send('G3', params)
   }
+  public comment(string: string) {
+    this.send(`(${string})`)
+  }
   public meta(params: { [key: string]: any }) {
     let comment = '('
     for (var k in params) {
