@@ -13,6 +13,9 @@ Similarly running `M5` after completion deactivates the stepper.
 
 I need to update the g-code outputting in this project to inject the above servo controls into the g-code stream instead of using the Z axis.
 
+This is a good reference for commands:  
+https://marlinfw.org/meta/gcode/
+
 # Operational issues
 
 The main issue I'm currently experiencing is that the stepper motors are extremely loud and vibrate the whole surface of the chassis - to the point where the line being drawn is quite shaky when viewed up close.  
