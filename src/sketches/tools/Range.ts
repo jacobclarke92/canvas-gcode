@@ -1,4 +1,4 @@
-import { wrap } from '../../utils/numberUtils'
+import { randIntRange, wrap } from '../../utils/numberUtils'
 
 let counter = 0
 
@@ -40,7 +40,8 @@ export default class Range {
   }
   public randomize() {
     if (this._disableRandomize) return
-    let value = Math.random() * (this.max - this.min) + this.min
+    const pieces = Math.round((this.max - this.min) / this.step)
+    let value = this.min + randIntRange(pieces) * this.step
     if (this.step >= 1) value = Math.round(value)
     this.setValue(value, true)
   }
