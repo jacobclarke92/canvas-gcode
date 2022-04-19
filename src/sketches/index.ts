@@ -10,4 +10,5 @@ export default [
   require('./09_GridWaves').default,
   require('./10_PerlinGrid').default,
   require('./11_PerlinLines').default,
+  require('./12_Tree').default,
 ]
