@@ -4,6 +4,7 @@ import { Sketch } from './Sketch'
 
 import sketches from './sketches'
 import { loadValue, saveValue } from './utils/localStorageUtils'
+import { throttle } from 'lodash'
 
 const CANVAS_WIDTH = 1000
 const CANVAS_HEIGHT = 1400
@@ -70,6 +71,21 @@ const init = () => {
   })
 }
 
+const _setGCodeHTML = (str: string) => {
+  gcodeTextarea.innerHTML = str
+}
+const setGCodeHTML = throttle(_setGCodeHTML, 1000)
+
+let gCodeString = ''
+const setGCode = (str: string) => {
+  gCodeString = str
+  setGCodeHTML(gCodeString)
+}
+const appendGCode = (str: string) => {
+  gCodeString += str + '\n'
+  setGCodeHTML(gCodeString)
+}
+
 const initSketch = (SketchClass: typeof Sketch) => {
   console.clear()
   console.log('Loading new sketch', SketchClass.name)
@@ -80,14 +96,14 @@ const initSketch = (SketchClass: typeof Sketch) => {
     rafRef = 0
   }
 
-  gcodeTextarea.innerHTML = SketchClass.generateGCode ? '' : '(GCode disabled for this sketch)'
+  setGCode(SketchClass.generateGCode ? '' : '(GCode disabled for this sketch)')
 
   // for now just recreate things each initSketch, will probably have memory issue later
   const driver = !SketchClass.generateGCode
     ? undefined
     : new GCode({
-        reset: () => { gcodeTextarea.innerHTML = '' }, // prettier-ignore
-        write: (line: string) => { gcodeTextarea.innerHTML += line + '\n' }, // prettier-ignore
+        reset: () => { setGCode('') }, // prettier-ignore
+        write: (line: string) => { appendGCode(line) }, // prettier-ignore
       })
   const gCanvas = new GCanvas({
     canvas,
