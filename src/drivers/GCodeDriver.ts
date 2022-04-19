@@ -1,34 +1,23 @@
-import { Unit } from './GCanvas'
-
-export type AllCommandParams = {
-  x: number
-  y: number
-  z: number
-  a: number
-  b: number
-  c: number
-  i: number
-  j: number
-  k: number
-  f: number
-  t: number
-}
-
-export type ArcParams = Partial<Pick<AllCommandParams, 'x' | 'y' | 'z' | 'i' | 'j' | 'f'>>
-export type EllipseParams = ArcParams
-export type RapidParams = Partial<Pick<AllCommandParams, 'x' | 'y' | 'z' | 'f'>>
-export type LinearParams = Partial<Pick<AllCommandParams, 'x' | 'y' | 'z' | 'f' | 'a'>>
-export type ZeroParams = Partial<Pick<AllCommandParams, 'a'>>
+import Driver, {
+  AllCommandParams,
+  ArcParams,
+  DriverStream,
+  LinearParams,
+  RapidParams,
+  Unit,
+  ZeroParams,
+} from './Driver'
 
 type Stream = {
   write: (str: string) => void
   reset: () => void
 }
 
-export default class GCode {
+export default class GCode extends Driver {
   public stream: Stream
 
-  constructor(stream?: Stream) {
+  constructor(stream?: DriverStream) {
+    super(stream)
     this.stream = stream || {
       write: (str) => console.log(str),
       reset: () => {},

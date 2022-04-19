@@ -4,7 +4,7 @@ import { Sketch } from '../Sketch'
 import { debugDot } from '../utils/debugUtils'
 import { randFloat, randFloatRange, randInt, randIntRange } from '../utils/numberUtils'
 import { arcToPoints } from '../utils/pathUtils'
-import { random, seed } from '../utils/random'
+import { random, seedRandom } from '../utils/random'
 import Osc from './tools/Osc'
 import Range from './tools/Range'
 
@@ -28,7 +28,7 @@ export default class GridWaves extends Sketch {
   }
 
   initDraw(): void {
-    // seed(this.vs.seed.value)
+    // seedRandom(this.vs.seed.value)
     const cols = this.vs.cols.value
     const rows = this.vs.rows.value
     const gap = this.vs.gap.value

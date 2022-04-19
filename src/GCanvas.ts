@@ -4,7 +4,9 @@ import Path, { Bounds, WindingRule } from './Path'
 import SubPath, { ArcAction, BezierCurveToAction, QuadraticCurveToAction } from './SubPath'
 import { arcToPoints, pointsToArc } from './utils/pathUtils'
 import Motion from './Motion'
-import GCode from './GCode'
+import Driver, { Unit } from './drivers/Driver'
+import GCodeDriver from './drivers/GCodeDriver'
+import NullDriver from './drivers/NullDriver'
 
 export interface GCanvasConfig {
   width: number
@@ -12,10 +14,9 @@ export interface GCanvasConfig {
   background?: string
   canvas?: HTMLCanvasElement
   output?: HTMLTextAreaElement
-  driver?: GCode
+  driver?: Driver
 }
 
-export type Unit = 'mm' | 'inch'
 export type StrokeAlign = 'outer' | 'inner' | 'center'
 
 export type CanvasStackItem = {
@@ -39,7 +40,7 @@ export default class GCanvas {
   public canvasElement?: HTMLCanvasElement
   public ctx?: CanvasRenderingContext2D
   public motion: Motion
-  public driver: GCode
+  public driver: GCodeDriver
 
   public canvas: { width: number; height: number }
 
@@ -71,7 +72,7 @@ export default class GCanvas {
   private _background: string = '#ffffff'
 
   constructor(config: GCanvasConfig) {
-    this.driver = config.driver || new GCode()
+    this.driver = config.driver || new NullDriver()
     this.motion = new Motion(this)
     this.canvasWidth = config.width
     this.canvasHeight = config.height

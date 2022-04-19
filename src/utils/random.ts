@@ -5,7 +5,7 @@ let m_z = 987654321
 const mask = 0xffffffff
 
 // Takes any integer
-export const seed = (integer: number) => {
+export const seedRandom = (integer: number) => {
   m_w = (123456789 + integer) & mask
   m_z = (987654321 - integer) & mask
 }
@@ -18,3 +18,5 @@ export const random = () => {
   const result = ((m_z << 16) + (m_w & 65535)) >>> 0
   return result / 4294967296
 }
+
+seedRandom(0)

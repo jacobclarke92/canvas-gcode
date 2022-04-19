@@ -1,9 +1,16 @@
-import GCanvas, { Unit } from './GCanvas'
-import { AllCommandParams, ZeroParams, RapidParams, LinearParams, ArcParams, EllipseParams } from './GCode'
+import GCanvas from './GCanvas'
+import {
+  AllCommandParams,
+  ZeroParams,
+  RapidParams,
+  LinearParams,
+  ArcParams,
+  EllipseParams,
+  Unit,
+} from './drivers/Driver'
 import Path from './Path'
 import Point from './Point'
 import SubPath, {
-  Action,
   BezierCurveToAction,
   EllipseAction,
   LineToAction,

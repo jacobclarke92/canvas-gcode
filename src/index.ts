@@ -1,5 +1,5 @@
 import GCanvas from './GCanvas'
-import GCode from './GCode'
+import GCode from './drivers/GCodeDriver'
 import { Sketch } from './Sketch'
 
 import sketches from './sketches'

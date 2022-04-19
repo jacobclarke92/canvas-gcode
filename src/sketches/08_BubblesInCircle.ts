@@ -4,7 +4,7 @@ import { Sketch } from '../Sketch'
 import { debugDot } from '../utils/debugUtils'
 import { randFloat, randFloatRange, randInt, randIntRange } from '../utils/numberUtils'
 import { arcToPoints } from '../utils/pathUtils'
-import { random, seed } from '../utils/random'
+import { random, seedRandom } from '../utils/random'
 import Osc from './tools/Osc'
 import Range from './tools/Range'
 
@@ -14,7 +14,7 @@ interface Circle {
 }
 
 export default class BubblesInCircle extends Sketch {
-  // static generateGCode = false
+  static generateGCode = false
 
   redrawnCount: number
   reordered: boolean
@@ -30,7 +30,7 @@ export default class BubblesInCircle extends Sketch {
   }
 
   initDraw(): void {
-    seed(this.vs.seed.value)
+    seedRandom(this.vs.seed.value)
     this.reordered = false
     this.redrawnCount = 0
     this.circles = []
