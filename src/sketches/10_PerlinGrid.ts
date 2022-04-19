@@ -10,7 +10,7 @@ import Osc from './tools/Osc'
 import Range from './tools/Range'
 
 export default class PerlinGrid extends Sketch {
-  static generateGCode = false
+  // static generateGCode = false
 
   init() {
     this.vs.speedUp = new Range({ initialValue: 10, min: 1, max: 100, step: 1, disableRandomize: true })
