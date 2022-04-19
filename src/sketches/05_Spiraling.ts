@@ -8,7 +8,7 @@ import Osc from './tools/Osc'
 import Range from './tools/Range'
 
 export default class Spiraling extends Sketch {
-  static generateGCode = false
+  // static generateGCode = false
   osc1: Osc
   osc2: Osc
   osc3: Osc
@@ -16,16 +16,16 @@ export default class Spiraling extends Sketch {
 
   init() {
     this.vs.speedUp = new Range({ initialValue: 10, min: 1, max: 100, step: 1, disableRandomize: true })
-    this.vs.stopAfter = new Range({ initialValue: 100000, min: 1, max: 500000, step: 1, disableRandomize: true })
-    this.vs.osc1speed = new Range({ initialValue: 0.1, min: -Math.PI / 8, max: Math.PI / 8, step: 0.005 })
-    this.vs.osc1dist = new Range({ initialValue: 1, min: 1, max: 50, step: 0.25 })
-    this.vs.osc1phase = new Range({ initialValue: 0, min: 0, max: Math.PI * 2, step: 0.01 })
-    this.vs.osc2speed = new Range({ initialValue: 0.1, min: -Math.PI / 8, max: Math.PI / 8, step: 0.005 })
-    this.vs.osc2dist = new Range({ initialValue: 1, min: 1, max: 50, step: 0.25 })
-    this.vs.osc2phase = new Range({ initialValue: 0, min: 0, max: Math.PI * 2, step: 0.01 })
-    this.vs.osc3speed = new Range({ initialValue: 0.1, min: -Math.PI / 8, max: Math.PI / 8, step: 0.005 })
-    this.vs.osc3dist = new Range({ initialValue: 1, min: 1, max: 50, step: 0.25 })
-    this.vs.osc3phase = new Range({ initialValue: 0, min: 0, max: Math.PI * 2, step: 0.01 })
+    this.vs.stopAfter = new Range({ initialValue: 50000, min: 1, max: 120000, step: 1, disableRandomize: true })
+    this.vs.osc1speed = new Range({ initialValue: 0.1, min: -Math.PI / 8, max: Math.PI / 8, step: Math.PI / 666 }) // 666 is actually important
+    this.vs.osc1dist = new Range({ initialValue: Math.PI / 4, min: Math.PI / 8, max: Math.PI * 16, step: Math.PI / 32 })
+    this.vs.osc1phase = new Range({ initialValue: 0, min: 0, max: Math.PI * 2, step: Math.PI / 16 })
+    this.vs.osc2speed = new Range({ initialValue: 0.1, min: -Math.PI / 8, max: Math.PI / 8, step: Math.PI / 666 }) // 666 is actually important
+    this.vs.osc2dist = new Range({ initialValue: Math.PI / 4, min: Math.PI / 8, max: Math.PI * 16, step: Math.PI / 32 })
+    this.vs.osc2phase = new Range({ initialValue: 0, min: 0, max: Math.PI * 2, step: Math.PI / 16 })
+    this.vs.osc3speed = new Range({ initialValue: 0.1, min: -Math.PI / 8, max: Math.PI / 8, step: Math.PI / 666 }) // 666 is actually important
+    this.vs.osc3dist = new Range({ initialValue: Math.PI / 4, min: Math.PI / 8, max: Math.PI * 16, step: Math.PI / 32 })
+    this.vs.osc3phase = new Range({ initialValue: 0, min: 0, max: Math.PI * 2, step: Math.PI / 16 })
     this.osc1 = new Osc({ speed: (i) => this.vs.osc1speed.value, radius: (i) => this.vs.osc1dist.value, phase: 0 })
     this.osc2 = new Osc({ speed: (i) => this.vs.osc2speed.value, radius: (i) => this.vs.osc2dist.value, phase: 0 })
     this.osc3 = new Osc({ speed: (i) => this.vs.osc3speed.value, radius: (i) => this.vs.osc3dist.value, phase: 0 })
