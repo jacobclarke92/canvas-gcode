@@ -8,4 +8,5 @@ export default [
   require('./07_ConcentricCircles').default,
   require('./08_BubblesInCircle').default,
   require('./09_GridWaves').default,
+  require('./10_PerlinGrid').default,
 ]
