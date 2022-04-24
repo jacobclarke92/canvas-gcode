@@ -13,14 +13,23 @@
       <div class="right-area">
         <div class="control-area">
           <div class="button-area">
-            <button type="button" id="reset">Reset</button> <button type="button" id="randomize">Randomize</button>
+            <button type="button" id="reset">Reset</button>
+            <button type="button" id="randomize">Randomize</button>
             <div id="sketch-buttons-area" class="sketch-buttons-area"></div>
           </div>
-          <div id="slider-area" class="slider-area"></div>
+          <div class="preset-area">
+            <div id="slider-area" class="slider-area"></div>
+            <div id="saves-area" class="saves-area">
+              <div id="save-slots"></div>
+              <button type="button" id="save-button">Save</button>
+            </div>
+          </div>
         </div>
-        <div class="gcode-area"><textarea id="gcode"></textarea></div>
+        <div class="gcode-area">
+          <textarea id="gcode"></textarea>
+        </div>
       </div>
     </div>
-    <script src="dist/bundle.js"></script>
+    <script src="bundle.js"></script>
   </body>
 </html>
