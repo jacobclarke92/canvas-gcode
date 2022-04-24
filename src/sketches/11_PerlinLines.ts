@@ -15,16 +15,16 @@ export default class PerlinLines extends Sketch {
   init() {
     this.vs.speedUp = new Range({ initialValue: 1, min: 1, max: 100, step: 1, disableRandomize: true })
     this.vs.seed = new Range({ initialValue: 9275, min: 1000, max: 5000, step: 1 })
-    this.vs.cols = new Range({ initialValue: 120, min: 1, max: 300, step: 1 })
-    this.vs.rows = new Range({ initialValue: 150, min: 1, max: 300, step: 1 })
-    this.vs.size = new Range({ initialValue: 5, min: 1, max: 80, step: 1 })
+    this.vs.cols = new Range({ initialValue: 150, min: 1, max: 300, step: 1 })
+    this.vs.rows = new Range({ initialValue: 120, min: 1, max: 300, step: 1 })
+    this.vs.size = new Range({ initialValue: 0.5, min: 0.1, max: 8, step: 0.1 })
     this.vs.perlinDivX = new Range({ initialValue: 75, min: 1, max: 100, step: 1 })
     this.vs.perlinDivY = new Range({ initialValue: 75, min: 1, max: 100, step: 1 })
     this.vs.perlinOffsetX = new Range({ initialValue: 0, min: -100, max: 100, step: 1 })
     this.vs.perlinOffsetY = new Range({ initialValue: 0, min: -100, max: 100, step: 1 })
-    this.vs.drawOffsetStart = new Range({ initialValue: 10, min: -50, max: 50, step: 1 })
-    this.vs.drawOffsetEnd = new Range({ initialValue: -45, min: -50, max: 50, step: 1 })
-    this.vs.outerGap = new Range({ initialValue: 180, min: 0, max: 250, step: 1, disableRandomize: true })
+    this.vs.drawOffsetStart = new Range({ initialValue: 1, min: -5, max: 5, step: 0.1 })
+    this.vs.drawOffsetEnd = new Range({ initialValue: -4.5, min: -5, max: 5, step: 0.1 })
+    this.vs.outerGap = new Range({ initialValue: 18, min: 0, max: 25, step: 1, disableRandomize: true })
   }
 
   private drawCount: number = 0

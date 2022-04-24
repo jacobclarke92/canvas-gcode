@@ -18,8 +18,8 @@ export default class ConcentricCircles extends Sketch {
   init() {
     this.vs.speedUp = new Range({ initialValue: 1, min: 1, max: 100, step: 1, disableRandomize: true })
     this.vs.stopAfter = new Range({ initialValue: 100, min: 1, max: 1000, step: 1, disableRandomize: true })
-    this.vs.shrinkAmount = new Range({ initialValue: 15, min: 1, max: 50, step: 1 })
-    this.vs.shrinkDiv = new Range({ initialValue: 1, min: 0, max: 1.5, step: 0.01 })
+    this.vs.shrinkAmount = new Range({ initialValue: 15, min: 1, max: 12, step: 0.1 })
+    this.vs.shrinkDiv = new Range({ initialValue: 1, min: 0, max: 1.8, step: 0.01 })
     this.vs.shrinkFalloff = new Range({ initialValue: 1, min: 0.9, max: 1.1, step: 0.005 })
     this.vs.shrinkVariance = new Range({ initialValue: 0, min: 0, max: 50, step: 0.01 })
     this.vs.shrinkVarOsc = new Range({ initialValue: Math.PI / 32, min: 0, max: Math.PI / 4, step: 0.001 })
@@ -33,7 +33,7 @@ export default class ConcentricCircles extends Sketch {
 
   initDraw(): void {
     this.lastPoint = new Point(this.cx, this.cy)
-    this.radius = this.cw * 0.45
+    this.radius = Math.min(this.cw, this.ch) * 0.45
     this.theta = 0
     this.osc1.reset()
   }

@@ -18,11 +18,11 @@ export default class PerlinGrid extends Sketch {
     this.vs.cols = new Range({ initialValue: 90, min: 1, max: 200, step: 1, disableRandomize: true })
     this.vs.rows = new Range({ initialValue: 90, min: 1, max: 200, step: 1, disableRandomize: true })
     this.vs.shape = new Range({ initialValue: 1, min: 0, max: 1, step: 1, disableRandomize: true })
-    this.vs.size = new Range({ initialValue: 180, min: 1, max: 750, step: 1 })
+    this.vs.size = new Range({ initialValue: 18, min: 0.1, max: 64, step: 0.1 })
     this.vs.perlinDiv = new Range({ initialValue: 25, min: 1, max: 100, step: 1, disableRandomize: true })
     this.vs.offsetX = new Range({ initialValue: 0, min: -100, max: 100, step: 1 })
     this.vs.offsetY = new Range({ initialValue: 0, min: -100, max: 100, step: 1 })
-    this.vs.outerGap = new Range({ initialValue: 120, min: 0, max: 250, step: 1, disableRandomize: true })
+    this.vs.outerGap = new Range({ initialValue: 12, min: 0, max: 25, step: 1, disableRandomize: true })
   }
 
   private drawCount: number = 0
