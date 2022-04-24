@@ -53,12 +53,12 @@ export default class GCanvas {
   public depth: number = 0
   public depthOfCut: number = 0
   public retract = 0
-  public speed = 10
-  public feed = 10
+  public speed = 500
+  public feed = 1000
   public act = 0
   public unit: Unit = 'mm'
   public top: number = 0
-  public toolDiameter: number = 1.5
+  public toolDiameter: number = 0.15
 
   private matrix: Matrix = new Matrix()
   private clipRegion?: Path
@@ -301,7 +301,7 @@ export default class GCanvas {
     // See portal2 example
     if (aEndAngle - aStartAngle === -Math.PI * 2) aEndAngle = Math.PI * 2
 
-    var center = new Point(x, y)
+    const center = new Point(x, y)
     var points = arcToPoints(x, y, aStartAngle, aEndAngle, radius)
 
     this.transformPoint(center)
@@ -441,7 +441,7 @@ export default class GCanvas {
           this.motion.followPath(subPath, z)
         })
       })
-    this.motion.retract()
+    // this.motion.retract()
 
     this.restore()
 
@@ -467,7 +467,7 @@ export default class GCanvas {
         })
       }, this)
 
-    this.motion.retract()
+    // this.motion.retract()
 
     this.restore()
 

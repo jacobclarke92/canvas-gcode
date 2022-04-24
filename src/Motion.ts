@@ -42,10 +42,10 @@ export default class Motion {
   }
 
   public retract() {
-    this.rapid({ z: this.ctx.retract })
+    this.ctx.driver.send(`M03 S090`)
   }
   public plunge() {
-    this.rapid({ z: -this.ctx.top })
+    this.ctx.driver.send(`M03 S070`)
   }
   public zero(params: ZeroParams) {
     this.ctx.driver.zero(params)
@@ -107,7 +107,7 @@ export default class Motion {
     // Sync meta
     if (this.ctx.driver.meta && this.ctx.toolDiameter != this.currentToolDiameter) {
       this.ctx.driver.meta({
-        tooldiameter: this.ctx.toolDiameter,
+        toolDiameter: this.ctx.toolDiameter,
       })
       this.currentToolDiameter = this.ctx.toolDiameter
     }
@@ -130,7 +130,7 @@ export default class Motion {
       // but we only send a G93 when there is a feedrate.
       // This allows backwards compatibility with global
       // classic feedrates.
-      this.ctx.driver.send('G93')
+      this.ctx.driver.send('G93 (inverse time mode)')
       this.currentFeed = this.ctx.feed
     }
 
@@ -141,10 +141,10 @@ export default class Motion {
     // }
 
     const v1 = new Point(
-      params.x === undefined ? this.position.x : params.x,
-      params.y === undefined ? this.position.y : params.y,
-      params.z === undefined ? this.position.z : params.z,
-      params.a === undefined ? this.position.a : params.a
+      'x' in params ? params.x : this.position.x,
+      'y' in params ? params.y : this.position.y,
+      'z' in params ? params.z : this.position.z,
+      'a' in params ? params.a : this.position.a
     )
 
     const v2 = this.position
@@ -222,7 +222,6 @@ export default class Motion {
     let curLen = 0
 
     const motion = this
-    const driver = this.ctx.driver
     const ctx = this.ctx
     const ramping = path.isClosed() && ctx.ramping != false
 
@@ -260,9 +259,9 @@ export default class Motion {
         const sameXY = sameFloat(x, this.position.x) && sameFloat(y, this.position.y)
         if (ramping && sameXY) return
 
-        motion.retract()
+        if (!sameXY) motion.retract()
         motion.rapid({ x, y })
-        motion.plunge()
+        if (!sameXY) motion.plunge()
 
         if (!ramping) motion.linear({ z: zEnd })
         zStart = motion.position.z

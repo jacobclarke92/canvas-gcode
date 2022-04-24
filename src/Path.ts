@@ -68,7 +68,7 @@ export default class Path {
     // this.ensure(points.start.x, points.start.y);
 
     if (!this.current || !samePos(this.current.lastPoint(), points.start)) {
-      this.lineTo(points.start.x, points.start.y)
+      this.moveTo(points.start.x, points.start.y)
     }
 
     this.current.ellipse(...args)

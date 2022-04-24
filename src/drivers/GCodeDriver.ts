@@ -26,6 +26,7 @@ export default class GCode extends Driver {
 
   public reset() {
     this.stream.reset()
+    this.init()
   }
 
   public send(code: string, params?: Partial<AllCommandParams>) {
@@ -41,13 +42,19 @@ export default class GCode extends Driver {
   }
 
   public init() {
-    this.send('G90') // Absolute mode
+    this.send('G00 (move as fast as it can or is programmed to)')
+    this.send('G90 (absolute position mode)')
+    this.send('G80 (cancel any previously used canned cycles)')
+    this.send('G17 (select the xy plane)')
+    this.send('G28 (rapid to home position)')
+    this.send('M3 S0 (activate on servo)')
   }
+
   public unit(name: Unit) {
-    this.send({ inch: 'G20', mm: 'G21' }[name])
+    this.send({ inch: 'G20', mm: 'G21' }[name] + ` (select ${name} unit)`)
   }
   public speed(n: number) {
-    this.send('S' + n)
+    this.send(`S${n} (set speed to ${n})`)
   }
   public feed(n: number) {
     this.send('F' + n)
