@@ -5,17 +5,19 @@ import { Sketch } from './Sketch'
 import sketches from './sketches'
 import { loadValue, saveValue } from './utils/localStorageUtils'
 import { throttle } from 'lodash'
+import { renderSketchSaveSlots, saveNewPreset } from './saveSlots'
+import { renderSketchSliders, updateSliderValues } from './sliders'
 
-const CANVAS_WIDTH = 1000
-const CANVAS_HEIGHT = 1400
+const CANVAS_WIDTH = 140
+const CANVAS_HEIGHT = 100
 const CANVAS_BACKGROUND = '#fff'
+const VIRTUAL_SCALE = 8
 const DRAW_STEPS_PER_FRAME = 100
 
 const canvas = document.createElement('canvas')
-const ctx = canvas.getContext('2d')
 const canvasArea = document.getElementById('canvas-area')
 const sketchButtonsArea = document.getElementById('sketch-buttons-area')
-const sliderArea = document.getElementById('slider-area')
+const saveButton = document.getElementById('save-button')
 const resetButton = document.getElementById('reset')
 const randomizeButton = document.getElementById('randomize')
 const gcodeTextarea = document.getElementById('gcode')
@@ -27,10 +29,10 @@ let animateIncrement = 0
 
 const init = () => {
   // initialize canvas
-  canvas.width = CANVAS_WIDTH * window.devicePixelRatio
-  canvas.height = CANVAS_HEIGHT * window.devicePixelRatio
-  canvas.style.width = `${CANVAS_WIDTH}px`
-  canvas.style.height = `${CANVAS_HEIGHT}px`
+  canvas.width = CANVAS_WIDTH * VIRTUAL_SCALE * window.devicePixelRatio
+  canvas.height = CANVAS_HEIGHT * VIRTUAL_SCALE * window.devicePixelRatio
+  canvas.style.width = `${CANVAS_WIDTH * VIRTUAL_SCALE}px`
+  canvas.style.height = `${CANVAS_HEIGHT * VIRTUAL_SCALE}px`
   if (canvasArea) canvasArea.appendChild(canvas)
   else document.body.appendChild(canvas)
 
@@ -66,14 +68,17 @@ const init = () => {
     Object.keys(CurrentSketch.vs).forEach((key) => {
       CurrentSketch.vs[key].randomize()
     })
+    updateSliderValues(CurrentSketch)
     CurrentSketch.reset()
     CurrentSketch.initDraw()
   })
+  saveButton.addEventListener('click', () => {
+    if (!CurrentSketch) return
+    saveNewPreset(CurrentSketch)
+  })
 }
 
-const _setGCodeHTML = (str: string) => {
-  gcodeTextarea.innerHTML = str
-}
+const _setGCodeHTML = (str: string) => (gcodeTextarea.innerHTML = str)
 const setGCodeHTML = throttle(_setGCodeHTML, 1000)
 
 let gCodeString = ''
@@ -110,6 +115,7 @@ const initSketch = (SketchClass: typeof Sketch) => {
     driver,
     width: CANVAS_WIDTH,
     height: CANVAS_HEIGHT,
+    virtualScale: VIRTUAL_SCALE,
     background: CANVAS_BACKGROUND,
   })
   CurrentSketch = new SketchClass({ ctx: gCanvas, width: CANVAS_WIDTH, height: CANVAS_HEIGHT })
@@ -117,33 +123,13 @@ const initSketch = (SketchClass: typeof Sketch) => {
   CurrentSketch.initDraw()
 
   // create sliders for all sketch parameters
-  sliderArea.innerHTML = ''
-  Object.keys(CurrentSketch.vs).forEach((key) => {
-    const valueRange = CurrentSketch.vs[key]
-    const slider = document.createElement('input')
-    slider.type = 'range'
-    slider.min = String(valueRange.min)
-    slider.max = String(valueRange.max)
-    slider.step = String(valueRange.step)
-    slider.value = String(valueRange.value)
+  renderSketchSliders(CurrentSketch, () => {
+    animateIncrement = 0
+  })
 
-    const handleUpdate = () => {
-      animateIncrement = 0
-      const v = slider.value
-      CurrentSketch.vs[key].value = Number(v)
-      CurrentSketch.reset()
-      CurrentSketch.initDraw()
-    }
-    slider.addEventListener('input', (e) => handleUpdate())
-    slider.addEventListener('change', (e) => handleUpdate())
-
-    const label = document.createElement('label')
-    const span = document.createElement('span')
-    span.innerText = key
-    label.appendChild(span)
-    label.appendChild(slider)
-    sliderArea.appendChild(label)
-    valueRange.inputElem = slider
+  // populate save slots from localStorage
+  renderSketchSaveSlots(CurrentSketch, () => {
+    animateIncrement = 0
   })
 
   // begin animation loop

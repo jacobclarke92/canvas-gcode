@@ -16,12 +16,12 @@ export default class Tree extends Sketch {
   init() {
     // this.vs.speedUp = new Range({ initialValue: 1, min: 1, max: 100, step: 1, disableRandomize: true })
     this.vs.seed = new Range({ initialValue: 2222, min: 1000, max: 5000, step: 1 })
-    this.vs.initBranchLength = new Range({ initialValue: 80, min: 50, max: 100, step: 1 })
+    this.vs.initBranchLength = new Range({ initialValue: 8, min: 5, max: 10, step: 0.1 })
     this.vs.branchLengthFalloff = new Range({ initialValue: 0.83, min: 0.4, max: 0.9, step: 0.005 })
     this.vs.splitProbability = new Range({ initialValue: 0.6, min: 0, max: 1, step: 0.005 })
     this.vs.pruneProbability = new Range({ initialValue: 0.95, min: 0, max: 1, step: 0.05 })
     this.vs.bloomProbability = new Range({ initialValue: 0.6, min: 0, max: 1, step: 0.05 })
-    this.vs.bloomSize = new Range({ initialValue: 3, min: 2, max: 12, step: 1 })
+    this.vs.bloomSize = new Range({ initialValue: 0.3, min: 0.2, max: 1.2, step: 0.1 })
     this.vs.splitAngleRange = new Range({ initialValue: 0.44, min: 0, max: Math.PI / 2, step: Math.PI / 256 })
     this.vs.splitAngleBranchLevelMulti = new Range({ initialValue: 0.1, min: -1, max: 1, step: 0.05 })
     this.vs.splitAngleMinPercent = new Range({ initialValue: 0.5, min: 0, max: 1, step: 0.05 })
@@ -48,7 +48,7 @@ export default class Tree extends Sketch {
 
     const length = initBranchLength / branchLengthFalloff
     const angle = -Math.PI / 2
-    const position = this.drawBranch(new Point(this.cx, this.cy * 1.2), angle, length)
+    const position = this.drawBranch(new Point(this.cx, this.ch - 10), angle, length)
     this.currentStems.push({ position, angle, length })
   }
 

@@ -23,8 +23,8 @@ export default class GridWaves extends Sketch {
     // this.vs.seed = new Range({ initialValue: 1000, min: 1000, max: 5000, step: 1 })
     this.vs.cols = new Range({ initialValue: 3, min: 1, max: 10, step: 1, disableRandomize: true })
     this.vs.rows = new Range({ initialValue: 4, min: 1, max: 10, step: 1, disableRandomize: true })
-    this.vs.gap = new Range({ initialValue: 20, min: 0, max: 100, step: 1, disableRandomize: true })
-    this.vs.outerGap = new Range({ initialValue: 50, min: 0, max: 250, step: 1, disableRandomize: true })
+    this.vs.gap = new Range({ initialValue: 2, min: 0, max: 25, step: 1, disableRandomize: true })
+    this.vs.outerGap = new Range({ initialValue: 5, min: 0, max: 25, step: 1, disableRandomize: true })
   }
 
   initDraw(): void {

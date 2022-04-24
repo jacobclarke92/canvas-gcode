@@ -15,8 +15,8 @@ export default class Arcs extends Sketch {
   init() {
     this.vs.precision = new Range({ initialValue: 180, min: 2, max: 1440, step: 1 })
     this.vs.speedPow1 = new Range({ initialValue: 0.5, min: 0.001, max: 10, step: 0.001 })
-    this.vs.radiusMin = new Range({ initialValue: 10, min: 1, max: 200, step: 1 })
-    this.vs.radiusMax = new Range({ initialValue: 50, min: 1, max: 200, step: 1 })
+    this.vs.radiusMin = new Range({ initialValue: 0.1, min: 1, max: 20, step: 0.1 })
+    this.vs.radiusMax = new Range({ initialValue: 0.5, min: 1, max: 20, step: 0.1 })
     this.vs.radiusThetaMulti = new Range({ initialValue: 1, min: 0.001, max: 5, step: 0.001 })
 
     this.osc = new Osc({
@@ -47,7 +47,7 @@ export default class Arcs extends Sketch {
     this.lastPoint = undefined
     this.osc.reset()
 
-    const radius = this.cw / 2 - this.vs.radiusMax.value - 100
+    const radius = Math.min(this.cw, this.ch) / 2 - (this.vs.radiusMax.value + 10)
     const { start: startPoint } = arcToPoints(this.cx, this.cy, 0, Math.PI * 2, radius)
 
     const tmp = new Path()
