@@ -11,6 +11,7 @@ import NullDriver from './drivers/NullDriver'
 export interface GCanvasConfig {
   width: number
   height: number
+  virtualScale?: number
   background?: string
   canvas?: HTMLCanvasElement
   output?: HTMLTextAreaElement
@@ -36,6 +37,7 @@ type CanvasStackItemKey = keyof CanvasStackItem
 export default class GCanvas {
   public canvasWidth: number
   public canvasHeight: number
+  public virtualScale: number
   public outputElement?: HTMLTextAreaElement
   public canvasElement?: HTMLCanvasElement
   public ctx?: CanvasRenderingContext2D
@@ -56,7 +58,7 @@ export default class GCanvas {
   public act = 0
   public unit: Unit = 'mm'
   public top: number = 0
-  public toolDiameter: number = 0.25
+  public toolDiameter: number = 1.5
 
   private matrix: Matrix = new Matrix()
   private clipRegion?: Path
@@ -76,6 +78,7 @@ export default class GCanvas {
     this.motion = new Motion(this)
     this.canvasWidth = config.width
     this.canvasHeight = config.height
+    this.virtualScale = config.virtualScale || 1
     if (config.canvas) {
       this.canvasElement = config.canvas
       this.ctx = this.canvasElement.getContext('2d')
@@ -96,14 +99,21 @@ export default class GCanvas {
     this.filters = []
     this.stack = []
     this.matrix = new Matrix()
+
     if (this.ctx) {
-      this.ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight)
       this.ctx.resetTransform()
+
       // scale drawable area to match device pixel ratio
-      this.ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0)
+      this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio)
+
+      // scale drawable area to match virtual zoom
+      this.ctx.scale(this.virtualScale, this.virtualScale)
+
+      // draw rect the actual size of the canvas - should fill whole screen at this stage
       this.ctx.fillStyle = this._background
       this.ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight)
-      this.ctx.strokeStyle = '#000000'
+
+      this.ctx.lineWidth = 1 / this.virtualScale
     }
   }
 
@@ -144,7 +154,6 @@ export default class GCanvas {
       fillStyle: this.fillStyle,
       filters: this.filters.slice(),
     })
-    this.ctx?.save()
   }
   public restore() {
     const prev = this.stack.pop()
@@ -152,7 +161,6 @@ export default class GCanvas {
       //@ts-ignore
       this[key] = prev[key]
     })
-    this.ctx?.restore()
   }
 
   public beginPath() {
@@ -181,7 +189,7 @@ export default class GCanvas {
   }
 
   public translate(x: number, y: number) {
-    this.matrix = this.matrix.scale(x, y)
+    this.matrix = this.matrix.translate(x, y)
     this.ctx?.translate(x, y)
   }
 
@@ -317,10 +325,7 @@ export default class GCanvas {
 
     this.ctx?.arc(x, y, radius, aStartAngle, aEndAngle, antiClockwise)
   }
-  public circle(x: number, y: number, rad: number, ccw: boolean = false) {
-    this.arc(x, y, rad, 0, Math.PI * 2, ccw)
-    // NOTE: not native so do not need to call canvas api
-  }
+
   public bezierCurveTo(...args: BezierCurveToAction['args']) {
     // let [aCP1x, aCP1y, aCP2x, aCP2y, aX, aY] = args
     const { x: aCP1x, y: aCP1y } = this.transformPoint([args[0], args[1]])
@@ -330,6 +335,7 @@ export default class GCanvas {
 
     this.ctx?.bezierCurveTo(aCP1x, aCP1y, aCP2x, aCP2y, aX, aY)
   }
+
   public quadraticCurveTo(...args: QuadraticCurveToAction['args']) {
     // const [aCPx, aCPy, aX, aY] = args
     const { x: aCPx, y: aCPy } = this.transformPoint([args[0], args[1]])
@@ -338,37 +344,55 @@ export default class GCanvas {
 
     this.ctx?.quadraticCurveTo(aCPx, aCPy, aX, aY)
   }
+
   public clip() {
     this.clipRegion = this.path
     this.ctx?.clip()
   }
+
   public rect(x: number, y: number, w: number, h: number) {
     this.moveTo(x, y)
     this.lineTo(x + w, y)
     this.lineTo(x + w, y + h)
     this.lineTo(x, y + h)
-    this.closePath()
-    this.ctx?.rect(x, y, w, h)
+    this.lineTo(x, y)
   }
-  public fillRect(x: number, y: number, w: number, h: number, depth?: number) {
-    this.save()
+
+  public strokeRect(x: number, y: number, w: number, h: number) {
     this.beginPath()
-    this.depth = depth || this.depth
+    this.rect(x, y, w, h)
+    this.stroke()
+    this.closePath()
+  }
+
+  public fillRect(x: number, y: number, w: number, h: number) {
+    this.beginPath()
     this.rect(x, y, w, h)
     this.fill()
-    this.restore()
-    this.ctx?.fillRect(x, y, w, h)
+    this.closePath()
   }
-  public fillCircle(x: number, y: number, rad: number, depth?: number) {
-    this.save()
-    this.beginPath()
-    this.depth = depth || this.depth
-    this.circle(x, y, rad)
-    this.fill()
-    this.restore()
+
+  public circle(x: number, y: number, rad: number, ccw: boolean = false) {
+    this.arc(x, y, rad, 0, Math.PI * 2, ccw)
     // NOTE: not native so do not need to call canvas api
   }
+
+  public strokeCircle(x: number, y: number, radius: number) {
+    this.beginPath()
+    this.circle(x, y, radius)
+    this.fill()
+    this.closePath()
+  }
+
+  public fillCircle(x: number, y: number, radius: number) {
+    this.beginPath()
+    this.circle(x, y, radius)
+    this.fill()
+    this.closePath()
+  }
+
   public clone() {}
+
   public measureText(text: string): Bounds {
     return {
       top: 0,
@@ -388,6 +412,7 @@ export default class GCanvas {
 
     return true
   }
+
   public stroke(align: StrokeAlign = this.align, depth: number = this.depth) {
     if (!this.isOpaque(this.strokeStyle)) return
     this.save()
@@ -401,7 +426,7 @@ export default class GCanvas {
       offset = -this.toolDiameter / 2
     }
 
-    var path = this.path
+    let path = this.path
 
     if (align != 'center') {
       path = path.simplify('evenodd', this.precision)
@@ -423,12 +448,10 @@ export default class GCanvas {
     this.ctx?.stroke()
   }
 
-  public fill(windingRule?: WindingRule, depth?: number) {
+  public fill(windingRule?: WindingRule) {
     if (!this.isOpaque(this.fillStyle)) return
 
     this.save()
-
-    if (depth) this.depth = depth
 
     if (!this.toolDiameter) throw 'You must set context.toolDiameter to use fill()'
 
@@ -450,9 +473,11 @@ export default class GCanvas {
 
     this.ctx?.fill()
   }
+
   public clearRect(x: number, y: number, width: number, height: number) {
     this.ctx?.clearRect(x, y, width, height)
   }
+
   public closePath() {
     this.path.close()
     this.ctx?.closePath()

@@ -148,7 +148,7 @@ export default class Motion {
     )
 
     const v2 = this.position
-    const dist = Math.sqrt(Math.pow(v2.x - v1.x, 2) + Math.pow(v2.y - v1.y, 2) + Math.pow(v2.z - v1.z, 2))
+    const dist = Math.sqrt(Math.pow(v2.x - v1.x, 2) + Math.pow(v2.y - v1.y, 2) /* + Math.pow(v2.z - v1.z, 2)*/)
 
     if (!params.f) {
       let f = dist / (1 / this.ctx.feed)
