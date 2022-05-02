@@ -19,3 +19,9 @@ export const floatString = (number: number, decimals: number = 5): string => {
   const decimalsCount = Math.min(countDecimals(number, decimals), decimals)
   return decimalsCount === 0 ? String(Math.round(number)) : number.toFixed(decimalsCount)
 }
+
+// normalizes any angle to be between -PI and PI
+export const normalizeRadian = (radian: number): number => ((radian + Math.PI) % (Math.PI * 2)) - Math.PI
+
+export const segmentValue = (segments: number, totalSegments: number, max: number, min: number = 0): number =>
+  ((max - min) / totalSegments) * segments
