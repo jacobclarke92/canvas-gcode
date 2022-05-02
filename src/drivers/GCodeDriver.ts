@@ -42,12 +42,12 @@ export default class GCode extends Driver {
   }
 
   public init() {
-    this.send('G00 (move as fast as it can or is programmed to)')
-    this.send('G90 (absolute position mode)')
-    this.send('G80 (cancel any previously used canned cycles)')
+    // this.send('G00 (move as fast as it can or is programmed to)')
+    // this.send('G90 (absolute position mode)')
+    // this.send('G80 (cancel any previously used canned cycles)')
     this.send('G17 (select the xy plane)')
-    this.send('G28 (rapid to home position)')
-    this.send('M3 S0 (activate on servo)')
+    // this.send('G28 (rapid to home position)')
+    this.send('M3 S0 (activate servo)')
   }
 
   public unit(name: Unit) {
