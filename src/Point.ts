@@ -36,6 +36,9 @@ export default class Point {
   magnitude() {
     return Math.sqrt(this.x * this.x + this.y * this.y)
   }
+  angle() {
+    return Math.atan2(this.y, this.x)
+  }
   multiply(point: Point | number) {
     return typeof point === 'number'
       ? new Point(this.x * point, this.y * point)

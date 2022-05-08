@@ -25,3 +25,6 @@ export const normalizeRadian = (radian: number): number => ((radian + Math.PI) %
 
 export const segmentValue = (segments: number, totalSegments: number, max: number, min: number = 0): number =>
   ((max - min) / totalSegments) * segments
+
+export const degToRad = (deg: number): number => (deg * Math.PI) / 180
+export const radToDeg = (rad: number): number => (rad * 180) / Math.PI
