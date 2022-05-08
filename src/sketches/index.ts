@@ -12,4 +12,5 @@ export default [
   require('./11_PerlinLines').default,
   require('./12_Tree').default,
   require('./13_MondayMaze').default,
+  require('./14_Chaser').default,
 ]
