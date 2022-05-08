@@ -13,4 +13,5 @@ export default [
   require('./12_Tree').default,
   require('./13_MondayMaze').default,
   require('./14_Chaser').default,
+  require('./15_Kaleido').default,
 ]

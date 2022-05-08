@@ -36,7 +36,7 @@ export default class Range {
   }
   public setValue(value: number, updateInput: boolean = true) {
     this.value = value
-    if (updateInput) this.inputElem.value = String(this.value)
+    if (updateInput && this.inputElem) this.inputElem.value = String(this.value)
   }
   public randomize() {
     if (this._disableRandomize) return
