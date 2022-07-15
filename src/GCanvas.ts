@@ -2,7 +2,7 @@ import Matrix from './Matrix'
 import Point from './Point'
 import Path, { Bounds, WindingRule } from './Path'
 import SubPath, { ArcAction, BezierCurveToAction, QuadraticCurveToAction } from './SubPath'
-import { arcToPoints, pointsToArc } from './utils/pathUtils'
+import { arcToPoints, convertPointsToEdges, pointsToArc } from './utils/pathUtils'
 import Motion from './Motion'
 import Driver, { Unit } from './drivers/Driver'
 import GCodeDriver from './drivers/GCodeDriver'
@@ -34,6 +34,13 @@ export type CanvasStackItem = {
 }
 type CanvasStackItemKey = keyof CanvasStackItem
 
+export type StrokeOptions = {
+  align?: StrokeAlign
+  depth?: number
+  cutout?: boolean
+  debug?: boolean
+}
+
 export default class GCanvas {
   public canvasWidth: number
   public canvasHeight: number
@@ -45,6 +52,8 @@ export default class GCanvas {
   public driver: GCodeDriver
 
   public canvas: { width: number; height: number }
+
+  public enableCutouts: boolean = true
 
   // cnc-specific stuff
   public precision: number = 20
@@ -62,10 +71,12 @@ export default class GCanvas {
 
   private matrix: Matrix = new Matrix()
   private clipRegion?: Path
-  private path?: Path
+  public path?: Path
   private subPaths: SubPath[] = []
   private filters: any[] = [] // no idea hey
   private stack: CanvasStackItem[] = []
+
+  private pathHistory: any[] = []
 
   // vars that get relayed to canvas
   private _strokeStyle: string = '#000000'
@@ -156,11 +167,19 @@ export default class GCanvas {
     })
   }
   public restore() {
+    if (!this.stack.length) {
+      console.warn('Cannot restore: GCanvas stack empty!')
+      return
+    }
     const prev = this.stack.pop()
     ;(Object.keys(prev) as CanvasStackItemKey[]).forEach((key) => {
       //@ts-ignore
       this[key] = prev[key]
     })
+    this.ctx.setTransform(prev.matrix.a, prev.matrix.b, prev.matrix.c, prev.matrix.d, prev.matrix.tx, prev.matrix.ty)
+    this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio)
+    this.ctx.scale(this.virtualScale, this.virtualScale)
+    this.ctx.lineWidth = 1 / this.virtualScale
   }
 
   public beginPath() {
@@ -350,7 +369,8 @@ export default class GCanvas {
     this.ctx?.clip()
   }
 
-  public rect(x: number, y: number, w: number, h: number) {
+  public rect(x: number, y: number, w: number, h: number, cutout?: boolean) {
+    if (cutout) this.cutoutRect(x, y, w, h)
     this.moveTo(x, y)
     this.lineTo(x + w, y)
     this.lineTo(x + w, y + h)
@@ -358,10 +378,11 @@ export default class GCanvas {
     this.lineTo(x, y)
   }
 
-  public strokeRect(x: number, y: number, w: number, h: number) {
+  public strokeRect(x: number, y: number, w: number, h: number, options?: StrokeOptions) {
+    // if (cutout) this.cutoutRect(x, y, w, h)
     this.beginPath()
     this.rect(x, y, w, h)
-    this.stroke()
+    this.stroke(options)
     this.closePath()
   }
 
@@ -370,6 +391,10 @@ export default class GCanvas {
     this.rect(x, y, w, h)
     this.fill()
     this.closePath()
+  }
+
+  public cutoutRect(x: number, y: number, w: number, h: number) {
+    // console.log(this.path.subPaths)
   }
 
   public circle(x: number, y: number, rad: number, ccw: boolean = false) {
@@ -413,39 +438,57 @@ export default class GCanvas {
     return true
   }
 
-  public stroke(align: StrokeAlign = this.align, depth: number = this.depth) {
+  public stroke({ align = this.align, depth = this.depth, cutout, debug }: StrokeOptions = {}) {
     if (!this.isOpaque(this.strokeStyle)) return
-    this.save()
 
-    let offset = 0
+    const origStrokeStyle = this.ctx.strokeStyle
+    if (debug) {
+      this.ctx.strokeStyle = 'rgba(255,0,0,0.5)'
+    } else {
+      let path = this.path
 
-    if (align === 'outer') {
-      offset = this.toolDiameter / 2
-    }
-    if (align === 'inner') {
-      offset = -this.toolDiameter / 2
-    }
+      if (cutout) {
+        if (this.pathHistory.length > 0) {
+          const currentLines = convertPointsToEdges(path.getPoints())
+          console.log('lines making up current shape:', currentLines)
+          console.log('previously stored shapes: ', this.pathHistory.length)
+          for (let i = this.pathHistory.length - 1; i >= 0; i--) {
+            const compareLines = convertPointsToEdges(this.pathHistory[i].getPoints())
+            console.log(`history item ${i} lines:`, compareLines)
+          }
+        }
+      }
 
-    let path = this.path
+      this.save()
 
-    if (align != 'center') {
-      path = path.simplify('evenodd', this.precision)
-      path = path.offset(offset) || path
-    }
+      let offset = 0
+      if (align === 'outer') offset = this.toolDiameter / 2
+      if (align === 'inner') offset = -this.toolDiameter / 2
 
-    if (path.subPaths)
-      path.subPaths.forEach((subPath) => {
-        // Climb milling
-        if (align == 'inner') subPath = subPath.reverse()
-        this.layer(subPath, (z) => {
-          this.motion.followPath(subPath, z)
+      if (align !== 'center') {
+        path = path.simplify('evenodd', this.precision)
+        path = path.offset(offset) || path
+      }
+
+      if (path.subPaths) {
+        path.subPaths.forEach((subPath) => {
+          // Climb milling
+          if (align == 'inner') subPath = subPath.reverse()
+          this.layer(subPath, (z) => {
+            this.motion.followPath(subPath, z)
+          })
         })
-      })
-    // this.motion.retract()
+      } else {
+        console.warn('stroke has no subpaths?')
+      }
+      // this.motion.retract()
 
-    this.restore()
+      this.restore()
+    }
 
     this.ctx?.stroke()
+
+    if (debug) this.ctx.strokeStyle = origStrokeStyle
   }
 
   public fill(windingRule?: WindingRule) {
@@ -480,6 +523,7 @@ export default class GCanvas {
 
   public closePath() {
     this.path.close()
+    if (this.enableCutouts) this.pathHistory.push(this.path.current.clone())
     this.ctx?.closePath()
   }
 

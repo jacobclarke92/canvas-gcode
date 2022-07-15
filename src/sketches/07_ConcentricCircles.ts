@@ -9,6 +9,7 @@ import Range from './tools/Range'
 
 export default class ConcentricCircles extends Sketch {
   // static generateGCode = false
+  static enableCutouts = false
 
   lastPoint: Point
   radius: number

@@ -17,9 +17,11 @@ export class Sketch {
   public cy: number
   public vs: { [key: string]: Range } = {}
   static generateGCode: boolean = true
+  static enableCutouts: boolean = true
 
   constructor(config: SketchConfig) {
     this.ctx = config.ctx
+    this.ctx.enableCutouts = Sketch.enableCutouts
     this.canvasWidth = this.cw = config.width
     this.canvasHeight = this.ch = config.height
     this.cx = this.canvasWidth / 2

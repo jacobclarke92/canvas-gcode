@@ -9,6 +9,7 @@ import Range from './tools/Range'
 
 export default class SpiralingProportional extends Sketch {
   // static generateGCode = false
+  static enableCutouts = false
   osc1: Osc
   osc2: Osc
   osc3: Osc

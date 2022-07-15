@@ -9,6 +9,7 @@ import Range from './tools/Range'
 
 export default class BezierScribbles extends Sketch {
   static generateGCode = false
+  static enableCutouts = false
   // startPoint: Point
   lastPoint: Point
   lastAnchorPoint: Point

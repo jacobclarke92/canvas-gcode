@@ -6,6 +6,7 @@ import Range from './tools/Range'
 
 export default class Chaser extends Sketch {
   // static generateGCode = false
+  static enableCutouts = false
 
   init() {
     this.vs.downscaleDrawing = new Range({ initialValue: 5, min: 1, max: 200, step: 0.01, disableRandomize: true })

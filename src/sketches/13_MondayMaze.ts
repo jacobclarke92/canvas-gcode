@@ -6,6 +6,7 @@ import Range from './tools/Range'
 
 export default class MondayMaze extends Sketch {
   // static generateGCode = false
+  static enableCutouts = false
 
   init() {
     this.vs.speedUp = new Range({ initialValue: 1, min: 1, max: 100, step: 1, disableRandomize: true })

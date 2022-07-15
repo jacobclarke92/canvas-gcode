@@ -15,6 +15,7 @@ interface Circle {
 
 export default class BubblesInCircle extends Sketch {
   static generateGCode = false
+  static enableCutouts = false
 
   redrawnCount: number
   reordered: boolean

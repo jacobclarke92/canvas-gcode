@@ -11,6 +11,7 @@ import Range from './tools/Range'
 
 export default class PerlinGrid extends Sketch {
   // static generateGCode = false
+  static enableCutouts = false
 
   init() {
     this.vs.speedUp = new Range({ initialValue: 10, min: 1, max: 100, step: 1, disableRandomize: true })

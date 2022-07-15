@@ -15,6 +15,7 @@ interface Circle {
 
 export default class GridWaves extends Sketch {
   // static generateGCode = false
+  static enableCutouts = false
 
   effectiveWidth: number
   effectiveHeight: number
