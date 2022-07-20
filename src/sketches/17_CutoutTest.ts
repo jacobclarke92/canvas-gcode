@@ -26,9 +26,14 @@ export default class CutoutTest extends Sketch {
     console.log('closed', this.ctx.path?.current.isClosed())
 
     this.ctx.save()
-    this.ctx.rotate(degToRad(5))
+    this.ctx.translate(20, 20)
+    this.ctx.strokeRect(0, 0, 15, 15, { cutout: true })
+    this.ctx.restore()
 
-    this.ctx.strokeRect(25, 25, 25, 25, { cutout: true })
+    this.ctx.save()
+    this.ctx.translate(25, 25)
+    this.ctx.rotate(degToRad(5))
+    this.ctx.strokeRect(0, 0, 25, 25, { cutout: true })
     this.ctx.restore()
     var bounds = this.ctx.path?.getBounds()
     console.log('bounds', bounds)

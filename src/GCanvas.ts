@@ -113,12 +113,7 @@ export default class GCanvas {
 
     if (this.ctx) {
       this.ctx.resetTransform()
-
-      // scale drawable area to match device pixel ratio
-      this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio)
-
-      // scale drawable area to match virtual zoom
-      this.ctx.scale(this.virtualScale, this.virtualScale)
+      this.setCtxTransform(this.matrix)
 
       // draw rect the actual size of the canvas - should fill whole screen at this stage
       this.ctx.fillStyle = this._background
@@ -152,6 +147,16 @@ export default class GCanvas {
     if (this.ctx) this.ctx.font = value
   }
 
+  private setCtxTransform(matrix: Matrix) {
+    console.log('before', this.ctx.getTransform())
+    this.ctx.setTransform(matrix.a, matrix.b, matrix.c, matrix.d, matrix.tx, matrix.ty)
+    // scale drawable area to match device pixel ratio
+    this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio)
+    // scale drawable area to match virtual zoom
+    this.ctx.scale(this.virtualScale, this.virtualScale)
+    console.log('after', this.ctx.getTransform())
+  }
+
   public save() {
     this.stack.push({
       matrix: this.matrix,
@@ -176,9 +181,7 @@ export default class GCanvas {
       //@ts-ignore
       this[key] = prev[key]
     })
-    this.ctx.setTransform(prev.matrix.a, prev.matrix.b, prev.matrix.c, prev.matrix.d, prev.matrix.tx, prev.matrix.ty)
-    this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio)
-    this.ctx.scale(this.virtualScale, this.virtualScale)
+    this.setCtxTransform(prev.matrix)
     this.ctx.lineWidth = 1 / this.virtualScale
   }
 
@@ -204,17 +207,22 @@ export default class GCanvas {
 
   public rotate(theta: number) {
     this.matrix = this.matrix.rotate(theta)
-    this.ctx?.rotate(theta)
+    this.ctx?.rotate((theta / 180) * Math.PI)
   }
 
   public translate(x: number, y: number) {
     this.matrix = this.matrix.translate(x, y)
+    // this.ctx?.scale(1 / this.virtualScale, 1 / this.virtualScale)
+    // this.ctx?.scale(1 / window.devicePixelRatio, 1 / window.devicePixelRatio)
+    this.ctx.resetTransform()
     this.ctx?.translate(x, y)
+    this.ctx?.scale(this.virtualScale, this.virtualScale)
+    this.ctx?.scale(window.devicePixelRatio, window.devicePixelRatio)
   }
 
   public scale(x: number, y?: number) {
     this.matrix = this.matrix.scale(x, y)
-    this.ctx?.scale(x, y)
+    this.ctx?.scale(x, y || x)
   }
 
   // Note: this was marked as to-tidy by OG author
