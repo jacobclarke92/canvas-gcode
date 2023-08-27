@@ -27,4 +27,7 @@ export const segmentValue = (segments: number, totalSegments: number, max: numbe
   ((max - min) / totalSegments) * segments
 
 export const degToRad = (deg: number): number => (deg * Math.PI) / 180
-export const radToDeg = (rad: number): number => (rad * 180) / Math.PI
+export const radToDeg = (rad: number, round?: boolean): number => {
+  const angle = (rad * 180) / Math.PI
+  return round ? Math.round(angle) : angle
+}

@@ -7,6 +7,7 @@ import Motion from './Motion'
 import Driver, { Unit } from './drivers/Driver'
 import GCodeDriver from './drivers/GCodeDriver'
 import NullDriver from './drivers/NullDriver'
+import { OverloadedFunctionWithOptionals } from './types'
 
 export interface GCanvasConfig {
   width: number
@@ -19,10 +20,6 @@ export interface GCanvasConfig {
 }
 
 export type StrokeAlign = 'outer' | 'inner' | 'center'
-
-type OverloadedFunctionWithOptionals<MainParams extends any[], OptionalParams extends any[]> = (
-  ...args: [...MainParams, ...OptionalParams] | [...MainParams]
-) => void
 
 export type CanvasStackItem = {
   matrix: Matrix

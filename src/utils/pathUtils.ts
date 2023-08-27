@@ -12,6 +12,28 @@ export const arcToPoints = (x: number, y: number, aStart: number, aEnd: number, 
   }
 }
 
+export const lineToPoints = (
+  ...args:
+    | [pt1: Point, pt2: Point, divisions: number]
+    | [x1: number, y1: number, x2: number, y2: number, divisions: number]
+) => {
+  const pt1 = args.length === 3 ? args[0] : new Point(args[0], args[1])
+  const pt2 = args.length === 3 ? args[1] : new Point(args[2], args[3])
+  const divisions = args.length === 3 ? args[2] : args[4]
+
+  const angle = pt1.angleTo(pt2)
+  const dist = pt1.distanceTo(pt2)
+
+  const points = []
+
+  for (let i = 1; i < divisions + 1; i++) {
+    const pt = pt1.clone().moveAlongAngle(angle, (dist / (divisions + 1)) * i)
+    points.push(pt)
+  }
+
+  return points
+}
+
 // Convert start/end/center point arc to start/end angle arc.
 export const pointsToArc = (center: Point, start: Point, end: Point) => {
   center = center.clone()

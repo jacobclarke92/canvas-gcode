@@ -15,4 +15,5 @@ export default [
   require('./14_Chaser').default,
   require('./15_Kaleido').default,
   require('./16_KaleidoCurve').default,
+  require('./17_Perpendicularity').default,
 ]
