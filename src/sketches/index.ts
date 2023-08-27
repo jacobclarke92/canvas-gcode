@@ -16,4 +16,5 @@ export default [
   require('./15_Kaleido').default,
   require('./16_KaleidoCurve').default,
   require('./17_Perpendicularity').default,
+  require('./18_Rays').default,
 ]

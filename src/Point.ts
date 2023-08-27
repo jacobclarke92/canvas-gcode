@@ -47,8 +47,10 @@ export default class Point {
   scale(scale: number) {
     return this.multiply(scale)
   }
-  divide(point: Point) {
-    return new Point(this.x / point.x, this.y / point.y)
+  divide(point: Point | number) {
+    return typeof point === 'number'
+      ? new Point(this.x / point, this.y / point)
+      : new Point(this.x / point.x, this.y / point.y)
   }
   normalize() {
     return this.multiply(1 / this.magnitude())
@@ -65,6 +67,10 @@ export default class Point {
   }
   moveAlongAngle(angle: number, distance: number) {
     return this.translate(Math.cos(angle) * distance, Math.sin(angle) * distance)
+  }
+  moveTowards(point: Point, distance: number) {
+    const angle = this.angleTo(point)
+    return this.moveAlongAngle(angle, distance)
   }
   rotate(angle: number) {
     const x = this.x * Math.cos(angle) - this.y * Math.sin(angle)
