@@ -1,11 +1,5 @@
-import Path from '../Path'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
-import { debugDot } from '../utils/debugUtils'
-import { randFloat, randFloatRange, randInt, randIntRange } from '../utils/numberUtils'
-import { arcToPoints } from '../utils/pathUtils'
-import { random, seedRandom } from '../utils/random'
-import Osc from './tools/Osc'
 import Range from './tools/Range'
 
 interface Circle {
@@ -15,6 +9,7 @@ interface Circle {
 
 export default class GridWaves extends Sketch {
   // static generateGCode = false
+  static enableCutouts = false
 
   effectiveWidth: number
   effectiveHeight: number

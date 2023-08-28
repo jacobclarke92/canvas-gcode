@@ -1,11 +1,12 @@
 import { Sketch } from '../Sketch'
 import { Vector } from '../types'
-import { randFloat, randFloatRange, randInt, randIntRange, wrap } from '../utils/numberUtils'
+import { randFloat, randInt, randIntRange, wrap } from '../utils/numberUtils'
 import Range from './tools/Range'
 
 export default class InitialSketch extends Sketch {
   pos: Vector
   static generateGCode = false
+  static enableCutouts = false
 
   init() {
     this.pos = { x: this.canvasWidth / 2, y: this.canvasHeight / 2 }

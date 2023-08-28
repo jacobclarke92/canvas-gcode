@@ -2,11 +2,12 @@ import Matrix from './Matrix'
 import Point from './Point'
 import Path, { Bounds, WindingRule } from './Path'
 import SubPath, { ArcAction, BezierCurveToAction, QuadraticCurveToAction } from './SubPath'
-import { arcToPoints, pointsToArc } from './utils/pathUtils'
+import { arcToPoints, convertPointsToEdges, pointsToArc } from './utils/pathUtils'
 import Motion from './Motion'
 import Driver, { Unit } from './drivers/Driver'
 import GCodeDriver from './drivers/GCodeDriver'
 import NullDriver from './drivers/NullDriver'
+import { OverloadedFunctionWithOptionals } from './types'
 
 export interface GCanvasConfig {
   width: number
@@ -34,6 +35,13 @@ export type CanvasStackItem = {
 }
 type CanvasStackItemKey = keyof CanvasStackItem
 
+export type StrokeOptions = {
+  align?: StrokeAlign
+  depth?: number
+  cutout?: boolean
+  debug?: boolean
+}
+
 export default class GCanvas {
   public canvasWidth: number
   public canvasHeight: number
@@ -45,6 +53,8 @@ export default class GCanvas {
   public driver: GCodeDriver
 
   public canvas: { width: number; height: number }
+
+  public enableCutouts: boolean = true
 
   // cnc-specific stuff
   public precision: number = 20
@@ -62,10 +72,12 @@ export default class GCanvas {
 
   private matrix: Matrix = new Matrix()
   private clipRegion?: Path
-  private path?: Path
+  public path?: Path
   private subPaths: SubPath[] = []
   private filters: any[] = [] // no idea hey
   private stack: CanvasStackItem[] = []
+
+  private pathHistory: any[] = []
 
   // vars that get relayed to canvas
   private _strokeStyle: string = '#000000'
@@ -102,12 +114,7 @@ export default class GCanvas {
 
     if (this.ctx) {
       this.ctx.resetTransform()
-
-      // scale drawable area to match device pixel ratio
-      this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio)
-
-      // scale drawable area to match virtual zoom
-      this.ctx.scale(this.virtualScale, this.virtualScale)
+      this.setCtxTransform(this.matrix)
 
       // draw rect the actual size of the canvas - should fill whole screen at this stage
       this.ctx.fillStyle = this._background
@@ -141,6 +148,16 @@ export default class GCanvas {
     if (this.ctx) this.ctx.font = value
   }
 
+  private setCtxTransform(matrix: Matrix) {
+    // console.log('before', this.ctx.getTransform())
+    this.ctx.setTransform(matrix.a, matrix.b, matrix.c, matrix.d, matrix.tx, matrix.ty)
+    // scale drawable area to match device pixel ratio
+    this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio)
+    // scale drawable area to match virtual zoom
+    this.ctx.scale(this.virtualScale, this.virtualScale)
+    // console.log('after', this.ctx.getTransform())
+  }
+
   public save() {
     this.stack.push({
       matrix: this.matrix,
@@ -156,11 +173,17 @@ export default class GCanvas {
     })
   }
   public restore() {
+    if (!this.stack.length) {
+      console.warn('Cannot restore: GCanvas stack empty!')
+      return
+    }
     const prev = this.stack.pop()
     ;(Object.keys(prev) as CanvasStackItemKey[]).forEach((key) => {
       //@ts-ignore
       this[key] = prev[key]
     })
+    this.setCtxTransform(prev.matrix)
+    this.ctx.lineWidth = 1 / this.virtualScale
   }
 
   public beginPath() {
@@ -185,17 +208,22 @@ export default class GCanvas {
 
   public rotate(theta: number) {
     this.matrix = this.matrix.rotate(theta)
-    this.ctx?.rotate(theta)
+    this.ctx?.rotate((theta / 180) * Math.PI)
   }
 
   public translate(x: number, y: number) {
     this.matrix = this.matrix.translate(x, y)
+    // this.ctx?.scale(1 / this.virtualScale, 1 / this.virtualScale)
+    // this.ctx?.scale(1 / window.devicePixelRatio, 1 / window.devicePixelRatio)
+    this.ctx.resetTransform()
     this.ctx?.translate(x, y)
+    this.ctx?.scale(this.virtualScale, this.virtualScale)
+    this.ctx?.scale(window.devicePixelRatio, window.devicePixelRatio)
   }
 
   public scale(x: number, y?: number) {
     this.matrix = this.matrix.scale(x, y)
-    this.ctx?.scale(x, y)
+    this.ctx?.scale(x, y || x)
   }
 
   // Note: this was marked as to-tidy by OG author
@@ -350,7 +378,16 @@ export default class GCanvas {
     this.ctx?.clip()
   }
 
-  public rect(x: number, y: number, w: number, h: number) {
+  public rect: OverloadedFunctionWithOptionals<
+    [pt: Point, w: number, h: number] | [x: number, y: number, w: number, h: number],
+    [cutout: true]
+  > = (...args) => {
+    const cutout = (args.length === 4 && args[3] === true) || args.length === 5 || false
+    const x = args.length === 3 || (args.length === 4 && args[3] === true) ? args[0].x : args[0]
+    const y = args.length === 3 || (args.length === 4 && args[3] === true) ? args[0].y : args[1]
+    const w = args.length === 3 || (args.length === 4 && args[3] === true) ? args[1] : args[2]
+    const h = args.length === 3 || (args.length === 4 && args[3] === true) ? args[2] : args[3]
+    if (cutout) this.cutoutRect(x, y, w, h)
     this.moveTo(x, y)
     this.lineTo(x + w, y)
     this.lineTo(x + w, y + h)
@@ -358,36 +395,83 @@ export default class GCanvas {
     this.lineTo(x, y)
   }
 
-  public strokeRect(x: number, y: number, w: number, h: number) {
+  public strokeRect: OverloadedFunctionWithOptionals<
+    [pt: Point, w: number, h: number] | [x: number, y: number, w: number, h: number],
+    [options: StrokeOptions]
+  > = (...args) => {
+    const x =
+      args.length === 3 || (args.length === 4 && typeof args[3] !== 'number')
+        ? (args[0] as Point).x
+        : (args[0] as number)
+    const y =
+      args.length === 3 || (args.length === 4 && typeof args[3] !== 'number')
+        ? (args[0] as Point).y
+        : (args[1] as number)
+    const w = args.length === 3 || (args.length === 4 && typeof args[3] !== 'number') ? args[1] : args[2]
+    const h = args.length === 3 || (args.length === 4 && typeof args[3] !== 'number') ? args[2] : (args[3] as number)
+    const options = args.length === 5 ? args[4] : args.length === 4 && typeof args[3] !== 'number' ? args[3] : undefined
     this.beginPath()
     this.rect(x, y, w, h)
+    this.stroke(options)
+    this.closePath()
+  }
+
+  public fillRect(...args: [pt: Point, w: number, h: number] | [x: number, y: number, w: number, h: number]) {
+    const x = args.length === 3 ? args[0].x : args[0]
+    const y = args.length === 3 ? args[0].y : args[1]
+    const w = args.length === 3 ? args[1] : args[2]
+    const h = args.length === 3 ? args[2] : args[3]
+    this.beginPath()
+    this.rect(x, y, w, h)
+    this.fill()
+    this.closePath()
+  }
+
+  public cutoutRect(x: number, y: number, w: number, h: number) {
+    // console.log(this.path.subPaths)
+  }
+
+  public circle: OverloadedFunctionWithOptionals<
+    [pt: Point, radius: number] | [x: number, y: number, radius: number],
+    [ccw: true]
+  > = (...args) => {
+    const x = args.length === 2 || (args.length === 3 && args[2] === true) ? args[0].x : args[0]
+    const y = args.length === 2 || (args.length === 3 && args[2] === true) ? args[0].y : args[1]
+    const radius = args.length === 2 || (args.length === 3 && args[2] === true) ? args[1] : args[2]
+    const ccw = (args.length === 3 && args[2] === true) || args.length === 4 || false
+    this.arc(x, y, radius, 0, Math.PI * 2, ccw)
+    // NOTE: not native so do not need to call canvas api
+  }
+
+  public strokeCircle(...args: [pt: Point, radius: number] | [x: number, y: number, radius: number]): void {
+    const x = args.length === 2 ? args[0].x : args[0]
+    const y = args.length === 2 ? args[0].y : args[1]
+    const radius = args.length === 2 ? args[1] : args[2]
+    this.beginPath()
+    this.circle(x, y, radius)
     this.stroke()
     this.closePath()
   }
 
-  public fillRect(x: number, y: number, w: number, h: number) {
-    this.beginPath()
-    this.rect(x, y, w, h)
-    this.fill()
-    this.closePath()
-  }
-
-  public circle(x: number, y: number, rad: number, ccw: boolean = false) {
-    this.arc(x, y, rad, 0, Math.PI * 2, ccw)
-    // NOTE: not native so do not need to call canvas api
-  }
-
-  public strokeCircle(x: number, y: number, radius: number) {
+  public fillCircle(...args: [pt: Point, radius: number] | [x: number, y: number, radius: number]) {
+    const x = args.length === 2 ? args[0].x : args[0]
+    const y = args.length === 2 ? args[0].y : args[1]
+    const radius = args.length === 2 ? args[1] : args[2]
     this.beginPath()
     this.circle(x, y, radius)
     this.fill()
     this.closePath()
   }
 
-  public fillCircle(x: number, y: number, radius: number) {
+  public strokeLine(...args: [Point, Point] | [x1: number, y1: number, x2: number, y2: number]) {
+    const x1 = args.length === 2 ? args[0].x : args[0]
+    const y1 = args.length === 2 ? args[0].y : args[1]
+    const x2 = args.length === 2 ? args[1].x : args[2]
+    const y2 = args.length === 2 ? args[1].y : args[3]
     this.beginPath()
-    this.circle(x, y, radius)
-    this.fill()
+    this.moveTo(x1, y1)
+    this.lineTo(x2, y2)
+    this.stroke()
     this.closePath()
   }
 
@@ -413,39 +497,57 @@ export default class GCanvas {
     return true
   }
 
-  public stroke(align: StrokeAlign = this.align, depth: number = this.depth) {
+  public stroke({ align = this.align, depth = this.depth, cutout, debug }: StrokeOptions = {}) {
     if (!this.isOpaque(this.strokeStyle)) return
-    this.save()
 
-    let offset = 0
+    const origStrokeStyle = this.ctx.strokeStyle
+    if (debug) {
+      this.ctx.strokeStyle = 'rgba(255,0,0,0.5)'
+    } else {
+      let path = this.path
 
-    if (align === 'outer') {
-      offset = this.toolDiameter / 2
-    }
-    if (align === 'inner') {
-      offset = -this.toolDiameter / 2
-    }
+      if (cutout) {
+        if (this.pathHistory.length > 0) {
+          const currentLines = convertPointsToEdges(path.getPoints())
+          console.log('lines making up current shape:', currentLines)
+          console.log('previously stored shapes: ', this.pathHistory.length)
+          for (let i = this.pathHistory.length - 1; i >= 0; i--) {
+            const compareLines = convertPointsToEdges(this.pathHistory[i].getPoints())
+            console.log(`history item ${i} lines:`, compareLines)
+          }
+        }
+      }
 
-    let path = this.path
+      this.save()
 
-    if (align != 'center') {
-      path = path.simplify('evenodd', this.precision)
-      path = path.offset(offset) || path
-    }
+      let offset = 0
+      if (align === 'outer') offset = this.toolDiameter / 2
+      if (align === 'inner') offset = -this.toolDiameter / 2
 
-    if (path.subPaths)
-      path.subPaths.forEach((subPath) => {
-        // Climb milling
-        if (align == 'inner') subPath = subPath.reverse()
-        this.layer(subPath, (z) => {
-          this.motion.followPath(subPath, z)
+      if (align !== 'center') {
+        path = path.simplify('evenodd', this.precision)
+        path = path.offset(offset) || path
+      }
+
+      if (path.subPaths) {
+        path.subPaths.forEach((subPath) => {
+          // Climb milling
+          if (align == 'inner') subPath = subPath.reverse()
+          this.layer(subPath, (z) => {
+            this.motion.followPath(subPath, z)
+          })
         })
-      })
-    // this.motion.retract()
+      } else {
+        console.warn('stroke has no subpaths?')
+      }
+      // this.motion.retract()
 
-    this.restore()
+      this.restore()
+    }
 
     this.ctx?.stroke()
+
+    if (debug) this.ctx.strokeStyle = origStrokeStyle
   }
 
   public fill(windingRule?: WindingRule) {
@@ -480,6 +582,7 @@ export default class GCanvas {
 
   public closePath() {
     this.path.close()
+    if (this.enableCutouts) this.pathHistory.push(this.path.current.clone())
     this.ctx?.closePath()
   }
 

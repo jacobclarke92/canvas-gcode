@@ -1,14 +1,11 @@
-import Path from '../Path'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
-import { debugDot } from '../utils/debugUtils'
-import { randFloat, randFloatRange, randInt, randIntRange } from '../utils/numberUtils'
-import { arcToPoints } from '../utils/pathUtils'
-import Osc from './tools/Osc'
+import { randInt } from '../utils/numberUtils'
 import Range from './tools/Range'
 
 export default class BezierScribbles extends Sketch {
   static generateGCode = false
+  static enableCutouts = false
   // startPoint: Point
   lastPoint: Point
   lastAnchorPoint: Point

@@ -6044,7 +6044,7 @@
 		}
 	};
 
-	ClipperLib.Clipper.GetBounds = function (paths)
+	ClipperLib.Clipper.prototype.GetBounds = function (paths)
 	{
 		var i = 0,
 			cnt = paths.length;

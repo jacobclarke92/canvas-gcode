@@ -1,16 +1,11 @@
-import Path from '../Path'
-import Point from '../Point'
 import { Sketch } from '../Sketch'
-import { debugDot } from '../utils/debugUtils'
-import { randFloat, randFloatRange, randInt, randIntRange } from '../utils/numberUtils'
-import { arcToPoints } from '../utils/pathUtils'
 import { perlin2, seedNoise } from '../utils/noise'
-import { random, seedRandom } from '../utils/random'
-import Osc from './tools/Osc'
+import { seedRandom } from '../utils/random'
 import Range from './tools/Range'
 
 export default class PerlinGrid extends Sketch {
   // static generateGCode = false
+  static enableCutouts = false
 
   init() {
     this.vs.speedUp = new Range({ initialValue: 10, min: 1, max: 100, step: 1, disableRandomize: true })

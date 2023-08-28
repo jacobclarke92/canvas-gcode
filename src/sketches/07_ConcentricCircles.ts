@@ -1,14 +1,11 @@
-import Path from '../Path'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
-import { debugDot } from '../utils/debugUtils'
-import { randFloat, randFloatRange, randInt, randIntRange } from '../utils/numberUtils'
-import { arcToPoints } from '../utils/pathUtils'
 import Osc from './tools/Osc'
 import Range from './tools/Range'
 
 export default class ConcentricCircles extends Sketch {
   // static generateGCode = false
+  static enableCutouts = false
 
   lastPoint: Point
   radius: number

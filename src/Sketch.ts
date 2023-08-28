@@ -11,15 +11,22 @@ export class Sketch {
   public ctx: GCanvas
   public canvasWidth: number
   public canvasHeight: number
+  /** canvas width */
   public cw: number
+  /** canvas height */
   public ch: number
+  /** canvas center x */
   public cx: number
+  /** canvas center y */
   public cy: number
+  /** editable values object */
   public vs: { [key: string]: Range } = {}
   static generateGCode: boolean = true
+  static enableCutouts: boolean = true
 
   constructor(config: SketchConfig) {
     this.ctx = config.ctx
+    this.ctx.enableCutouts = Sketch.enableCutouts
     this.canvasWidth = this.cw = config.width
     this.canvasHeight = this.ch = config.height
     this.cx = this.canvasWidth / 2

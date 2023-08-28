@@ -23,8 +23,18 @@ export const floatString = (number: number, decimals: number = 5): string => {
 // normalizes any angle to be between -PI and PI
 export const normalizeRadian = (radian: number): number => ((radian + Math.PI) % (Math.PI * 2)) - Math.PI
 
+export const angleDiff = (startAngle: number, endAngle: number) =>
+  ((endAngle - startAngle + Math.PI * 3) % (Math.PI * 2)) - Math.PI
+
+export const smallestAngleDiff = (a1: number, a2: number): number => Math.PI - Math.abs(Math.abs(a1 - a2) - Math.PI)
+
 export const segmentValue = (segments: number, totalSegments: number, max: number, min: number = 0): number =>
   ((max - min) / totalSegments) * segments
 
 export const degToRad = (deg: number): number => (deg * Math.PI) / 180
-export const radToDeg = (rad: number): number => (rad * 180) / Math.PI
+export const radToDeg = (rad: number, round?: boolean): number => {
+  const angle = (rad * 180) / Math.PI
+  return round ? Math.round(angle) : angle
+}
+
+export const sign = (x: number) => (x < 0.0 ? -1 : 1)
