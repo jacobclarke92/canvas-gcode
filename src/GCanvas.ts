@@ -149,13 +149,13 @@ export default class GCanvas {
   }
 
   private setCtxTransform(matrix: Matrix) {
-    console.log('before', this.ctx.getTransform())
+    // console.log('before', this.ctx.getTransform())
     this.ctx.setTransform(matrix.a, matrix.b, matrix.c, matrix.d, matrix.tx, matrix.ty)
     // scale drawable area to match device pixel ratio
     this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio)
     // scale drawable area to match virtual zoom
     this.ctx.scale(this.virtualScale, this.virtualScale)
-    console.log('after', this.ctx.getTransform())
+    // console.log('after', this.ctx.getTransform())
   }
 
   public save() {
