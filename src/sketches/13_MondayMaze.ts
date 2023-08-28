@@ -1,7 +1,6 @@
-import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { normalizeRadian, randInt, segmentValue } from '../utils/numberUtils'
-import { random, seedRandom } from '../utils/random'
+import { seedRandom } from '../utils/random'
 import Range from './tools/Range'
 
 export default class MondayMaze extends Sketch {

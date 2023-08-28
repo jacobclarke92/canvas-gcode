@@ -1,7 +1,7 @@
 import Point from '../Point'
 import { Sketch } from '../Sketch'
-import { degToRad, normalizeRadian, randFloat, randFloatRange, wrap } from '../utils/numberUtils'
-import { random, seedRandom } from '../utils/random'
+import { degToRad, normalizeRadian, randFloat, randFloatRange } from '../utils/numberUtils'
+import { seedRandom } from '../utils/random'
 import Range from './tools/Range'
 
 export default class Chaser extends Sketch {

@@ -1,7 +1,6 @@
 import Path from '../Path'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
-import { randFloat, randFloatRange } from '../utils/numberUtils'
 import { arcToPoints } from '../utils/pathUtils'
 import Osc from './tools/Osc'
 import Range from './tools/Range'

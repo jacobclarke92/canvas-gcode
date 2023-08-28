@@ -7,6 +7,7 @@ import Motion from './Motion'
 import Driver, { Unit } from './drivers/Driver'
 import GCodeDriver from './drivers/GCodeDriver'
 import NullDriver from './drivers/NullDriver'
+import { OverloadedFunctionWithOptionals } from './types'
 
 export interface GCanvasConfig {
   width: number
@@ -377,7 +378,15 @@ export default class GCanvas {
     this.ctx?.clip()
   }
 
-  public rect(x: number, y: number, w: number, h: number, cutout?: boolean) {
+  public rect: OverloadedFunctionWithOptionals<
+    [pt: Point, w: number, h: number] | [x: number, y: number, w: number, h: number],
+    [cutout: true]
+  > = (...args) => {
+    const cutout = (args.length === 4 && args[3] === true) || args.length === 5 || false
+    const x = args.length === 3 || (args.length === 4 && args[3] === true) ? args[0].x : args[0]
+    const y = args.length === 3 || (args.length === 4 && args[3] === true) ? args[0].y : args[1]
+    const w = args.length === 3 || (args.length === 4 && args[3] === true) ? args[1] : args[2]
+    const h = args.length === 3 || (args.length === 4 && args[3] === true) ? args[2] : args[3]
     if (cutout) this.cutoutRect(x, y, w, h)
     this.moveTo(x, y)
     this.lineTo(x + w, y)
@@ -386,15 +395,32 @@ export default class GCanvas {
     this.lineTo(x, y)
   }
 
-  public strokeRect(x: number, y: number, w: number, h: number, options?: StrokeOptions) {
-    // if (cutout) this.cutoutRect(x, y, w, h)
+  public strokeRect: OverloadedFunctionWithOptionals<
+    [pt: Point, w: number, h: number] | [x: number, y: number, w: number, h: number],
+    [options: StrokeOptions]
+  > = (...args) => {
+    const x =
+      args.length === 3 || (args.length === 4 && typeof args[3] !== 'number')
+        ? (args[0] as Point).x
+        : (args[0] as number)
+    const y =
+      args.length === 3 || (args.length === 4 && typeof args[3] !== 'number')
+        ? (args[0] as Point).y
+        : (args[1] as number)
+    const w = args.length === 3 || (args.length === 4 && typeof args[3] !== 'number') ? args[1] : args[2]
+    const h = args.length === 3 || (args.length === 4 && typeof args[3] !== 'number') ? args[2] : (args[3] as number)
+    const options = args.length === 5 ? args[4] : args.length === 4 && typeof args[3] !== 'number' ? args[3] : undefined
     this.beginPath()
     this.rect(x, y, w, h)
     this.stroke(options)
     this.closePath()
   }
 
-  public fillRect(x: number, y: number, w: number, h: number) {
+  public fillRect(...args: [pt: Point, w: number, h: number] | [x: number, y: number, w: number, h: number]) {
+    const x = args.length === 3 ? args[0].x : args[0]
+    const y = args.length === 3 ? args[0].y : args[1]
+    const w = args.length === 3 ? args[1] : args[2]
+    const h = args.length === 3 ? args[2] : args[3]
     this.beginPath()
     this.rect(x, y, w, h)
     this.fill()
@@ -405,22 +431,47 @@ export default class GCanvas {
     // console.log(this.path.subPaths)
   }
 
-  public circle(x: number, y: number, rad: number, ccw: boolean = false) {
-    this.arc(x, y, rad, 0, Math.PI * 2, ccw)
+  public circle: OverloadedFunctionWithOptionals<
+    [pt: Point, radius: number] | [x: number, y: number, radius: number],
+    [ccw: true]
+  > = (...args) => {
+    const x = args.length === 2 || (args.length === 3 && args[2] === true) ? args[0].x : args[0]
+    const y = args.length === 2 || (args.length === 3 && args[2] === true) ? args[0].y : args[1]
+    const radius = args.length === 2 || (args.length === 3 && args[2] === true) ? args[1] : args[2]
+    const ccw = (args.length === 3 && args[2] === true) || args.length === 4 || false
+    this.arc(x, y, radius, 0, Math.PI * 2, ccw)
     // NOTE: not native so do not need to call canvas api
   }
 
-  public strokeCircle(x: number, y: number, radius: number) {
+  public strokeCircle(...args: [pt: Point, radius: number] | [x: number, y: number, radius: number]): void {
+    const x = args.length === 2 ? args[0].x : args[0]
+    const y = args.length === 2 ? args[0].y : args[1]
+    const radius = args.length === 2 ? args[1] : args[2]
+    this.beginPath()
+    this.circle(x, y, radius)
+    this.stroke()
+    this.closePath()
+  }
+
+  public fillCircle(...args: [pt: Point, radius: number] | [x: number, y: number, radius: number]) {
+    const x = args.length === 2 ? args[0].x : args[0]
+    const y = args.length === 2 ? args[0].y : args[1]
+    const radius = args.length === 2 ? args[1] : args[2]
     this.beginPath()
     this.circle(x, y, radius)
     this.fill()
     this.closePath()
   }
 
-  public fillCircle(x: number, y: number, radius: number) {
+  public strokeLine(...args: [Point, Point] | [x1: number, y1: number, x2: number, y2: number]) {
+    const x1 = args.length === 2 ? args[0].x : args[0]
+    const y1 = args.length === 2 ? args[0].y : args[1]
+    const x2 = args.length === 2 ? args[1].x : args[2]
+    const y2 = args.length === 2 ? args[1].y : args[3]
     this.beginPath()
-    this.circle(x, y, radius)
-    this.fill()
+    this.moveTo(x1, y1)
+    this.lineTo(x2, y2)
+    this.stroke()
     this.closePath()
   }
 

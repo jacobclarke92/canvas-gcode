@@ -1,7 +1,6 @@
-import Point from '../Point'
 import { Sketch } from '../Sketch'
-import { degToRad, normalizeRadian, randFloat, randFloatRange, randInt, randIntRange, wrap } from '../utils/numberUtils'
-import { random, seedRandom } from '../utils/random'
+import { degToRad, randFloat, randFloatRange, wrap } from '../utils/numberUtils'
+import { seedRandom } from '../utils/random'
 import Range from './tools/Range'
 
 export default class Kaleido extends Sketch {
