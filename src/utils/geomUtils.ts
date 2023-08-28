@@ -34,7 +34,7 @@ export const getLineIntersectionPoint = (line1: Line, line2: Line): Point | null
   return null
 }
 
-export const getLineIntersectionPoints = (line: Line, ...lines: Line[]) => {
+export const getLineIntersectionPoints = (line: Line, ...lines: Line[]): [Point, Line][] => {
   const pointsAndLines: [Point, Line][] = []
   for (const l of lines) {
     const pt = getLineIntersectionPoint(line, l)
@@ -56,7 +56,7 @@ export const getClosestButNotSamePoint = (pt: Point, ...pts: [Point] | Point[]):
   return ptsWithDist[0][0]
 }
 
-export const lineIntersectsCircle = ([p1, p2]: Line, pt: Point, radius: number) => {
+export const lineIntersectsCircle = ([p1, p2]: Line, pt: Point, radius: number): boolean => {
   let x1 = p1.clone().subtract(pt)
   let x2 = p2.clone().subtract(pt)
 
@@ -71,7 +71,7 @@ export const lineIntersectsCircle = ([p1, p2]: Line, pt: Point, radius: number) 
   return true
 }
 
-export const getPointsWhereLineIntersectsCircle = ([p1, p2]: Line, pt: Point, radius: number) => {
+export const getPointsWhereLineIntersectsCircle = ([p1, p2]: Line, pt: Point, radius: number): Point[] | [] => {
   let x1 = p1.clone().subtract(pt)
   let x2 = p2.clone().subtract(pt)
 
@@ -97,9 +97,9 @@ export const getPointsWhereLineIntersectsCircle = ([p1, p2]: Line, pt: Point, ra
   return intersectionPoints
 }
 
-export const pointInCircle = (pt: Point, circlePos: Point, radius: number) => pt.distanceTo(circlePos) < radius
+export const pointInCircle = (pt: Point, circlePos: Point, radius: number): boolean => pt.distanceTo(circlePos) < radius
 
-export const pointInCircles = (pt: Point, ...circles: [pos: Point, rad: number][]) => {
+export const pointInCircles = (pt: Point, ...circles: [pos: Point, rad: number][]): boolean => {
   for (const [pos, rad] of circles) {
     if (pointInCircle(pt, pos, rad)) return true
   }
@@ -109,12 +109,12 @@ export const pointInCircles = (pt: Point, ...circles: [pos: Point, rad: number][
 export const circleOverlapsCircle = (
   [circle1Pos, circle1Rad]: [Point, number],
   [circle2Pos, circle2Rad]: [Point, number]
-) => circle1Pos.distanceTo(circle2Pos) < circle1Rad + circle2Rad
+): boolean => circle1Pos.distanceTo(circle2Pos) < circle1Rad + circle2Rad
 
 export const circleOverlapsCircles = (
   [circlePos, circleRad]: [Point, number],
   ...circles: [pos: Point, rad: number][]
-) => {
+): boolean => {
   for (const [pos, rad] of circles) {
     if (circleOverlapsCircle([circlePos, circleRad], [pos, rad])) return true
   }
