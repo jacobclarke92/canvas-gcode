@@ -67,11 +67,11 @@
 import { Clipper } from './Clipper'
 import { ClipperBase } from './ClipperBase'
 import { ClipperOffset } from './ClipperOffset'
-import { DoublePoint, DoublePoint0, DoublePoint1, DoublePoint2 } from './DoublePoint'
+import { DoublePoint } from './DoublePoint'
 import { ClipType, Direction, EdgeSide, EndType, JoinType, PolyFillType, PolyType } from './enums'
 import { IntersectNode, MyIntersectNodeSort } from './IntersectNode'
-import { IntPoint, IntPoint0, IntPoint1, IntPoint1dp, IntPoint2 } from './IntPoint'
-import { IntRect, IntRect0, IntRect1, IntRect4 } from './IntRect'
+import { IntPoint } from './IntPoint'
+import { IntRect } from './IntRect'
 import { Join, LocalMinima, Maxima, OutPt, OutRec, Scanbeam } from './Misc'
 import { Path, Paths } from './Path'
 import { PolyNode, PolyTree } from './PolyNode'
@@ -107,11 +107,8 @@ export const ClipperLib = {
   Path,
   Paths,
   DoublePoint,
-  DoublePoint0: DoublePoint0,
-  DoublePoint1: DoublePoint1,
-  DoublePoint2: DoublePoint2,
-  PolyNode: PolyNode,
-  PolyTree: PolyTree,
+  PolyNode,
+  PolyTree,
   Math_Abs_Int64: (a: number) => Math.abs(a),
   Math_Abs_Int32: (a: number) => Math.abs(a),
   Math_Abs_Double: (a: number) => Math.abs(a),
@@ -129,34 +126,27 @@ export const ClipperLib = {
     if (a < -2147483648 || a > 2147483647) return a < 0 ? Math.ceil(a) : Math.floor(a)
     else return ~~a
   },
-  IntPoint: IntPoint,
-  IntPoint0: IntPoint0,
-  IntPoint1: IntPoint1,
-  IntPoint1dp: IntPoint1dp,
-  IntPoint2: IntPoint2,
-  IntRect: IntRect,
-  IntRect0: IntRect0,
-  IntRect1: IntRect1,
-  IntRect4: IntRect4,
-  ClipType: ClipType,
-  PolyType: PolyType,
-  PolyFillType: PolyFillType,
-  JoinType: JoinType,
-  EndType: EndType,
-  EdgeSide: EdgeSide,
-  Direction: Direction,
-  TEdge: TEdge,
-  IntersectNode: IntersectNode,
-  MyIntersectNodeSort: MyIntersectNodeSort,
-  LocalMinima: LocalMinima,
-  Scanbeam: Scanbeam,
-  Maxima: Maxima,
-  OutRec: OutRec,
-  OutPt: OutPt,
-  Join: Join,
-  ClipperBase: ClipperBase,
-  Clipper: Clipper,
-  ClipperOffset: ClipperOffset,
+  IntPoint,
+  IntRect,
+  ClipType,
+  PolyType,
+  PolyFillType,
+  JoinType,
+  EndType,
+  EdgeSide,
+  Direction,
+  TEdge,
+  IntersectNode,
+  MyIntersectNodeSort,
+  LocalMinima,
+  Scanbeam,
+  Maxima,
+  OutRec,
+  OutPt,
+  Join,
+  ClipperBase,
+  Clipper,
+  ClipperOffset,
   Error: (message: string) => {
     try {
       throw new Error(message)

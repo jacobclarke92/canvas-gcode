@@ -11,23 +11,3 @@ export class DoublePoint {
     }
   }
 }
-
-export class DoublePoint0 extends DoublePoint {
-  constructor() {
-    super()
-    this.X = 0
-    this.Y = 0
-  }
-}
-
-export class DoublePoint1 extends DoublePoint {
-  constructor(dp: DoublePoint) {
-    super(dp)
-  }
-}
-
-export class DoublePoint2 extends DoublePoint {
-  constructor(x: number, y: number) {
-    super(x, y)
-  }
-}

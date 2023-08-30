@@ -1,6 +1,6 @@
 import { ClipperLib } from '.'
 import { ClipperBase } from './ClipperBase'
-import { ClipType, Direction, PolyFillType } from './enums'
+import { ClipType, Direction, EdgeSide, PolyFillType, PolyType } from './enums'
 import { IntersectNode } from './IntersectNode'
 import { IntPoint } from './IntPoint'
 import { IntRect } from './IntRect'
@@ -702,7 +702,7 @@ export class Clipper extends ClipperBase {
   }
 
   public GetLastOutPt(e) {
-    var outRec = this.m_PolyOuts[e.OutIdx]
+    const outRec = this.m_PolyOuts[e.OutIdx]
     if (e.Side === EdgeSide.esLeft) {
       return outRec.Pts
     } else {
@@ -711,7 +711,7 @@ export class Clipper extends ClipperBase {
   }
 
   public SwapPoints(pt1, pt2) {
-    var tmp = new IntPoint1(pt1.Value)
+    const tmp = new IntPoint(pt1.Value)
     //pt1.Value = pt2.Value;
     pt1.Value.X = pt2.Value.X
     pt1.Value.Y = pt2.Value.Y
@@ -723,7 +723,7 @@ export class Clipper extends ClipperBase {
   }
 
   public HorzSegmentsOverlap(seg1a, seg1b, seg2a, seg2b) {
-    var tmp
+    let tmp
     if (seg1a > seg1b) {
       tmp = seg1a
       seg1a = seg1b
@@ -738,8 +738,8 @@ export class Clipper extends ClipperBase {
   }
 
   public SetHoleState(e, outRec) {
-    var e2 = e.PrevInAEL
-    var eTmp = null
+    let e2 = e.PrevInAEL
+    let eTmp = null
     while (e2 !== null) {
       if (e2.OutIdx >= 0 && e2.WindDelta !== 0) {
         if (eTmp === null) eTmp = e2
@@ -763,18 +763,18 @@ export class Clipper extends ClipperBase {
   }
 
   public FirstIsBottomPt(btmPt1, btmPt2) {
-    var p = btmPt1.Prev
+    let p = btmPt1.Prev
     while (IntPoint.op_Equality(p.Pt, btmPt1.Pt) && p !== btmPt1) p = p.Prev
-    var dx1p = Math.abs(this.GetDx(btmPt1.Pt, p.Pt))
+    const dx1p = Math.abs(this.GetDx(btmPt1.Pt, p.Pt))
     p = btmPt1.Next
     while (IntPoint.op_Equality(p.Pt, btmPt1.Pt) && p !== btmPt1) p = p.Next
-    var dx1n = Math.abs(this.GetDx(btmPt1.Pt, p.Pt))
+    const dx1n = Math.abs(this.GetDx(btmPt1.Pt, p.Pt))
     p = btmPt2.Prev
     while (IntPoint.op_Equality(p.Pt, btmPt2.Pt) && p !== btmPt2) p = p.Prev
-    var dx2p = Math.abs(this.GetDx(btmPt2.Pt, p.Pt))
+    const dx2p = Math.abs(this.GetDx(btmPt2.Pt, p.Pt))
     p = btmPt2.Next
     while (IntPoint.op_Equality(p.Pt, btmPt2.Pt) && p !== btmPt2) p = p.Next
-    var dx2n = Math.abs(this.GetDx(btmPt2.Pt, p.Pt))
+    const dx2n = Math.abs(this.GetDx(btmPt2.Pt, p.Pt))
 
     if (Math.max(dx1p, dx1n) === Math.max(dx2p, dx2n) && Math.min(dx1p, dx1n) === Math.min(dx2p, dx2n)) {
       return this.Area(btmPt1) > 0 //if otherwise identical use orientation
@@ -784,8 +784,8 @@ export class Clipper extends ClipperBase {
   }
 
   public GetBottomPt(pp) {
-    var dups = null
-    var p = pp.Next
+    let dups = null
+    let p = pp.Next
     while (p !== pp) {
       if (p.Pt.Y > pp.Pt.Y) {
         pp = p
@@ -815,8 +815,8 @@ export class Clipper extends ClipperBase {
     //work out which polygon fragment has the correct hole state ...
     if (outRec1.BottomPt === null) outRec1.BottomPt = this.GetBottomPt(outRec1.Pts)
     if (outRec2.BottomPt === null) outRec2.BottomPt = this.GetBottomPt(outRec2.Pts)
-    var bPt1 = outRec1.BottomPt
-    var bPt2 = outRec2.BottomPt
+    const bPt1 = outRec1.BottomPt
+    const bPt2 = outRec2.BottomPt
     if (bPt1.Pt.Y > bPt2.Pt.Y) return outRec1
     else if (bPt1.Pt.Y < bPt2.Pt.Y) return outRec2
     else if (bPt1.Pt.X < bPt2.Pt.X) return outRec1
@@ -836,28 +836,28 @@ export class Clipper extends ClipperBase {
   }
 
   public GetOutRec(idx) {
-    var outrec = this.m_PolyOuts[idx]
+    let outrec = this.m_PolyOuts[idx]
     while (outrec !== this.m_PolyOuts[outrec.Idx]) outrec = this.m_PolyOuts[outrec.Idx]
     return outrec
   }
 
   public AppendPolygon(e1, e2) {
-    //get the start and ends of both output polygons ...
-    var outRec1 = this.m_PolyOuts[e1.OutIdx]
-    var outRec2 = this.m_PolyOuts[e2.OutIdx]
-    var holeStateRec
+    // get the start and ends of both output polygons ...
+    const outRec1 = this.m_PolyOuts[e1.OutIdx]
+    const outRec2 = this.m_PolyOuts[e2.OutIdx]
+    let holeStateRec
     if (this.OutRec1RightOfOutRec2(outRec1, outRec2)) holeStateRec = outRec2
     else if (this.OutRec1RightOfOutRec2(outRec2, outRec1)) holeStateRec = outRec1
     else holeStateRec = this.GetLowermostRec(outRec1, outRec2)
 
-    //get the start and ends of both output polygons and
-    //join E2 poly onto E1 poly and delete pointers to E2 ...
+    // get the start and ends of both output polygons and
+    // join E2 poly onto E1 poly and delete pointers to E2 ...
+    const p1_lft = outRec1.Pts
+    const p1_rt = p1_lft.Prev
+    const p2_lft = outRec2.Pts
+    const p2_rt = p2_lft.Prev
 
-    var p1_lft = outRec1.Pts
-    var p1_rt = p1_lft.Prev
-    var p2_lft = outRec2.Pts
-    var p2_rt = p2_lft.Prev
-    //join e2 poly onto e1 poly and delete pointers to e2 ...
+    // join e2 poly onto e1 poly and delete pointers to e2 ...
     if (e1.Side === EdgeSide.esLeft) {
       if (e2.Side === EdgeSide.esLeft) {
         //z y x a b c
@@ -899,12 +899,13 @@ export class Clipper extends ClipperBase {
     outRec2.Pts = null
     outRec2.BottomPt = null
     outRec2.FirstLeft = outRec1
-    var OKIdx = e1.OutIdx
-    var ObsoleteIdx = e2.OutIdx
+    const OKIdx = e1.OutIdx
+    const ObsoleteIdx = e2.OutIdx
     e1.OutIdx = -1
-    //nb: safe because we only get here via AddLocalMaxPoly
+
+    // nb: safe because we only get here via AddLocalMaxPoly
     e2.OutIdx = -1
-    var e = this.m_ActiveEdges
+    let e = this.m_ActiveEdges
     while (e !== null) {
       if (e.OutIdx === ObsoleteIdx) {
         e.OutIdx = OKIdx
@@ -918,8 +919,8 @@ export class Clipper extends ClipperBase {
 
   public ReversePolyPtLinks(pp) {
     if (pp === null) return
-    var pp1
-    var pp2
+    let pp1
+    let pp2
     pp1 = pp
     do {
       pp2 = pp1.Next
@@ -930,13 +931,13 @@ export class Clipper extends ClipperBase {
   }
 
   public static SwapSides(edge1, edge2) {
-    var side = edge1.Side
+    const side = edge1.Side
     edge1.Side = edge2.Side
     edge2.Side = side
   }
 
   public static SwapPolyIndexes(edge1, edge2) {
-    var outIdx = edge1.OutIdx
+    const outIdx = edge1.OutIdx
     edge1.OutIdx = edge2.OutIdx
     edge2.OutIdx = outIdx
   }
@@ -944,18 +945,18 @@ export class Clipper extends ClipperBase {
   public IntersectEdges(e1, e2, pt) {
     //e1 will be to the left of e2 BELOW the intersection. Therefore e1 is before
     //e2 in AEL except when e1 is being inserted at the intersection point ...
-    var e1Contributing = e1.OutIdx >= 0
-    var e2Contributing = e2.OutIdx >= 0
+    const e1Contributing = e1.OutIdx >= 0
+    const e2Contributing = e2.OutIdx >= 0
 
     if (ClipperLib.use_xyz) this.SetZ(pt, e1, e2)
 
     if (ClipperLib.use_lines) {
-      //if either edge is on an OPEN path ...
+      // if either edge is on an OPEN path ...
       if (e1.WindDelta === 0 || e2.WindDelta === 0) {
-        //ignore subject-subject open path intersections UNLESS they
-        //are both open paths, AND they are both 'contributing maximas' ...
+        // ignore subject-subject open path intersections UNLESS they
+        // are both open paths, AND they are both 'contributing maximas' ...
         if (e1.WindDelta === 0 && e2.WindDelta === 0) return
-        //if intersecting a subj line with a subj poly ...
+        // if intersecting a subj line with a subj poly ...
         else if (e1.PolyTyp === e2.PolyTyp && e1.WindDelta !== e2.WindDelta && this.m_ClipType === ClipType.ctUnion) {
           if (e1.WindDelta === 0) {
             if (e2Contributing) {
@@ -988,11 +989,12 @@ export class Clipper extends ClipperBase {
         return
       }
     }
-    //update winding counts...
-    //assumes that e1 will be to the Right of e2 ABOVE the intersection
+
+    // update winding counts...
+    // assumes that e1 will be to the Right of e2 ABOVE the intersection
     if (e1.PolyTyp === e2.PolyTyp) {
       if (this.IsEvenOddFillType(e1)) {
-        var oldE1WindCnt = e1.WindCnt
+        const oldE1WindCnt = e1.WindCnt
         e1.WindCnt = e2.WindCnt
         e2.WindCnt = oldE1WindCnt
       } else {
@@ -1007,7 +1009,8 @@ export class Clipper extends ClipperBase {
       if (!this.IsEvenOddFillType(e1)) e2.WindCnt2 -= e1.WindDelta
       else e2.WindCnt2 = e2.WindCnt2 === 0 ? 1 : 0
     }
-    var e1FillType, e2FillType, e1FillType2, e2FillType2
+
+    let e1FillType, e2FillType, e1FillType2, e2FillType2
     if (e1.PolyTyp === PolyType.ptSubject) {
       e1FillType = this.m_SubjFillType
       e1FillType2 = this.m_ClipFillType
@@ -1022,7 +1025,7 @@ export class Clipper extends ClipperBase {
       e2FillType = this.m_ClipFillType
       e2FillType2 = this.m_SubjFillType
     }
-    var e1Wc, e2Wc
+    let e1Wc, e2Wc
     switch (e1FillType) {
       case PolyFillType.pftPositive:
         e1Wc = e1.WindCnt
@@ -1072,7 +1075,7 @@ export class Clipper extends ClipperBase {
       }
     } else if ((e1Wc === 0 || e1Wc === 1) && (e2Wc === 0 || e2Wc === 1)) {
       //neither edge is currently contributing ...
-      var e1Wc2, e2Wc2
+      let e1Wc2, e2Wc2
       switch (e1FillType2) {
         case PolyFillType.pftPositive:
           e1Wc2 = e1.WindCnt2
@@ -1121,8 +1124,8 @@ export class Clipper extends ClipperBase {
   }
 
   public DeleteFromSEL(e) {
-    var SelPrev = e.PrevInSEL
-    var SelNext = e.NextInSEL
+    const SelPrev = e.PrevInSEL
+    const SelNext = e.NextInSEL
     if (SelPrev === null && SelNext === null && e !== this.m_SortedEdges) return
     //already deleted
     if (SelPrev !== null) SelPrev.NextInSEL = SelNext
@@ -1133,7 +1136,7 @@ export class Clipper extends ClipperBase {
   }
 
   public ProcessHorizontals() {
-    var horzEdge = {} //m_SortedEdges;
+    const horzEdge = {} //m_SortedEdges;
     while (this.PopEdgeFromSEL(horzEdge)) {
       this.ProcessHorizontal(horzEdge.v)
     }
@@ -1152,26 +1155,26 @@ export class Clipper extends ClipperBase {
   }
 
   public ProcessHorizontal(horzEdge) {
-    var $var = {
+    const $var = {
       Dir: null,
       Left: null,
       Right: null,
     }
 
     this.GetHorzDirection(horzEdge, $var)
-    var dir = $var.Dir
-    var horzLeft = $var.Left
-    var horzRight = $var.Right
+    let dir = $var.Dir
+    let horzLeft = $var.Left
+    let horzRight = $var.Right
 
-    var IsOpen = horzEdge.WindDelta === 0
+    const IsOpen = horzEdge.WindDelta === 0
 
-    var eLastHorz = horzEdge,
+    let eLastHorz = horzEdge,
       eMaxPair = null
     while (eLastHorz.NextInLML !== null && ClipperBase.IsHorizontal(eLastHorz.NextInLML))
       eLastHorz = eLastHorz.NextInLML
     if (eLastHorz.NextInLML === null) eMaxPair = this.GetMaximaPair(eLastHorz)
 
-    var currMax = this.m_Maxima
+    let currMax = this.m_Maxima
     if (currMax !== null) {
       //get the first maxima in range (X) ...
       if (dir === Direction.dLeftToRight) {
@@ -1190,11 +1193,12 @@ export class Clipper extends ClipperBase {
         }
       }
     }
-    var op1 = null
+
+    let op1 = null
     for (;;) //loop through consec. horizontal edges
     {
-      var IsLastHorz = horzEdge === eLastHorz
-      var e = this.GetNextInAEL(horzEdge, dir)
+      const IsLastHorz = horzEdge === eLastHorz
+      let e = this.GetNextInAEL(horzEdge, dir)
       while (e !== null) {
         //this code block inserts extra coords into horizontal edges (in output
         //polygons) whereever maxima touch these horizontal edges. This helps
@@ -1236,13 +1240,13 @@ export class Clipper extends ClipperBase {
           }
 
           op1 = this.AddOutPt(horzEdge, e.Curr)
-          var eNextHorz = this.m_SortedEdges
+          let eNextHorz = this.m_SortedEdges
           while (eNextHorz !== null) {
             if (
               eNextHorz.OutIdx >= 0 &&
               this.HorzSegmentsOverlap(horzEdge.Bot.X, horzEdge.Top.X, eNextHorz.Bot.X, eNextHorz.Top.X)
             ) {
-              var op2 = this.GetLastOutPt(eNextHorz)
+              const op2 = this.GetLastOutPt(eNextHorz)
               this.AddJoin(op2, op1, eNextHorz.Top)
             }
             eNextHorz = eNextHorz.NextInSEL
@@ -1262,13 +1266,13 @@ export class Clipper extends ClipperBase {
         }
 
         if (dir === Direction.dLeftToRight) {
-          var Pt = new IntPoint(e.Curr.X, horzEdge.Curr.Y)
+          const Pt = new IntPoint(e.Curr.X, horzEdge.Curr.Y)
           this.IntersectEdges(horzEdge, e, Pt)
         } else {
-          var Pt = new IntPoint(e.Curr.X, horzEdge.Curr.Y)
+          const Pt = new IntPoint(e.Curr.X, horzEdge.Curr.Y)
           this.IntersectEdges(e, horzEdge, Pt)
         }
-        var eNext = this.GetNextInAEL(e, dir)
+        const eNext = this.GetNextInAEL(e, dir)
         this.SwapPositionsInAEL(horzEdge, e)
         e = eNext
       } //end while(e !== null)
@@ -1283,7 +1287,7 @@ export class Clipper extends ClipperBase {
         this.AddOutPt(horzEdge, horzEdge.Bot)
       }
 
-      $var = {
+      const $var = {
         Dir: dir,
         Left: horzLeft,
         Right: horzRight,
@@ -1297,13 +1301,13 @@ export class Clipper extends ClipperBase {
 
     if (horzEdge.OutIdx >= 0 && op1 === null) {
       op1 = this.GetLastOutPt(horzEdge)
-      var eNextHorz = this.m_SortedEdges
+      const eNextHorz = this.m_SortedEdges
       while (eNextHorz !== null) {
         if (
           eNextHorz.OutIdx >= 0 &&
           this.HorzSegmentsOverlap(horzEdge.Bot.X, horzEdge.Top.X, eNextHorz.Bot.X, eNextHorz.Top.X)
         ) {
-          var op2 = this.GetLastOutPt(eNextHorz)
+          const op2 = this.GetLastOutPt(eNextHorz)
           this.AddJoin(op2, op1, eNextHorz.Top)
         }
         eNextHorz = eNextHorz.NextInSEL
@@ -1320,8 +1324,8 @@ export class Clipper extends ClipperBase {
           return
         }
         //nb: HorzEdge is no longer horizontal here
-        var ePrev = horzEdge.PrevInAEL
-        var eNext = horzEdge.NextInAEL
+        const ePrev = horzEdge.PrevInAEL
+        const eNext = horzEdge.NextInAEL
         if (
           ePrev !== null &&
           ePrev.Curr.X === horzEdge.Bot.X &&
@@ -1331,7 +1335,7 @@ export class Clipper extends ClipperBase {
           ePrev.Curr.Y > ePrev.Top.Y &&
           ClipperBase.SlopesEqual3(horzEdge, ePrev, this.m_UseFullRange)
         ) {
-          var op2 = this.AddOutPt(ePrev, horzEdge.Bot)
+          const op2 = this.AddOutPt(ePrev, horzEdge.Bot)
           this.AddJoin(op1, op2, horzEdge.Top)
         } else if (
           eNext !== null &&
@@ -1342,7 +1346,7 @@ export class Clipper extends ClipperBase {
           eNext.Curr.Y > eNext.Top.Y &&
           ClipperBase.SlopesEqual3(horzEdge, eNext, this.m_UseFullRange)
         ) {
-          var op2 = this.AddOutPt(eNext, horzEdge.Bot)
+          const op2 = this.AddOutPt(eNext, horzEdge.Bot)
           this.AddJoin(op1, op2, horzEdge.Top)
         }
       } else {
@@ -1385,8 +1389,8 @@ export class Clipper extends ClipperBase {
   }
 
   public GetMaximaPairEx(e) {
-    //as above but returns null if MaxPair isn't in AEL (unless it's horizontal)
-    var result = this.GetMaximaPair(e)
+    // as above but returns null if MaxPair isn't in AEL (unless it's horizontal)
+    const result = this.GetMaximaPair(e)
     if (
       result === null ||
       result.OutIdx === ClipperBase.Skip ||
@@ -1415,9 +1419,9 @@ export class Clipper extends ClipperBase {
 
   public BuildIntersectList(topY) {
     if (this.m_ActiveEdges === null) return
-    //prepare for sorting ...
-    var e = this.m_ActiveEdges
-    //console.log(JSON.stringify(JSON.decycle( e )));
+
+    // prepare for sorting ...
+    let e = this.m_ActiveEdges
     this.m_SortedEdges = e
     while (e !== null) {
       e.PrevInSEL = e.PrevInAEL
@@ -1425,21 +1429,21 @@ export class Clipper extends ClipperBase {
       e.Curr.X = Clipper.TopX(e, topY)
       e = e.NextInAEL
     }
-    //bubblesort ...
-    var isModified = true
+
+    // bubblesort ...
+    let isModified = true
     while (isModified && this.m_SortedEdges !== null) {
       isModified = false
       e = this.m_SortedEdges
       while (e.NextInSEL !== null) {
-        var eNext = e.NextInSEL
-        var pt = new IntPoint0()
-        //console.log("e.Curr.X: " + e.Curr.X + " eNext.Curr.X" + eNext.Curr.X);
+        const eNext = e.NextInSEL
+        const pt = new IntPoint()
         if (e.Curr.X > eNext.Curr.X) {
           this.IntersectPoint(e, eNext, pt)
           if (pt.Y < topY) {
             pt = new IntPoint(Clipper.TopX(e, topY), topY)
           }
-          var newNode = new IntersectNode()
+          const newNode = new IntersectNode()
           newNode.Edge1 = e
           newNode.Edge2 = eNext
           //newNode.Pt = pt;
@@ -1462,24 +1466,24 @@ export class Clipper extends ClipperBase {
   }
 
   public static IntersectNodeSort(node1, node2) {
-    //the following typecast is safe because the differences in Pt.Y will
-    //be limited to the height of the scanbeam.
+    // the following typecast is safe because the differences in Pt.Y will
+    // be limited to the height of the scanbeam.
     return node2.Pt.Y - node1.Pt.Y
   }
 
   public FixupIntersectionOrder() {
-    //pre-condition: intersections are sorted bottom-most first.
-    //Now it's crucial that intersections are made only between adjacent edges,
-    //so to ensure this the order of intersections may need adjusting ...
+    // pre-condition: intersections are sorted bottom-most first.
+    // Now it's crucial that intersections are made only between adjacent edges,
+    // so to ensure this the order of intersections may need adjusting ...
     this.m_IntersectList.sort(this.m_IntersectNodeComparer)
     this.CopyAELToSEL()
-    var cnt = this.m_IntersectList.length
-    for (var i = 0; i < cnt; i++) {
+    const cnt = this.m_IntersectList.length
+    for (let i = 0; i < cnt; i++) {
       if (!this.EdgesAdjacent(this.m_IntersectList[i])) {
-        var j = i + 1
+        let j = i + 1
         while (j < cnt && !this.EdgesAdjacent(this.m_IntersectList[j])) j++
         if (j === cnt) return false
-        var tmp = this.m_IntersectList[i]
+        const tmp = this.m_IntersectList[i]
         this.m_IntersectList[i] = this.m_IntersectList[j]
         this.m_IntersectList[j] = tmp
       }
@@ -1489,8 +1493,8 @@ export class Clipper extends ClipperBase {
   }
 
   public ProcessIntersectList() {
-    for (var i = 0, ilen = this.m_IntersectList.length; i < ilen; i++) {
-      var iNode = this.m_IntersectList[i]
+    for (let i = 0, ilen = this.m_IntersectList.length; i < ilen; i++) {
+      const iNode = this.m_IntersectList[i]
       this.IntersectEdges(iNode.Edge1, iNode.Edge2, iNode.Pt)
       this.SwapPositionsInAEL(iNode.Edge1, iNode.Edge2)
     }
@@ -1569,7 +1573,7 @@ export class Clipper extends ClipperBase {
     } else {
       b1 = edge1.Bot.X - edge1.Bot.Y * edge1.Dx
       b2 = edge2.Bot.X - edge2.Bot.Y * edge2.Dx
-      var q = (b2 - b1) / (edge1.Dx - edge2.Dx)
+      const q = (b2 - b1) / (edge1.Dx - edge2.Dx)
       ip.Y = Clipper.Round(q)
       if (Math.abs(edge1.Dx) < Math.abs(edge2.Dx)) ip.X = Clipper.Round(edge1.Dx * q + b1)
       else ip.X = Clipper.Round(edge2.Dx * q + b2)
@@ -1640,7 +1644,7 @@ export class Clipper extends ClipperBase {
             ePrev.Curr.X === e.Curr.X &&
             ePrev.WindDelta !== 0
           ) {
-            var ip = new IntPoint1(e.Curr)
+            var ip = new IntPoint(e.Curr)
 
             if (ClipperLib.use_xyz) {
               this.SetZ(ip, ePrev, e)
@@ -2044,7 +2048,7 @@ export class Clipper extends ClipperBase {
       //DiscardLeftSide: when overlapping edges are joined, a spike will created
       //which needs to be cleaned up. However, we don't want Op1 or Op2 caught up
       //on the discard Side as either may still be needed for other joins ...
-      var Pt = new IntPoint0()
+      var Pt = new IntPoint()
       var DiscardLeftSide
       if (op1.Pt.X >= Left && op1.Pt.X <= Right) {
         //Pt = op1.Pt;
@@ -2546,7 +2550,7 @@ export class Clipper extends ClipperBase {
     if (cnt < 3) cnt = 0
     var result = new Array(cnt)
     for (var i = 0; i < cnt; ++i) {
-      result[i] = new IntPoint1(op.Pt)
+      result[i] = new IntPoint(op.Pt)
       op = op.Next
     }
     outPts = null

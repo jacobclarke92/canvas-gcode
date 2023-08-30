@@ -1,8 +1,9 @@
 import { ClipperLib } from '.'
 import { Clipper } from './Clipper'
 import { ClipperBase } from './ClipperBase'
+import { DoublePoint } from './DoublePoint'
 import { ClipType, EndType, PolyFillType } from './enums'
-import { IntPoint, IntPoint0, IntPoint2 } from './IntPoint'
+import { IntPoint } from './IntPoint'
 import { Path, Paths } from './Path'
 import { PolyNode, PolyTree } from './PolyNode'
 
@@ -19,7 +20,7 @@ export class ClipperOffset {
   protected m_cos = 0
   protected m_miterLim = 0
   protected m_StepsPerRad = 0
-  protected m_lowest = new IntPoint0()
+  protected m_lowest = new IntPoint()
   protected m_polyNodes = new PolyNode()
   protected MiterLimit: number
   protected ArcTolerance: number
@@ -67,11 +68,11 @@ export class ClipperOffset {
     this.m_polyNodes.AddChild(newNode)
     //if this path's lowest pt is lower than all the others then update m_lowest
     if (endType !== EndType.etClosedPolygon) return
-    if (this.m_lowest.X < 0) this.m_lowest = new IntPoint2(this.m_polyNodes.ChildCount() - 1, k)
+    if (this.m_lowest.X < 0) this.m_lowest = new IntPoint(this.m_polyNodes.ChildCount() - 1, k)
     else {
       var ip = this.m_polyNodes.Childs()[this.m_lowest.X].m_polygon[this.m_lowest.Y]
       if (newNode.m_polygon[k].Y > ip.Y || (newNode.m_polygon[k].Y === ip.Y && newNode.m_polygon[k].X < ip.X))
-        this.m_lowest = new IntPoint2(this.m_polyNodes.ChildCount() - 1, k)
+        this.m_lowest = new IntPoint(this.m_polyNodes.ChildCount() - 1, k)
     }
   }
 
@@ -102,11 +103,11 @@ export class ClipperOffset {
   public static GetUnitNormal(pt1, pt2) {
     var dx = pt2.X - pt1.X
     var dy = pt2.Y - pt1.Y
-    if (dx === 0 && dy === 0) return new DoublePoint2(0, 0)
+    if (dx === 0 && dy === 0) return new DoublePoint(0, 0)
     var f = 1 / Math.sqrt(dx * dx + dy * dy)
     dx *= f
     dy *= f
-    return new DoublePoint2(dy, -dx)
+    return new DoublePoint(dy, -dx)
   }
 
   public DoOffset(delta) {
@@ -151,7 +152,7 @@ export class ClipperOffset {
             Y = 0
           for (var j = 1; j <= steps; j++) {
             this.m_destPoly.push(
-              new IntPoint2(
+              new IntPoint(
                 ClipperOffset.Round(this.m_srcPoly[0].X + X * delta),
                 ClipperOffset.Round(this.m_srcPoly[0].Y + Y * delta)
               )
@@ -165,7 +166,7 @@ export class ClipperOffset {
             Y = -1
           for (var j = 0; j < 4; ++j) {
             this.m_destPoly.push(
-              new IntPoint2(
+              new IntPoint(
                 ClipperOffset.Round(this.m_srcPoly[0].X + X * delta),
                 ClipperOffset.Round(this.m_srcPoly[0].Y + Y * delta)
               )
@@ -188,7 +189,7 @@ export class ClipperOffset {
 
       if (node.m_endtype === EndType.etClosedLine || node.m_endtype === EndType.etClosedPolygon)
         this.m_normals.push(ClipperOffset.GetUnitNormal(this.m_srcPoly[len - 1], this.m_srcPoly[0]))
-      else this.m_normals.push(new DoublePoint1(this.m_normals[len - 2]))
+      else this.m_normals.push(new DoublePoint(this.m_normals[len - 2]))
 
       if (node.m_endtype === EndType.etClosedPolygon) {
         var k = len - 1
@@ -202,8 +203,8 @@ export class ClipperOffset {
         //re-build m_normals ...
         var n = this.m_normals[len - 1]
         for (var j = len - 1; j > 0; j--)
-          this.m_normals[j] = new DoublePoint2(-this.m_normals[j - 1].X, -this.m_normals[j - 1].Y)
-        this.m_normals[0] = new DoublePoint2(-n.X, -n.Y)
+          this.m_normals[j] = new DoublePoint(-this.m_normals[j - 1].X, -this.m_normals[j - 1].Y)
+        this.m_normals[0] = new DoublePoint(-n.X, -n.Y)
         k = 0
         for (var j = len - 1; j >= 0; j--) k = this.OffsetPoint(j, k, node.m_jointype)
         this.m_destPolys.push(this.m_destPoly)
@@ -213,12 +214,12 @@ export class ClipperOffset {
         var pt1
         if (node.m_endtype === EndType.etOpenButt) {
           var j = len - 1
-          pt1 = new IntPoint2(
+          pt1 = new IntPoint(
             ClipperOffset.Round(this.m_srcPoly[j].X + this.m_normals[j].X * delta),
             ClipperOffset.Round(this.m_srcPoly[j].Y + this.m_normals[j].Y * delta)
           )
           this.m_destPoly.push(pt1)
-          pt1 = new IntPoint2(
+          pt1 = new IntPoint(
             ClipperOffset.Round(this.m_srcPoly[j].X - this.m_normals[j].X * delta),
             ClipperOffset.Round(this.m_srcPoly[j].Y - this.m_normals[j].Y * delta)
           )
@@ -227,23 +228,23 @@ export class ClipperOffset {
           var j = len - 1
           k = len - 2
           this.m_sinA = 0
-          this.m_normals[j] = new DoublePoint2(-this.m_normals[j].X, -this.m_normals[j].Y)
+          this.m_normals[j] = new DoublePoint(-this.m_normals[j].X, -this.m_normals[j].Y)
           if (node.m_endtype === EndType.etOpenSquare) this.DoSquare(j, k)
           else this.DoRound(j, k)
         }
-        //re-build m_normals ...
+        // re-build m_normals ...
         for (var j = len - 1; j > 0; j--)
-          this.m_normals[j] = new DoublePoint2(-this.m_normals[j - 1].X, -this.m_normals[j - 1].Y)
-        this.m_normals[0] = new DoublePoint2(-this.m_normals[1].X, -this.m_normals[1].Y)
+          this.m_normals[j] = new DoublePoint(-this.m_normals[j - 1].X, -this.m_normals[j - 1].Y)
+        this.m_normals[0] = new DoublePoint(-this.m_normals[1].X, -this.m_normals[1].Y)
         k = len - 1
         for (var j = k - 1; j > 0; --j) k = this.OffsetPoint(j, k, node.m_jointype)
         if (node.m_endtype === EndType.etOpenButt) {
-          pt1 = new IntPoint2(
+          pt1 = new IntPoint(
             ClipperOffset.Round(this.m_srcPoly[0].X - this.m_normals[0].X * delta),
             ClipperOffset.Round(this.m_srcPoly[0].Y - this.m_normals[0].Y * delta)
           )
           this.m_destPoly.push(pt1)
-          pt1 = new IntPoint2(
+          pt1 = new IntPoint(
             ClipperOffset.Round(this.m_srcPoly[0].X + this.m_normals[0].X * delta),
             ClipperOffset.Round(this.m_srcPoly[0].Y + this.m_normals[0].Y * delta)
           )
@@ -277,10 +278,10 @@ export class ClipperOffset {
       } else {
         var r = Clipper.GetBounds(this.m_destPolys)
         var outer = new Path()
-        outer.push(new IntPoint2(r.left - 10, r.bottom + 10))
-        outer.push(new IntPoint2(r.right + 10, r.bottom + 10))
-        outer.push(new IntPoint2(r.right + 10, r.top - 10))
-        outer.push(new IntPoint2(r.left - 10, r.top - 10))
+        outer.push(new IntPoint(r.left - 10, r.bottom + 10))
+        outer.push(new IntPoint(r.right + 10, r.bottom + 10))
+        outer.push(new IntPoint(r.right + 10, r.top - 10))
+        outer.push(new IntPoint(r.left - 10, r.top - 10))
         clpr.AddPath(outer, PolyType.ptSubject, true)
         clpr.ReverseSolution = true
         clpr.Execute(ClipType.ctUnion, solution, PolyFillType.pftNegative, PolyFillType.pftNegative)
@@ -302,10 +303,10 @@ export class ClipperOffset {
       } else {
         var r = Clipper.GetBounds(this.m_destPolys)
         var outer = new Path()
-        outer.push(new IntPoint2(r.left - 10, r.bottom + 10))
-        outer.push(new IntPoint2(r.right + 10, r.bottom + 10))
-        outer.push(new IntPoint2(r.right + 10, r.top - 10))
-        outer.push(new IntPoint2(r.left - 10, r.top - 10))
+        outer.push(new IntPoint(r.left - 10, r.bottom + 10))
+        outer.push(new IntPoint(r.right + 10, r.bottom + 10))
+        outer.push(new IntPoint(r.right + 10, r.top - 10))
+        outer.push(new IntPoint(r.left - 10, r.top - 10))
         clpr.AddPath(outer, PolyType.ptSubject, true)
         clpr.ReverseSolution = true
         clpr.Execute(ClipType.ctUnion, solution, PolyFillType.pftNegative, PolyFillType.pftNegative)
@@ -331,7 +332,7 @@ export class ClipperOffset {
       if (cosA > 0) {
         // angle ==> 0 degrees
         this.m_destPoly.push(
-          new IntPoint2(
+          new IntPoint(
             ClipperOffset.Round(this.m_srcPoly[j].X + this.m_normals[k].X * this.m_delta),
             ClipperOffset.Round(this.m_srcPoly[j].Y + this.m_normals[k].Y * this.m_delta)
           )
@@ -343,14 +344,14 @@ export class ClipperOffset {
     else if (this.m_sinA < -1) this.m_sinA = -1.0
     if (this.m_sinA * this.m_delta < 0) {
       this.m_destPoly.push(
-        new IntPoint2(
+        new IntPoint(
           ClipperOffset.Round(this.m_srcPoly[j].X + this.m_normals[k].X * this.m_delta),
           ClipperOffset.Round(this.m_srcPoly[j].Y + this.m_normals[k].Y * this.m_delta)
         )
       )
-      this.m_destPoly.push(new IntPoint1(this.m_srcPoly[j]))
+      this.m_destPoly.push(new IntPoint(this.m_srcPoly[j]))
       this.m_destPoly.push(
-        new IntPoint2(
+        new IntPoint(
           ClipperOffset.Round(this.m_srcPoly[j].X + this.m_normals[j].X * this.m_delta),
           ClipperOffset.Round(this.m_srcPoly[j].Y + this.m_normals[j].Y * this.m_delta)
         )
@@ -379,13 +380,13 @@ export class ClipperOffset {
       Math.atan2(this.m_sinA, this.m_normals[k].X * this.m_normals[j].X + this.m_normals[k].Y * this.m_normals[j].Y) / 4
     )
     this.m_destPoly.push(
-      new IntPoint2(
+      new IntPoint(
         ClipperOffset.Round(this.m_srcPoly[j].X + this.m_delta * (this.m_normals[k].X - this.m_normals[k].Y * dx)),
         ClipperOffset.Round(this.m_srcPoly[j].Y + this.m_delta * (this.m_normals[k].Y + this.m_normals[k].X * dx))
       )
     )
     this.m_destPoly.push(
-      new IntPoint2(
+      new IntPoint(
         ClipperOffset.Round(this.m_srcPoly[j].X + this.m_delta * (this.m_normals[j].X + this.m_normals[j].Y * dx)),
         ClipperOffset.Round(this.m_srcPoly[j].Y + this.m_delta * (this.m_normals[j].Y - this.m_normals[j].X * dx))
       )
@@ -395,7 +396,7 @@ export class ClipperOffset {
   public DoMiter(j, k, r) {
     var q = this.m_delta / r
     this.m_destPoly.push(
-      new IntPoint2(
+      new IntPoint(
         ClipperOffset.Round(this.m_srcPoly[j].X + (this.m_normals[k].X + this.m_normals[j].X) * q),
         ClipperOffset.Round(this.m_srcPoly[j].Y + (this.m_normals[k].Y + this.m_normals[j].Y) * q)
       )
@@ -415,7 +416,7 @@ export class ClipperOffset {
       X2
     for (var i = 0; i < steps; ++i) {
       this.m_destPoly.push(
-        new IntPoint2(
+        new IntPoint(
           ClipperOffset.Round(this.m_srcPoly[j].X + X * this.m_delta),
           ClipperOffset.Round(this.m_srcPoly[j].Y + Y * this.m_delta)
         )
@@ -425,7 +426,7 @@ export class ClipperOffset {
       Y = X2 * this.m_sin + Y * this.m_cos
     }
     this.m_destPoly.push(
-      new IntPoint2(
+      new IntPoint(
         ClipperOffset.Round(this.m_srcPoly[j].X + this.m_normals[j].X * this.m_delta),
         ClipperOffset.Round(this.m_srcPoly[j].Y + this.m_normals[j].Y * this.m_delta)
       )
