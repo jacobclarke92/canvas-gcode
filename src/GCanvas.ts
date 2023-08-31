@@ -229,23 +229,11 @@ export default class GCanvas {
     this.ctx?.scale(x, y || x)
   }
 
-  // Note: this was marked as to-tidy by OG author
-  private transformPoint(a: [x: number, y: number] | Point): Point {
-    // i = i || 0
-    if (!(a instanceof Point)) {
-      let v = new Point(a[0], a[1])
-      v = this.matrix.transformPoint(v)
-      //   var v = new Point(a[i], a[i + 1])
-      //   v = this.matrix.transformPoint(v)
-      //   a[i] = v.x
-      //   a[i + 1] = v.y
-      return new Point(v.x, v.y)
-    } else if (a.x !== undefined) {
-      let v = new Point(a.x, a.y)
-      v = this.matrix.transformPoint(v)
-      a.x = v.x
-      a.y = v.y
-      return v
+  private transformPoint(pt: [x: number, y: number] | Point): Point {
+    if (Array.isArray(pt)) {
+      return this.matrix.transformPoint(pt)
+    } else {
+      return this.matrix.transformPoint(pt)
     }
   }
 

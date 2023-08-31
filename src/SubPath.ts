@@ -64,7 +64,7 @@ export const actions = {
 
 export default class SubPath {
   public actions: Action[] = []
-  public pointsCache: Point[] = []
+  public pointsCache: Point[][] = []
 
   constructor(points?: Point[]) {
     if (points) this.fromPoints(points)
@@ -181,7 +181,7 @@ export default class SubPath {
   public getLength() {
     let len = 0
     const first = this.firstPoint()
-    const pts = this.getPoints(10000)
+    const pts = this.getPoints()
     for (let i = 1, l = pts.length; i < l; ++i) {
       const p = pts[i]
       const x1 = first.x
@@ -296,7 +296,7 @@ export default class SubPath {
 
   public getPoints(divisions = 40): Point[] {
     // TODO: I don't understand what this does
-    // if (this.pointsCache[divisions]) return this.pointsCache[divisions]
+    if (this.pointsCache[divisions]) return this.pointsCache[divisions]
 
     const points: Point[] = []
 
@@ -421,7 +421,7 @@ export default class SubPath {
 
     if (this.closed) points.push(points[0])
 
-    // this.pointsCache[divisions] = points;
+    this.pointsCache[divisions] = points
     return points
   }
 
