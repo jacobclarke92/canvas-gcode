@@ -8,7 +8,7 @@ export default class Matrix {
   public tx: number
   public ty: number
 
-  constructor(a: number = 1, b: number = 0, c: number = 0, d: number = 1, tx: number = 0, ty: number = 0) {
+  constructor(a = 1, b = 0, c = 0, d = 1, tx = 0, ty = 0) {
     this.a = a
     this.b = b
     this.c = c

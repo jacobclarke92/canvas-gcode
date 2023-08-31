@@ -1,22 +1,17 @@
-import GCanvas from './GCanvas'
-import {
+import type {
   AllCommandParams,
-  ZeroParams,
-  RapidParams,
-  LinearParams,
   ArcParams,
   EllipseParams,
+  LinearParams,
+  RapidParams,
   Unit,
+  ZeroParams,
 } from './drivers/Driver'
-import Path from './Path'
+import type GCanvas from './GCanvas'
+import type Path from './Path'
 import Point from './Point'
-import SubPath, {
-  BezierCurveToAction,
-  EllipseAction,
-  LineToAction,
-  MoveToAction,
-  QuadraticCurveToAction,
-} from './SubPath'
+import type { BezierCurveToAction, EllipseAction, LineToAction, MoveToAction, QuadraticCurveToAction } from './SubPath'
+import SubPath from './SubPath'
 import { arcToPoints, pointsToArc, sameFloat, samePos } from './utils/pathUtils'
 
 export default class Motion {
@@ -74,7 +69,7 @@ export default class Motion {
   public arcCCW(params: ArcParams) {
     return this.arc(params, true)
   }
-  public arc(params: ArcParams, ccw: boolean = false) {
+  public arc(params: ArcParams, ccw = false) {
     const newPosition = this.postProcess({ ...params, z: this.position.z || 0 })
     // Note: Can be cyclic so we don't ignore it if the position is the same
     const cx = this.position.x + (params.i || 0)
@@ -169,7 +164,7 @@ export default class Motion {
 
     // Round down the decimal points to 10 nanometers
     // Gotta accept that there's no we're that precise.
-    for (let k in params) {
+    for (const k in params) {
       const key = k as keyof AllCommandParams
       if (typeof params[key] === 'number') {
         params[key] = Math.round(params[key] * 100000) / 100000
@@ -221,7 +216,6 @@ export default class Motion {
     const totalLen = path.getLength()
     let curLen = 0
 
-    const motion = this
     const ctx = this.ctx
     const ramping = path.isClosed() && ctx.ramping != false
 
@@ -241,14 +235,14 @@ export default class Motion {
 
     function interpolate(name: keyof SubPath, args: any[]) {
       const path = new SubPath()
-      path.moveTo(motion.position.x, motion.position.y)
+      path.moveTo(this.position.x, this.position.y)
       const func = path[name]
       if (typeof func === 'function') func.apply(path, args)
 
       const pts = path.getPoints(40)
       for (let i = 0, l = pts.length; i < l; ++i) {
         const p = pts[i]
-        motion.linear({ x: p.x, y: p.y, z: helix() })
+        this.linear({ x: p.x, y: p.y, z: helix() })
       }
     }
 
@@ -259,16 +253,16 @@ export default class Motion {
         const sameXY = sameFloat(x, this.position.x) && sameFloat(y, this.position.y)
         if (ramping && sameXY) return
 
-        if (!sameXY) motion.retract()
-        motion.rapid({ x, y })
-        if (!sameXY) motion.plunge()
+        if (!sameXY) this.retract()
+        this.rapid({ x, y })
+        if (!sameXY) this.plunge()
 
-        if (!ramping) motion.linear({ z: zEnd })
-        zStart = motion.position.z
+        if (!ramping) this.linear({ z: zEnd })
+        zStart = this.position.z
       },
       ['LINE_TO' as LineToAction['type']]: (...args: LineToAction['args']) => {
         const [x, y] = args
-        motion.linear({ x, y, z: helix() })
+        this.linear({ x, y, z: helix() })
       },
       ['ELLIPSE' as EllipseAction['type']]: (...args: EllipseAction['args']) => {
         const [x, y, rx, ry, aStart, aEnd, ccw] = args
@@ -282,7 +276,7 @@ export default class Motion {
             j: y - points.start.y,
             z: helix(),
           }
-          motion.arc(params, ccw)
+          this.arc(params, ccw)
         } else {
           interpolate('ellipse', args)
         }

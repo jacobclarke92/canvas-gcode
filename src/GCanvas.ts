@@ -1,13 +1,16 @@
-import Matrix from './Matrix'
-import Point from './Point'
-import Path, { Bounds, WindingRule } from './Path'
-import SubPath, { ArcAction, BezierCurveToAction, QuadraticCurveToAction } from './SubPath'
-import { arcToPoints, convertPointsToEdges, pointsToArc } from './utils/pathUtils'
-import Motion from './Motion'
-import Driver, { Unit } from './drivers/Driver'
-import GCodeDriver from './drivers/GCodeDriver'
+import type { Unit } from './drivers/Driver'
+import type Driver from './drivers/Driver'
+import type GCodeDriver from './drivers/GCodeDriver'
 import NullDriver from './drivers/NullDriver'
-import { OverloadedFunctionWithOptionals } from './types'
+import Matrix from './Matrix'
+import Motion from './Motion'
+import type { Bounds, WindingRule } from './Path'
+import Path from './Path'
+import Point from './Point'
+import type { ArcAction, BezierCurveToAction, QuadraticCurveToAction } from './SubPath'
+import type SubPath from './SubPath'
+import type { OverloadedFunctionWithOptionals } from './types'
+import { arcToPoints, convertPointsToEdges, pointsToArc } from './utils/pathUtils'
 
 export interface GCanvasConfig {
   width: number
@@ -54,21 +57,21 @@ export default class GCanvas {
 
   public canvas: { width: number; height: number }
 
-  public enableCutouts: boolean = true
+  public enableCutouts = true
 
   // cnc-specific stuff
-  public precision: number = 20
+  public precision = 20
   public align: StrokeAlign = 'center'
-  public ramping: boolean = true
-  public depth: number = 0
-  public depthOfCut: number = 0
+  public ramping = true
+  public depth = 0
+  public depthOfCut = 0
   public retract = 0
   public speed = 500
   public feed = 1000
   public act = 0
   public unit: Unit = 'mm'
-  public top: number = 0
-  public toolDiameter: number = 0.15
+  public top = 0
+  public toolDiameter = 0.15
 
   private matrix: Matrix = new Matrix()
   private clipRegion?: Path
@@ -80,10 +83,10 @@ export default class GCanvas {
   private pathHistory: any[] = []
 
   // vars that get relayed to canvas
-  private _strokeStyle: string = '#000000'
-  private _fillStyle: string = '#000000'
-  private _font: string = '7pt Helvetica'
-  private _background: string = '#ffffff'
+  private _strokeStyle = '#000000'
+  private _fillStyle = '#000000'
+  private _font = '7pt Helvetica'
+  private _background = '#ffffff'
 
   constructor(config: GCanvasConfig) {
     this.driver = config.driver || new NullDriver()
@@ -179,7 +182,7 @@ export default class GCanvas {
     }
     const prev = this.stack.pop()
     ;(Object.keys(prev) as CanvasStackItemKey[]).forEach((key) => {
-      //@ts-ignore
+      // @ts-expect-error - this is fine
       this[key] = prev[key]
     })
     this.setCtxTransform(prev.matrix)
@@ -229,21 +232,23 @@ export default class GCanvas {
   // Note: this was marked as to-tidy by OG author
   private transformPoint(a: [x: number, y: number] | Point): Point {
     // i = i || 0
-    if (a instanceof Array) {
-      const v = this.matrix.transformPoint(new Point(a[0], a[1]))
+    if (!(a instanceof Point)) {
+      let v = new Point(a[0], a[1])
+      v = this.matrix.transformPoint(v)
       //   var v = new Point(a[i], a[i + 1])
       //   v = this.matrix.transformPoint(v)
       //   a[i] = v.x
       //   a[i + 1] = v.y
       return new Point(v.x, v.y)
     } else if (a.x !== undefined) {
-      var v = new Point(a.x, a.y)
+      let v = new Point(a.x, a.y)
       v = this.matrix.transformPoint(v)
       a.x = v.x
       a.y = v.y
       return v
     }
   }
+
   private ensurePath(x: number, y: number) {
     if (!this.path) return
     if (this.path.subPaths.length === 0) {
@@ -265,6 +270,7 @@ export default class GCanvas {
   }
 
   public arcTo(_x1: number, _y1: number, _x2: number, _y2: number, radius: number) {
+    // console.log(this.constructor.name, 'arcTo')
     // TODO: this doesn't mutate the arguments array yet
     const { x: x1, y: y1 } = this.transformPoint([_x1, _y1])
     const { x: x2, y: y2 } = this.transformPoint([_x2, _y2])
@@ -330,7 +336,7 @@ export default class GCanvas {
     if (aEndAngle - aStartAngle === -Math.PI * 2) aEndAngle = Math.PI * 2
 
     const center = new Point(x, y)
-    var points = arcToPoints(x, y, aStartAngle, aEndAngle, radius)
+    const points = arcToPoints(x, y, aStartAngle, aEndAngle, radius)
 
     this.transformPoint(center)
     this.transformPoint(points.start)
@@ -475,7 +481,9 @@ export default class GCanvas {
     this.closePath()
   }
 
-  public clone() {}
+  public clone() {
+    //
+  }
 
   public measureText(text: string): Bounds {
     return {

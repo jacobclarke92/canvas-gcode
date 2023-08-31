@@ -4,7 +4,6 @@
  * Thanks zz85!
  **/
 
-import { IntPoint } from './clipper_unminified'
 import Path from './Path'
 import Point from './Point'
 import { arcToPoints, samePos } from './utils/pathUtils'
@@ -55,17 +54,17 @@ export type Action =
   // | ArcAction
   | EllipseAction
 
+export const actions = {
+  MOVE_TO: 'moveTo',
+  LINE_TO: 'lineTo',
+  QUADRATIC_CURVE_TO: 'quadraticCurveTo',
+  BEZIER_CURVE_TO: 'bezierCurveTo',
+  ELLIPSE: 'ellipse',
+} as const
+
 export default class SubPath {
   public actions: Action[] = []
   public pointsCache: Point[] = []
-
-  static actions = {
-    MOVE_TO: 'moveTo',
-    LINE_TO: 'lineTo',
-    QUADRATIC_CURVE_TO: 'quadraticCurveTo',
-    BEZIER_CURVE_TO: 'bezierCurveTo',
-    ELLIPSE: 'ellipse',
-  } as const
 
   constructor(points?: Point[]) {
     if (points) this.fromPoints(points)
@@ -426,23 +425,25 @@ export default class SubPath {
     return points
   }
 
-  public toPoly(scale: number, divisions?: number) {
-    return this.getPoints(divisions).map((p) => {
-      return new IntPoint(p.x * scale, p.y * scale)
-    })
+  public toPolygon(scale: number, divisions?: number) {
+    const polygon = new Path()
+    for (const pt of this.getPoints(divisions)) {
+      polygon.push(new Point(pt.x * scale, pt.y * scale))
+    }
+    return [polygon]
   }
 
   // public fromPoly(poly: {X: number; Y: number}, scale: number) {
   //   scale = 1/scale
   // }
 
-  public fromPolys(poly: { X: number; Y: number }[], scale: number) {
+  public fromPolygon(polygon: Path, scale: number) {
     scale = 1 / scale
 
-    this.moveTo(poly[0].X * scale, poly[0].Y * scale)
+    this.moveTo(polygon[0].x * scale, polygon[0].y * scale)
 
-    for (let i = 1, l = poly.length; i < l; ++i) {
-      this.lineTo(poly[i].X * scale, poly[i].Y * scale)
+    for (let i = 1, l = polygon.length; i < l; ++i) {
+      this.lineTo(polygon[i].x * scale, polygon[i].y * scale)
     }
 
     this.close()
@@ -450,12 +451,14 @@ export default class SubPath {
     // this.lineTo(poly[0].X*scale, poly[0].Y*scale);
     return this
   }
+
   public close() {
     if (this.isClosed()) return
 
     const curStart = this.actions[0].args
     this.lineTo(curStart[0], curStart[1])
   }
+
   public reverse() {
     const result = new SubPath()
     const pts = this.getPoints().reverse()

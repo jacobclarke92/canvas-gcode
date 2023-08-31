@@ -1,92 +1,93 @@
-export default class Point {
-  public x: number
-  public y: number
-  public z: number
+import { ClipperLib } from './packages/Clipper'
+import { IntPoint } from './packages/Clipper/IntPoint'
+
+export default class Point extends IntPoint {
+  // public x: number
+  // public y: number
+  // public z: number
   public a: number
-  constructor(x: number = 0, y: number = 0, z?: number, a?: number) {
-    this.x = isNaN(x) ? 0 : x
-    this.y = isNaN(y) ? 0 : y
-    this.z = isNaN(z) ? 0 : z
+  constructor(x = 0, y = 0, z = 0, a?: number) {
+    super(...(ClipperLib.USE_XYZ ? [x, y, z] : [x, y]))
     this.a = isNaN(a) ? 0 : a
   }
-  static distance(point1: Point, point2: Point) {
+  public static distance(point1: Point, point2: Point) {
     return Math.sqrt(Math.pow(point2.x - point1.x, 2) + Math.pow(point2.y - point1.y, 2))
   }
-  static angleBetween(point1: Point, point2: Point) {
+  public static angleBetween(point1: Point, point2: Point) {
     return Math.acos(point1.dot(point2) / (point1.magnitude() * point2.magnitude()))
   }
-  clone() {
+  public clone() {
     return new Point(this.x, this.y)
   }
-  round() {
+  public round() {
     return new Point(Math.round(this.x), Math.round(this.y))
   }
-  equals(point: Point) {
+  public equals(point: Point) {
     return this.x === point.x && this.y === point.y
   }
-  add(point: Point) {
+  public add(point: Point) {
     return new Point(this.x + point.x, this.y + point.y)
   }
-  midpoint(point: Point) {
+  public midpoint(point: Point) {
     return new Point((this.x + point.x) / 2, (this.y + point.y) / 2)
   }
-  subtract(point: Point) {
+  public subtract(point: Point) {
     return new Point(this.x - point.x, this.y - point.y)
   }
-  magnitude() {
+  public magnitude() {
     return Math.sqrt(this.x * this.x + this.y * this.y)
   }
-  angle() {
+  public angle() {
     return Math.atan2(this.y, this.x)
   }
-  multiply(point: Point | number) {
+  public multiply(point: Point | number) {
     return typeof point === 'number'
       ? new Point(this.x * point, this.y * point)
       : new Point(this.x * point.x, this.y * point.y)
   }
-  scale(scale: number) {
+  public scale(scale: number) {
     return this.multiply(scale)
   }
-  divide(point: Point | number) {
+  public divide(point: Point | number) {
     return typeof point === 'number'
       ? new Point(this.x / point, this.y / point)
       : new Point(this.x / point.x, this.y / point.y)
   }
-  normalize() {
+  public normalize() {
     return this.multiply(1 / this.magnitude())
   }
-  set(x: number, y: number) {
+  public set(x: number, y: number) {
     this.x = x
     this.y = y
   }
-  dot(point: Point): number {
+  public dot(point: Point): number {
     return this.x * point.x + this.y * point.y
   }
-  translate(x: number, y: number) {
+  public translate(x: number, y: number) {
     return new Point(this.x + x, this.y + y)
   }
-  moveAlongAngle(angle: number, distance: number) {
+  public moveAlongAngle(angle: number, distance: number) {
     return this.translate(Math.cos(angle) * distance, Math.sin(angle) * distance)
   }
-  moveTowards(point: Point, distance: number) {
+  public moveTowards(point: Point, distance: number) {
     const angle = this.angleTo(point)
     return this.moveAlongAngle(angle, distance)
   }
-  rotate(angle: number) {
+  public rotate(angle: number) {
     const x = this.x * Math.cos(angle) - this.y * Math.sin(angle)
     const y = this.x * Math.sin(angle) + this.y * Math.cos(angle)
     return new Point(x, y)
   }
-  angleTo(point: Point) {
+  public angleTo(point: Point) {
     return Math.atan2(point.y - this.y, point.x - this.x)
   }
-  distanceTo(point: Point) {
+  public distanceTo(point: Point) {
     return Math.sqrt(Math.pow(point.x - this.x, 2) + Math.pow(point.y - this.y, 2))
   }
-  angleBetween(point: Point) {
+  public angleBetween(point: Point) {
     return Math.acos(this.dot(point) / (this.magnitude() * point.magnitude()))
   }
-  toUnit() {
+  public toUnit() {
     return this.multiply(1 / this.magnitude())
   }
 }
