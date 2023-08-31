@@ -1,23 +1,22 @@
 import { Int128 } from '../BigInteger'
 import { ClipperLib } from '.'
 import { PolyType } from './enums'
-import { IntersectNode } from './IntersectNode'
 import { IntPoint } from './IntPoint'
-import type { OutPt } from './Misc'
-import { LocalMinima, OutRec, Scanbeam } from './Misc'
+import type { OuterPoint } from './Misc'
+import { LocalMinima, OuterRectangle, Scanbeam } from './Misc'
 import type { Path, Paths } from './Path'
 import type { TEdge } from './TEdge'
 
 export class ClipperBase {
-  public m_MinimaList: LocalMinima | null = null
-  public m_CurrentLM: LocalMinima | null = null
-  public m_edges: TEdge[][] = []
-  public m_UseFullRange = false
-  public m_HasOpenPaths = false
-  public PreserveCollinear = false
-  public m_Scanbeam: Scanbeam | null = null
-  public m_PolyOuts: OutRec[] = []
-  public m_ActiveEdges: TEdge | null = null
+  public preserveCollinear = false
+  protected minimaList: LocalMinima | null = null
+  protected currentLocalMinima: LocalMinima | null = null
+  protected edges: TEdge[][] = []
+  protected useFullRange = false
+  protected hasOpenPaths = false
+  protected scanbeam: Scanbeam | null = null
+  protected polyOuts: OuterRectangle[] = []
+  protected activeEdges: TEdge | null = null
 
   // Ranges are in original C# too high for Javascript (in current state 2013 september):
   // protected const double horizontal = -3.4E+38;
@@ -26,63 +25,62 @@ export class ClipperBase {
   // So had to adjust them to more suitable for Javascript.
   // If JS some day supports truly 64-bit integers, then these ranges can be as in C#
   // and biginteger library can be more simpler (as then 128bit can be represented as two 64bit numbers)
-  public static horizontal = -9007199254740992 as const //-2^53
-  public static Skip = -2 as const
-  public static Unassigned = -1 as const
-  public static tolerance = 1e-20 as const
-  public static loRange = 47453132 as const // sqrt(2^53 -1)/2
-  public static hiRange = 4503599627370495 as const // sqrt(2^106 -1)/2
+  public static HORIZONTAL = -9007199254740992 as const //-2^53
+  public static SKIP = -2 as const
+  public static UNASSIGNED = -1 as const
+  public static TOLERANCE = 1e-20 as const
+  public static LOW_RANGE = 47453132 as const // sqrt(2^53 -1)/2
+  public static HIGH_RANGE = 4503599627370495 as const // sqrt(2^106 -1)/2
 
-  public static near_zero(val: number) {
-    return val > -ClipperBase.tolerance && val < ClipperBase.tolerance
+  public static isNearZero(val: number) {
+    return val > -ClipperBase.TOLERANCE && val < ClipperBase.TOLERANCE
   }
-  public static IsHorizontal(e: TEdge) {
-    return e.Delta.Y === 0
+  public static isHorizontal(e: TEdge) {
+    return e.delta.y === 0
   }
 
-  public PointIsVertex(pt: IntPoint, pp: OutPt) {
+  public pointIsVertex(pt: IntPoint, pp: OuterPoint) {
     let pp2 = pp
     do {
-      if (IntPoint.op_Equality(pp2.Pt, pt)) return true
-      pp2 = pp2.Next
+      if (IntPoint.op_Equality(pp2.point, pt)) return true
+      pp2 = pp2.next
     } while (pp2 !== pp)
     return false
   }
 
-  public PointOnLineSegment(pt: IntPoint, linePt1: IntPoint, linePt2: IntPoint, UseFullRange: boolean) {
+  public isPointOnLineSegment(pt: IntPoint, linePt1: IntPoint, linePt2: IntPoint, UseFullRange: boolean) {
     if (UseFullRange)
       return (
-        (pt.X === linePt1.X && pt.Y === linePt1.Y) ||
-        (pt.X === linePt2.X && pt.Y === linePt2.Y) ||
-        (pt.X > linePt1.X === pt.X < linePt2.X &&
-          pt.Y > linePt1.Y === pt.Y < linePt2.Y &&
+        (pt.x === linePt1.x && pt.y === linePt1.y) ||
+        (pt.x === linePt2.x && pt.y === linePt2.y) ||
+        (pt.x > linePt1.x === pt.x < linePt2.x &&
+          pt.y > linePt1.y === pt.y < linePt2.y &&
           Int128.op_Equality(
-            Int128.Int128Mul(pt.X - linePt1.X, linePt2.Y - linePt1.Y),
-            Int128.Int128Mul(linePt2.X - linePt1.X, pt.Y - linePt1.Y)
+            Int128.Int128Mul(pt.x - linePt1.x, linePt2.y - linePt1.y),
+            Int128.Int128Mul(linePt2.x - linePt1.x, pt.y - linePt1.y)
           ))
       )
     else
       return (
-        (pt.X === linePt1.X && pt.Y === linePt1.Y) ||
-        (pt.X === linePt2.X && pt.Y === linePt2.Y) ||
-        (pt.X > linePt1.X === pt.X < linePt2.X &&
-          pt.Y > linePt1.Y === pt.Y < linePt2.Y &&
-          (pt.X - linePt1.X) * (linePt2.Y - linePt1.Y) === (linePt2.X - linePt1.X) * (pt.Y - linePt1.Y))
+        (pt.x === linePt1.x && pt.y === linePt1.y) ||
+        (pt.x === linePt2.x && pt.y === linePt2.y) ||
+        (pt.x > linePt1.x === pt.x < linePt2.x &&
+          pt.y > linePt1.y === pt.y < linePt2.y &&
+          (pt.x - linePt1.x) * (linePt2.y - linePt1.y) === (linePt2.x - linePt1.x) * (pt.y - linePt1.y))
       )
   }
 
-  public PointOnPolygon(pt: IntPoint, pp: OutPt, UseFullRange: boolean) {
+  public isPointOnPolygon(pt: IntPoint, pp: OuterPoint, UseFullRange: boolean) {
     let pp2 = pp
     while (true) {
-      if (this.PointOnLineSegment(pt, pp2.Pt, pp2.Next.Pt, UseFullRange)) return true
-      pp2 = pp2.Next
+      if (this.isPointOnLineSegment(pt, pp2.point, pp2.next.point, UseFullRange)) return true
+      pp2 = pp2.next
       if (pp2 === pp) break
     }
     return false
   }
 
-  // static and not
-  public static SlopesEqual(
+  public static slopesEqual(
     ...args:
       | [e1: TEdge, e2: TEdge, UseFullRange: boolean]
       | [pt1: IntPoint, pt2: IntPoint, pt3: IntPoint, UseFullRange: boolean]
@@ -91,256 +89,265 @@ export class ClipperBase {
     if (args.length === 3) {
       const [e1, e2, UseFullRange] = args
       if (UseFullRange)
-        return Int128.op_Equality(Int128.Int128Mul(e1.Delta.Y, e2.Delta.X), Int128.Int128Mul(e1.Delta.X, e2.Delta.Y))
-      else return ClipperLib.Cast_Int64(e1.Delta.Y * e2.Delta.X) === ClipperLib.Cast_Int64(e1.Delta.X * e2.Delta.Y)
+        return Int128.op_Equality(Int128.Int128Mul(e1.delta.y, e2.delta.x), Int128.Int128Mul(e1.delta.x, e2.delta.y))
+      else return ClipperLib.Cast_Int64(e1.delta.y * e2.delta.x) === ClipperLib.Cast_Int64(e1.delta.x * e2.delta.y)
     } else if (args.length === 4) {
       const [pt1, pt2, pt3, UseFullRange] = args
       if (UseFullRange)
         return Int128.op_Equality(
-          Int128.Int128Mul(pt1.Y - pt2.Y, pt2.X - pt3.X),
-          Int128.Int128Mul(pt1.X - pt2.X, pt2.Y - pt3.Y)
+          Int128.Int128Mul(pt1.y - pt2.y, pt2.x - pt3.x),
+          Int128.Int128Mul(pt1.x - pt2.x, pt2.y - pt3.y)
         )
       else
         return (
-          ClipperLib.Cast_Int64((pt1.Y - pt2.Y) * (pt2.X - pt3.X)) -
-            ClipperLib.Cast_Int64((pt1.X - pt2.X) * (pt2.Y - pt3.Y)) ===
+          ClipperLib.Cast_Int64((pt1.y - pt2.y) * (pt2.x - pt3.x)) -
+            ClipperLib.Cast_Int64((pt1.x - pt2.x) * (pt2.y - pt3.y)) ===
           0
         )
     } else {
       const [pt1, pt2, pt3, pt4, UseFullRange] = args
       if (UseFullRange)
         return Int128.op_Equality(
-          Int128.Int128Mul(pt1.Y - pt2.Y, pt3.X - pt4.X),
-          Int128.Int128Mul(pt1.X - pt2.X, pt3.Y - pt4.Y)
+          Int128.Int128Mul(pt1.y - pt2.y, pt3.x - pt4.x),
+          Int128.Int128Mul(pt1.x - pt2.x, pt3.y - pt4.y)
         )
       else
         return (
-          ClipperLib.Cast_Int64((pt1.Y - pt2.Y) * (pt3.X - pt4.X)) -
-            ClipperLib.Cast_Int64((pt1.X - pt2.X) * (pt3.Y - pt4.Y)) ===
+          ClipperLib.Cast_Int64((pt1.y - pt2.y) * (pt3.x - pt4.x)) -
+            ClipperLib.Cast_Int64((pt1.x - pt2.x) * (pt3.y - pt4.y)) ===
           0
         )
     }
   }
 
-  public Clear() {
-    this.DisposeLocalMinimaList()
-    for (let i = 0, len = this.m_edges.length; i < len; ++i) {
-      for (let j = 0, jlen = this.m_edges[i].length; j < jlen; ++j) this.m_edges[i][j] = null
-      ClipperLib.Clear(this.m_edges[i])
+  public clear() {
+    this.disposeLocalMinimaList()
+    for (let i = 0, len = this.edges.length; i < len; ++i) {
+      for (let j = 0, jlen = this.edges[i].length; j < jlen; ++j) this.edges[i][j] = null
+      ClipperLib.clear(this.edges[i])
     }
-    ClipperLib.Clear(this.m_edges)
-    this.m_UseFullRange = false
-    this.m_HasOpenPaths = false
+    ClipperLib.clear(this.edges)
+    this.useFullRange = false
+    this.hasOpenPaths = false
   }
 
-  public DisposeLocalMinimaList() {
-    while (this.m_MinimaList !== null) {
-      const tmpLm = this.m_MinimaList.Next
-      this.m_MinimaList = null
-      this.m_MinimaList = tmpLm
+  public disposeLocalMinimaList() {
+    while (this.minimaList !== null) {
+      const tmpLm = this.minimaList.next
+      this.minimaList = null
+      this.minimaList = tmpLm
     }
-    this.m_CurrentLM = null
+    this.currentLocalMinima = null
   }
 
-  public RangeTest(Pt: IntPoint, useFullRange: { Value: boolean }) {
-    if (useFullRange.Value) {
+  public rangeTest(point: IntPoint, $useFullRange: { value: boolean }) {
+    if ($useFullRange.value) {
       if (
-        Pt.X > ClipperBase.hiRange ||
-        Pt.Y > ClipperBase.hiRange ||
-        -Pt.X > ClipperBase.hiRange ||
-        -Pt.Y > ClipperBase.hiRange
+        point.x > ClipperBase.HIGH_RANGE ||
+        point.y > ClipperBase.HIGH_RANGE ||
+        -point.x > ClipperBase.HIGH_RANGE ||
+        -point.y > ClipperBase.HIGH_RANGE
       )
         ClipperLib.Error('Coordinate outside allowed range in RangeTest().')
     } else if (
-      Pt.X > ClipperBase.loRange ||
-      Pt.Y > ClipperBase.loRange ||
-      -Pt.X > ClipperBase.loRange ||
-      -Pt.Y > ClipperBase.loRange
+      point.x > ClipperBase.LOW_RANGE ||
+      point.y > ClipperBase.LOW_RANGE ||
+      -point.x > ClipperBase.LOW_RANGE ||
+      -point.y > ClipperBase.LOW_RANGE
     ) {
-      useFullRange.Value = true
-      this.RangeTest(Pt, useFullRange)
+      $useFullRange.value = true
+      this.rangeTest(point, $useFullRange)
     }
   }
 
-  public InitEdge(e: TEdge, eNext: TEdge | null, ePrev: TEdge | null, pt: IntPoint) {
-    e.Next = eNext
-    e.Prev = ePrev
-    //e.Curr = pt;
-    e.Curr.X = pt.X
-    e.Curr.Y = pt.Y
-    if (ClipperLib.use_xyz) e.Curr.Z = pt.Z
-    e.OutIdx = -1
-  }
-
-  public InitEdge2(e: TEdge, polyType: PolyType) {
-    if (e.Curr.Y >= e.Next.Curr.Y) {
-      //e.Bot = e.Curr;
-      e.Bot.X = e.Curr.X
-      e.Bot.Y = e.Curr.Y
-      if (ClipperLib.use_xyz) e.Bot.Z = e.Curr.Z
-      //e.Top = e.Next.Curr;
-      e.Top.X = e.Next.Curr.X
-      e.Top.Y = e.Next.Curr.Y
-      if (ClipperLib.use_xyz) e.Top.Z = e.Next.Curr.Z
+  public initEdge(
+    ...args: [e: TEdge, eNext: TEdge | null, ePrev: TEdge | null, pt: IntPoint] | [e: TEdge, polyType: PolyType]
+  ) {
+    if (args.length === 2) {
+      const [e, polyType] = args
+      if (e.current.y >= e.next.current.y) {
+        //e.Bot = e.Curr;
+        e.bottom.x = e.current.x
+        e.bottom.y = e.current.y
+        if (ClipperLib.USE_XYZ) e.bottom.z = e.current.z
+        //e.Top = e.Next.Curr;
+        e.top.x = e.next.current.x
+        e.top.y = e.next.current.y
+        if (ClipperLib.USE_XYZ) e.top.z = e.next.current.z
+      } else {
+        //e.Top = e.Curr;
+        e.top.x = e.current.x
+        e.top.y = e.current.y
+        if (ClipperLib.USE_XYZ) e.top.z = e.current.z
+        //e.Bot = e.Next.Curr;
+        e.bottom.x = e.next.current.x
+        e.bottom.y = e.next.current.y
+        if (ClipperLib.USE_XYZ) e.bottom.z = e.next.current.z
+      }
+      this.setDx(e)
+      e.polyType = polyType
     } else {
-      //e.Top = e.Curr;
-      e.Top.X = e.Curr.X
-      e.Top.Y = e.Curr.Y
-      if (ClipperLib.use_xyz) e.Top.Z = e.Curr.Z
-      //e.Bot = e.Next.Curr;
-      e.Bot.X = e.Next.Curr.X
-      e.Bot.Y = e.Next.Curr.Y
-      if (ClipperLib.use_xyz) e.Bot.Z = e.Next.Curr.Z
+      const [e, nextEdge, prevEdge, pt] = args
+      e.next = nextEdge
+      e.prev = prevEdge
+      //e.Curr = pt;
+      e.current.x = pt.x
+      e.current.y = pt.y
+      if (ClipperLib.USE_XYZ) e.current.z = pt.z
+      e.outIndex = -1
     }
-    this.SetDx(e)
-    e.PolyTyp = polyType
   }
 
-  public FindNextLocMin(E: TEdge) {
-    let E2
+  public findNextLocMin(edge: TEdge) {
+    let edge2
     for (;;) {
-      while (IntPoint.op_Inequality(E.Bot, E.Prev.Bot) || IntPoint.op_Equality(E.Curr, E.Top)) E = E.Next
-      if (E.Dx !== ClipperBase.horizontal && E.Prev.Dx !== ClipperBase.horizontal) break
-      while (E.Prev.Dx === ClipperBase.horizontal) E = E.Prev
-      E2 = E
-      while (E.Dx === ClipperBase.horizontal) E = E.Next
-      if (E.Top.Y === E.Prev.Bot.Y) continue
+      while (IntPoint.op_Inequality(edge.bottom, edge.prev.bottom) || IntPoint.op_Equality(edge.current, edge.top))
+        edge = edge.next
+      if (edge.dx !== ClipperBase.HORIZONTAL && edge.prev.dx !== ClipperBase.HORIZONTAL) break
+      while (edge.prev.dx === ClipperBase.HORIZONTAL) edge = edge.prev
+      edge2 = edge
+      while (edge.dx === ClipperBase.HORIZONTAL) edge = edge.next
+      if (edge.top.y === edge.prev.bottom.y) continue
       // ie just an intermediate horz.
-      if (E2.Prev.Bot.X < E.Bot.X) E = E2
+      if (edge2.prev.bottom.x < edge.bottom.x) edge = edge2
       break
     }
-    return E
+    return edge
   }
 
-  public ProcessBound(E: TEdge, LeftBoundIsForward: boolean) {
-    let EStart
-    let Result = E
-    let Horz
+  public processBoundary(edge: TEdge, leftBoundIsForward: boolean) {
+    let startEdge: TEdge
+    let result = edge
+    let horizontal: TEdge
 
-    if (Result.OutIdx === ClipperBase.Skip) {
-      //check if there are edges beyond the skip edge in the bound and if so
-      //create another LocMin and calling ProcessBound once more ...
-      E = Result
-      if (LeftBoundIsForward) {
-        while (E.Top.Y === E.Next.Bot.Y) E = E.Next
-        while (E !== Result && E.Dx === ClipperBase.horizontal) E = E.Prev
+    if (result.outIndex === ClipperBase.SKIP) {
+      // check if there are edges beyond the skip edge in the bound and if so
+      // create another LocMin and calling ProcessBound once more ...
+      edge = result
+      if (leftBoundIsForward) {
+        while (edge.top.y === edge.next.bottom.y) edge = edge.next
+        while (edge !== result && edge.dx === ClipperBase.HORIZONTAL) edge = edge.prev
       } else {
-        while (E.Top.Y === E.Prev.Bot.Y) E = E.Prev
-        while (E !== Result && E.Dx === ClipperBase.horizontal) E = E.Next
+        while (edge.top.y === edge.prev.bottom.y) edge = edge.prev
+        while (edge !== result && edge.dx === ClipperBase.HORIZONTAL) edge = edge.next
       }
-      if (E === Result) {
-        if (LeftBoundIsForward) Result = E.Next
-        else Result = E.Prev
+      if (edge === result) {
+        if (leftBoundIsForward) result = edge.next
+        else result = edge.prev
       } else {
         // there are more edges in the bound beyond result starting with E
-        if (LeftBoundIsForward) E = Result.Next
-        else E = Result.Prev
+        if (leftBoundIsForward) edge = result.next
+        else edge = result.prev
         const locMin = new LocalMinima()
-        locMin.Next = null
-        locMin.Y = E.Bot.Y
-        locMin.LeftBound = null
-        locMin.RightBound = E
-        E.WindDelta = 0
-        Result = this.ProcessBound(E, LeftBoundIsForward)
-        this.InsertLocalMinima(locMin)
+        locMin.next = null
+        locMin.y = edge.bottom.y
+        locMin.leftBoundary = null
+        locMin.rightBoundary = edge
+        edge.windDelta = 0
+        result = this.processBoundary(edge, leftBoundIsForward)
+        this.insertLocalMinima(locMin)
       }
-      return Result
+      return result
     }
 
-    if (E.Dx === ClipperBase.horizontal) {
+    if (edge.dx === ClipperBase.HORIZONTAL) {
       //We need to be careful with open paths because this may not be a
       //true local minima (ie E may be following a skip edge).
       //Also, consecutive horz. edges may start heading left before going right.
-      if (LeftBoundIsForward) EStart = E.Prev
-      else EStart = E.Next
+      if (leftBoundIsForward) startEdge = edge.prev
+      else startEdge = edge.next
 
-      if (EStart.Dx === ClipperBase.horizontal) {
+      if (startEdge.dx === ClipperBase.HORIZONTAL) {
         //ie an adjoining horizontal skip edge
-        if (EStart.Bot.X !== E.Bot.X && EStart.Top.X !== E.Bot.X) this.ReverseHorizontal(E)
-      } else if (EStart.Bot.X !== E.Bot.X) this.ReverseHorizontal(E)
+        if (startEdge.bottom.x !== edge.bottom.x && startEdge.top.x !== edge.bottom.x) this.reverseHorizontal(edge)
+      } else if (startEdge.bottom.x !== edge.bottom.x) this.reverseHorizontal(edge)
     }
 
-    EStart = E
-    if (LeftBoundIsForward) {
-      while (Result.Top.Y === Result.Next.Bot.Y && Result.Next.OutIdx !== ClipperBase.Skip) Result = Result.Next
-      if (Result.Dx === ClipperBase.horizontal && Result.Next.OutIdx !== ClipperBase.Skip) {
+    startEdge = edge
+    if (leftBoundIsForward) {
+      while (result.top.y === result.next.bottom.y && result.next.outIndex !== ClipperBase.SKIP) result = result.next
+      if (result.dx === ClipperBase.HORIZONTAL && result.next.outIndex !== ClipperBase.SKIP) {
         //nb: at the top of a bound, horizontals are added to the bound
         //only when the preceding edge attaches to the horizontal's left vertex
         //unless a Skip edge is encountered when that becomes the top divide
-        Horz = Result
-        while (Horz.Prev.Dx === ClipperBase.horizontal) Horz = Horz.Prev
-        if (Horz.Prev.Top.X > Result.Next.Top.X) Result = Horz.Prev
+        horizontal = result
+        while (horizontal.prev.dx === ClipperBase.HORIZONTAL) horizontal = horizontal.prev
+        if (horizontal.prev.top.x > result.next.top.x) result = horizontal.prev
       }
-      while (E !== Result) {
-        E.NextInLML = E.Next
-        if (E.Dx === ClipperBase.horizontal && E !== EStart && E.Bot.X !== E.Prev.Top.X) this.ReverseHorizontal(E)
-        E = E.Next
+      while (edge !== result) {
+        edge.nextInLML = edge.next
+        if (edge.dx === ClipperBase.HORIZONTAL && edge !== startEdge && edge.bottom.x !== edge.prev.top.x)
+          this.reverseHorizontal(edge)
+        edge = edge.next
       }
-      if (E.Dx === ClipperBase.horizontal && E !== EStart && E.Bot.X !== E.Prev.Top.X) this.ReverseHorizontal(E)
-      Result = Result.Next
+      if (edge.dx === ClipperBase.HORIZONTAL && edge !== startEdge && edge.bottom.x !== edge.prev.top.x)
+        this.reverseHorizontal(edge)
+      result = result.next
       //move to the edge just beyond current bound
     } else {
-      while (Result.Top.Y === Result.Prev.Bot.Y && Result.Prev.OutIdx !== ClipperBase.Skip) Result = Result.Prev
-      if (Result.Dx === ClipperBase.horizontal && Result.Prev.OutIdx !== ClipperBase.Skip) {
-        Horz = Result
-        while (Horz.Next.Dx === ClipperBase.horizontal) Horz = Horz.Next
-        if (Horz.Next.Top.X === Result.Prev.Top.X || Horz.Next.Top.X > Result.Prev.Top.X) {
-          Result = Horz.Next
+      while (result.top.y === result.prev.bottom.y && result.prev.outIndex !== ClipperBase.SKIP) result = result.prev
+      if (result.dx === ClipperBase.HORIZONTAL && result.prev.outIndex !== ClipperBase.SKIP) {
+        horizontal = result
+        while (horizontal.next.dx === ClipperBase.HORIZONTAL) horizontal = horizontal.next
+        if (horizontal.next.top.x === result.prev.top.x || horizontal.next.top.x > result.prev.top.x) {
+          result = horizontal.next
         }
       }
-      while (E !== Result) {
-        E.NextInLML = E.Prev
-        if (E.Dx === ClipperBase.horizontal && E !== EStart && E.Bot.X !== E.Next.Top.X) this.ReverseHorizontal(E)
-        E = E.Prev
+      while (edge !== result) {
+        edge.nextInLML = edge.prev
+        if (edge.dx === ClipperBase.HORIZONTAL && edge !== startEdge && edge.bottom.x !== edge.next.top.x)
+          this.reverseHorizontal(edge)
+        edge = edge.prev
       }
-      if (E.Dx === ClipperBase.horizontal && E !== EStart && E.Bot.X !== E.Next.Top.X) this.ReverseHorizontal(E)
-      Result = Result.Prev
+      if (edge.dx === ClipperBase.HORIZONTAL && edge !== startEdge && edge.bottom.x !== edge.next.top.x)
+        this.reverseHorizontal(edge)
+      result = result.prev
       //move to the edge just beyond current bound
     }
 
-    return Result
+    return result
   }
 
-  public AddPath(pg: Path, polyType: PolyType, Closed: boolean) {
+  public addPath(path: Path, polyType: PolyType, isClosed: boolean) {
     if (ClipperLib.use_lines) {
-      if (!Closed && polyType === PolyType.ptClip) ClipperLib.Error('AddPath: Open paths must be subject.')
+      if (!isClosed && polyType === PolyType.clip) ClipperLib.Error('AddPath: Open paths must be subject.')
     } else {
-      if (!Closed) ClipperLib.Error('AddPath: Open paths have been disabled.')
+      if (!isClosed) ClipperLib.Error('AddPath: Open paths have been disabled.')
     }
-    let highI = pg.length - 1
-    if (Closed) while (highI > 0 && IntPoint.op_Equality(pg[highI], pg[0])) --highI
-    while (highI > 0 && IntPoint.op_Equality(pg[highI], pg[highI - 1])) --highI
-    if ((Closed && highI < 2) || (!Closed && highI < 1)) return false
+    let highIndex = path.length - 1
+    if (isClosed) while (highIndex > 0 && IntPoint.op_Equality(path[highIndex], path[0])) --highIndex
+    while (highIndex > 0 && IntPoint.op_Equality(path[highIndex], path[highIndex - 1])) --highIndex
+    if ((isClosed && highIndex < 2) || (!isClosed && highIndex < 1)) return false
     //create a new edge array ...
     const edges: TEdge[] = []
-    for (let i = 0; i <= highI; i++) edges.push(new ClipperLib.TEdge())
-    let IsFlat = true
+    for (let i = 0; i <= highIndex; i++) edges.push(new ClipperLib.TEdge())
+    let isFlat = true
     //1. Basic (first) edge initialization ...
 
     //edges[1].Curr = pg[1];
-    edges[1].Curr.X = pg[1].X
-    edges[1].Curr.Y = pg[1].Y
-    if (ClipperLib.use_xyz) edges[1].Curr.Z = pg[1].Z
+    edges[1].current.x = path[1].x
+    edges[1].current.y = path[1].y
+    if (ClipperLib.USE_XYZ) edges[1].current.z = path[1].z
 
-    const $1 = {
-      Value: this.m_UseFullRange,
+    const $useFullRange = {
+      value: this.useFullRange,
     }
 
-    this.RangeTest(pg[0], $1)
-    this.m_UseFullRange = $1.Value
+    this.rangeTest(path[0], $useFullRange)
+    this.useFullRange = $useFullRange.value
 
-    $1.Value = this.m_UseFullRange
-    this.RangeTest(pg[highI], $1)
-    this.m_UseFullRange = $1.Value
+    $useFullRange.value = this.useFullRange
+    this.rangeTest(path[highIndex], $useFullRange)
+    this.useFullRange = $useFullRange.value
 
-    this.InitEdge(edges[0], edges[1], edges[highI], pg[0])
-    this.InitEdge(edges[highI], edges[0], edges[highI - 1], pg[highI])
-    for (let i = highI - 1; i >= 1; --i) {
-      $1.Value = this.m_UseFullRange
-      this.RangeTest(pg[i], $1)
-      this.m_UseFullRange = $1.Value
+    this.initEdge(edges[0], edges[1], edges[highIndex], path[0])
+    this.initEdge(edges[highIndex], edges[0], edges[highIndex - 1], path[highIndex])
+    for (let i = highIndex - 1; i >= 1; --i) {
+      $useFullRange.value = this.useFullRange
+      this.rangeTest(path[i], $useFullRange)
+      this.useFullRange = $useFullRange.value
 
-      this.InitEdge(edges[i], edges[i + 1], edges[i - 1], pg[i])
+      this.initEdge(edges[i], edges[i + 1], edges[i - 1], path[i])
     }
 
     let eStart = edges[0]
@@ -350,393 +357,393 @@ export class ClipperBase {
     for (;;) {
       //console.log(E.Next, eStart);
       //nb: allows matching start and end points when not Closed ...
-      if (E.Curr === E.Next.Curr && (Closed || E.Next !== eStart)) {
-        if (E === E.Next) break
-        if (E === eStart) eStart = E.Next
-        E = this.RemoveEdge(E)
+      if (E.current === E.next.current && (isClosed || E.next !== eStart)) {
+        if (E === E.next) break
+        if (E === eStart) eStart = E.next
+        E = this.removeEdge(E)
         eLoopStop = E
         continue
       }
-      if (E.Prev === E.Next) break
+      if (E.prev === E.next) break
       else if (
-        Closed &&
-        ClipperBase.SlopesEqual(E.Prev.Curr, E.Curr, E.Next.Curr, this.m_UseFullRange) &&
-        (!this.PreserveCollinear || !this.Pt2IsBetweenPt1AndPt3(E.Prev.Curr, E.Curr, E.Next.Curr))
+        isClosed &&
+        ClipperBase.slopesEqual(E.prev.current, E.current, E.next.current, this.useFullRange) &&
+        (!this.preserveCollinear || !this.pt2IsBetweenPt1AndPt3(E.prev.current, E.current, E.next.current))
       ) {
         //Collinear edges are allowed for open paths but in closed paths
         //the default is to merge adjacent collinear edges into a single edge.
         //However, if the PreserveCollinear property is enabled, only overlapping
         //collinear edges (ie spikes) will be removed from closed paths.
-        if (E === eStart) eStart = E.Next
-        E = this.RemoveEdge(E)
-        E = E.Prev
+        if (E === eStart) eStart = E.next
+        E = this.removeEdge(E)
+        E = E.prev
         eLoopStop = E
         continue
       }
-      E = E.Next
-      if (E === eLoopStop || (!Closed && E.Next === eStart)) break
+      E = E.next
+      if (E === eLoopStop || (!isClosed && E.next === eStart)) break
     }
-    if ((!Closed && E === E.Next) || (Closed && E.Prev === E.Next)) return false
-    if (!Closed) {
-      this.m_HasOpenPaths = true
-      eStart.Prev.OutIdx = ClipperBase.Skip
+    if ((!isClosed && E === E.next) || (isClosed && E.prev === E.next)) return false
+    if (!isClosed) {
+      this.hasOpenPaths = true
+      eStart.prev.outIndex = ClipperBase.SKIP
     }
     //3. Do second stage of edge initialization ...
     E = eStart
     do {
-      this.InitEdge2(E, polyType)
-      E = E.Next
-      if (IsFlat && E.Curr.Y !== eStart.Curr.Y) IsFlat = false
+      this.initEdge(E, polyType)
+      E = E.next
+      if (isFlat && E.current.y !== eStart.current.y) isFlat = false
     } while (E !== eStart)
     //4. Finally, add edge bounds to LocalMinima list ...
     //Totally flat paths must be handled differently when adding them
     //to LocalMinima list to avoid endless loops etc ...
-    if (IsFlat) {
-      if (Closed) return false
+    if (isFlat) {
+      if (isClosed) return false
 
-      E.Prev.OutIdx = ClipperBase.Skip
+      E.prev.outIndex = ClipperBase.SKIP
 
       const locMin = new ClipperLib.LocalMinima()
-      locMin.Next = null
-      locMin.Y = E.Bot.Y
-      locMin.LeftBound = null
-      locMin.RightBound = E
-      locMin.RightBound.Side = ClipperLib.EdgeSide.esRight
-      locMin.RightBound.WindDelta = 0
+      locMin.next = null
+      locMin.y = E.bottom.y
+      locMin.leftBoundary = null
+      locMin.rightBoundary = E
+      locMin.rightBoundary.side = ClipperLib.EdgeSide.right
+      locMin.rightBoundary.windDelta = 0
 
       for (;;) {
-        if (E.Bot.X !== E.Prev.Top.X) this.ReverseHorizontal(E)
-        if (E.Next.OutIdx === ClipperBase.Skip) break
-        E.NextInLML = E.Next
-        E = E.Next
+        if (E.bottom.x !== E.prev.top.x) this.reverseHorizontal(E)
+        if (E.next.outIndex === ClipperBase.SKIP) break
+        E.nextInLML = E.next
+        E = E.next
       }
-      this.InsertLocalMinima(locMin)
-      this.m_edges.push(edges)
+      this.insertLocalMinima(locMin)
+      this.edges.push(edges)
       return true
     }
-    this.m_edges.push(edges)
+    this.edges.push(edges)
     let leftBoundIsForward: boolean
     let EMin: TEdge | null = null
 
     //workaround to avoid an endless loop in the while loop below when
     //open paths have matching start and end points ...
-    if (IntPoint.op_Equality(E.Prev.Bot, E.Prev.Top)) E = E.Next
+    if (IntPoint.op_Equality(E.prev.bottom, E.prev.top)) E = E.next
 
     for (;;) {
-      E = this.FindNextLocMin(E)
+      E = this.findNextLocMin(E)
       if (E === EMin) break
       else if (EMin === null) EMin = E
       //E and E.Prev now share a local minima (left aligned if horizontal).
       //Compare their slopes to find which starts which bound ...
       const locMin = new ClipperLib.LocalMinima()
-      locMin.Next = null
-      locMin.Y = E.Bot.Y
-      if (E.Dx < E.Prev.Dx) {
-        locMin.LeftBound = E.Prev
-        locMin.RightBound = E
+      locMin.next = null
+      locMin.y = E.bottom.y
+      if (E.dx < E.prev.dx) {
+        locMin.leftBoundary = E.prev
+        locMin.rightBoundary = E
         leftBoundIsForward = false
         //Q.nextInLML = Q.prev
       } else {
-        locMin.LeftBound = E
-        locMin.RightBound = E.Prev
+        locMin.leftBoundary = E
+        locMin.rightBoundary = E.prev
         leftBoundIsForward = true
         //Q.nextInLML = Q.next
       }
-      locMin.LeftBound.Side = ClipperLib.EdgeSide.esLeft
-      locMin.RightBound.Side = ClipperLib.EdgeSide.esRight
+      locMin.leftBoundary.side = ClipperLib.EdgeSide.left
+      locMin.rightBoundary.side = ClipperLib.EdgeSide.right
 
-      if (!Closed) locMin.LeftBound.WindDelta = 0
-      else if (locMin.LeftBound.Next === locMin.RightBound) locMin.LeftBound.WindDelta = -1
-      else locMin.LeftBound.WindDelta = 1
+      if (!isClosed) locMin.leftBoundary.windDelta = 0
+      else if (locMin.leftBoundary.next === locMin.rightBoundary) locMin.leftBoundary.windDelta = -1
+      else locMin.leftBoundary.windDelta = 1
 
-      locMin.RightBound.WindDelta = -locMin.LeftBound.WindDelta as 1 | 0 | -1
-      E = this.ProcessBound(locMin.LeftBound, leftBoundIsForward)
+      locMin.rightBoundary.windDelta = -locMin.leftBoundary.windDelta as 1 | 0 | -1
+      E = this.processBoundary(locMin.leftBoundary, leftBoundIsForward)
 
-      if (E.OutIdx === ClipperBase.Skip) E = this.ProcessBound(E, leftBoundIsForward)
+      if (E.outIndex === ClipperBase.SKIP) E = this.processBoundary(E, leftBoundIsForward)
 
-      let E2 = this.ProcessBound(locMin.RightBound, !leftBoundIsForward)
-      if (E2.OutIdx === ClipperBase.Skip) E2 = this.ProcessBound(E2, !leftBoundIsForward)
+      let E2 = this.processBoundary(locMin.rightBoundary, !leftBoundIsForward)
+      if (E2.outIndex === ClipperBase.SKIP) E2 = this.processBoundary(E2, !leftBoundIsForward)
 
-      if (locMin.LeftBound.OutIdx === ClipperBase.Skip) locMin.LeftBound = null
-      else if (locMin.RightBound.OutIdx === ClipperBase.Skip) locMin.RightBound = null
+      if (locMin.leftBoundary.outIndex === ClipperBase.SKIP) locMin.leftBoundary = null
+      else if (locMin.rightBoundary.outIndex === ClipperBase.SKIP) locMin.rightBoundary = null
 
-      this.InsertLocalMinima(locMin)
+      this.insertLocalMinima(locMin)
       if (!leftBoundIsForward) E = E2
     }
     return true
   }
 
-  public AddPaths(ppg: Paths, polyType: PolyType, closed: boolean) {
+  public addPaths(paths: Paths, polyType: PolyType, isClosed: boolean) {
     //  console.log("-------------------------------------------");
     //  console.log(JSON.stringify(ppg));
     let result = false
-    for (let i = 0, len = ppg.length; i < len; ++i) {
-      if (this.AddPath(ppg[i], polyType, closed)) result = true
+    for (let i = 0, len = paths.length; i < len; ++i) {
+      if (this.addPath(paths[i], polyType, isClosed)) result = true
     }
     return result
   }
 
-  public Pt2IsBetweenPt1AndPt3(pt1: IntPoint, pt2: IntPoint, pt3: IntPoint) {
+  public pt2IsBetweenPt1AndPt3(pt1: IntPoint, pt2: IntPoint, pt3: IntPoint) {
     if (IntPoint.op_Equality(pt1, pt3) || IntPoint.op_Equality(pt1, pt2) || IntPoint.op_Equality(pt3, pt2))
       // if ((pt1 == pt3) || (pt1 == pt2) || (pt3 == pt2))
       return false
-    else if (pt1.X !== pt3.X) return pt2.X > pt1.X === pt2.X < pt3.X
-    else return pt2.Y > pt1.Y === pt2.Y < pt3.Y
+    else if (pt1.x !== pt3.x) return pt2.x > pt1.x === pt2.x < pt3.x
+    else return pt2.y > pt1.y === pt2.y < pt3.y
   }
 
-  public RemoveEdge(e: TEdge) {
+  public removeEdge(edge: TEdge) {
     // removes e from double_linked_list (but without removing from memory)
-    e.Prev.Next = e.Next
-    e.Next.Prev = e.Prev
-    const result = e.Next
-    e.Prev = null // flag as removed (see ClipperBase.Clear)
+    edge.prev.next = edge.next
+    edge.next.prev = edge.prev
+    const result = edge.next
+    edge.prev = null // flag as removed (see ClipperBase.Clear)
     return result
   }
 
-  public SetDx(e: TEdge) {
-    e.Delta.X = e.Top.X - e.Bot.X
-    e.Delta.Y = e.Top.Y - e.Bot.Y
-    if (e.Delta.Y === 0) e.Dx = ClipperBase.horizontal
-    else e.Dx = e.Delta.X / e.Delta.Y
+  public setDx(edge: TEdge) {
+    edge.delta.x = edge.top.x - edge.bottom.x
+    edge.delta.y = edge.top.y - edge.bottom.y
+    if (edge.delta.y === 0) edge.dx = ClipperBase.HORIZONTAL
+    else edge.dx = edge.delta.x / edge.delta.y
   }
 
-  public InsertLocalMinima(newLm: LocalMinima) {
-    if (this.m_MinimaList === null) {
-      this.m_MinimaList = newLm
-    } else if (newLm.Y >= this.m_MinimaList.Y) {
-      newLm.Next = this.m_MinimaList
-      this.m_MinimaList = newLm
+  public insertLocalMinima(newLocalMinima: LocalMinima) {
+    if (this.minimaList === null) {
+      this.minimaList = newLocalMinima
+    } else if (newLocalMinima.y >= this.minimaList.y) {
+      newLocalMinima.next = this.minimaList
+      this.minimaList = newLocalMinima
     } else {
-      let tmpLm = this.m_MinimaList
-      while (tmpLm.Next !== null && newLm.Y < tmpLm.Next.Y) tmpLm = tmpLm.Next
-      newLm.Next = tmpLm.Next
-      tmpLm.Next = newLm
+      let tmpLm = this.minimaList
+      while (tmpLm.next !== null && newLocalMinima.y < tmpLm.next.y) tmpLm = tmpLm.next
+      newLocalMinima.next = tmpLm.next
+      tmpLm.next = newLocalMinima
     }
   }
 
-  public PopLocalMinima(Y: number, current: LocalMinima) {
-    current.v = this.m_CurrentLM
-    if (this.m_CurrentLM !== null && this.m_CurrentLM.Y === Y) {
-      this.m_CurrentLM = this.m_CurrentLM.Next
+  public popLocalMinima(y: number, currentLocalMinima: LocalMinima) {
+    currentLocalMinima.v = this.currentLocalMinima
+    if (this.currentLocalMinima !== null && this.currentLocalMinima.y === y) {
+      this.currentLocalMinima = this.currentLocalMinima.next
       return true
     }
     return false
   }
 
-  public ReverseHorizontal(e: TEdge) {
+  public reverseHorizontal(edge: TEdge) {
     // swap horizontal edges' top and bottom x's so they follow the natural
     // progression of the bounds - ie so their xbots will align with the
     // adjoining lower edge. [Helpful in the ProcessHorizontal() method.]
-    let tmp = e.Top.X
-    e.Top.X = e.Bot.X
-    e.Bot.X = tmp
-    if (ClipperLib.use_xyz) {
-      tmp = e.Top.Z
-      e.Top.Z = e.Bot.Z
-      e.Bot.Z = tmp
+    let tmp = edge.top.x
+    edge.top.x = edge.bottom.x
+    edge.bottom.x = tmp
+    if (ClipperLib.USE_XYZ) {
+      tmp = edge.top.z
+      edge.top.z = edge.bottom.z
+      edge.bottom.z = tmp
     }
   }
 
-  public Reset() {
-    this.m_CurrentLM = this.m_MinimaList
-    if (this.m_CurrentLM === null)
+  public reset() {
+    this.currentLocalMinima = this.minimaList
+    if (this.currentLocalMinima === null)
       //ie nothing to process
       return
     //reset all edges ...
-    this.m_Scanbeam = null
-    let lm = this.m_MinimaList
+    this.scanbeam = null
+    let lm = this.minimaList
     while (lm !== null) {
-      this.InsertScanbeam(lm.Y)
-      let e = lm.LeftBound
+      this.insertScanbeam(lm.y)
+      let e = lm.leftBoundary
       if (e !== null) {
         //e.Curr = e.Bot;
-        e.Curr.X = e.Bot.X
-        e.Curr.Y = e.Bot.Y
-        if (ClipperLib.use_xyz) e.Curr.Z = e.Bot.Z
-        e.OutIdx = ClipperBase.Unassigned
+        e.current.x = e.bottom.x
+        e.current.y = e.bottom.y
+        if (ClipperLib.USE_XYZ) e.current.z = e.bottom.z
+        e.outIndex = ClipperBase.UNASSIGNED
       }
-      e = lm.RightBound
+      e = lm.rightBoundary
       if (e !== null) {
         //e.Curr = e.Bot;
-        e.Curr.X = e.Bot.X
-        e.Curr.Y = e.Bot.Y
-        if (ClipperLib.use_xyz) e.Curr.Z = e.Bot.Z
-        e.OutIdx = ClipperBase.Unassigned
+        e.current.x = e.bottom.x
+        e.current.y = e.bottom.y
+        if (ClipperLib.USE_XYZ) e.current.z = e.bottom.z
+        e.outIndex = ClipperBase.UNASSIGNED
       }
-      lm = lm.Next
+      lm = lm.next
     }
-    this.m_ActiveEdges = null
+    this.activeEdges = null
   }
 
-  public InsertScanbeam(Y: number) {
-    //single-linked list: sorted descending, ignoring dups.
-    if (this.m_Scanbeam === null) {
-      this.m_Scanbeam = new Scanbeam()
-      this.m_Scanbeam.Next = null
-      this.m_Scanbeam.Y = Y
-    } else if (Y > this.m_Scanbeam.Y) {
+  public insertScanbeam(y: number) {
+    // single-linked list: sorted descending, ignoring dups.
+    if (this.scanbeam === null) {
+      this.scanbeam = new Scanbeam()
+      this.scanbeam.Next = null
+      this.scanbeam.y = y
+    } else if (y > this.scanbeam.y) {
       const newSb = new Scanbeam()
-      newSb.Y = Y
-      newSb.Next = this.m_Scanbeam
-      this.m_Scanbeam = newSb
+      newSb.y = y
+      newSb.Next = this.scanbeam
+      this.scanbeam = newSb
     } else {
-      let sb2 = this.m_Scanbeam
-      while (sb2.Next !== null && Y <= sb2.Next.Y) {
+      let sb2 = this.scanbeam
+      while (sb2.Next !== null && y <= sb2.Next.y) {
         sb2 = sb2.Next
       }
-      if (Y === sb2.Y) {
+      if (y === sb2.y) {
         return
       } //ie ignores duplicates
       const newSb1 = new Scanbeam()
-      newSb1.Y = Y
+      newSb1.y = y
       newSb1.Next = sb2.Next
       sb2.Next = newSb1
     }
   }
 
-  public PopScanbeam(Y: Scanbeam) {
-    if (this.m_Scanbeam === null) {
-      Y.v = 0
+  public popScanbeam(scanbeam: Scanbeam) {
+    if (this.scanbeam === null) {
+      scanbeam.v = 0
       return false
     }
-    Y.v = this.m_Scanbeam.Y
-    this.m_Scanbeam = this.m_Scanbeam.Next
+    scanbeam.v = this.scanbeam.y
+    this.scanbeam = this.scanbeam.Next
     return true
   }
 
-  public LocalMinimaPending() {
-    return this.m_CurrentLM !== null
+  public localMinimaPending() {
+    return this.currentLocalMinima !== null
   }
 
-  public CreateOutRec() {
-    const result = new OutRec()
-    result.Idx = ClipperBase.Unassigned
-    result.IsHole = false
-    result.IsOpen = false
-    result.FirstLeft = null
-    result.Pts = null
-    result.BottomPt = null
-    result.PolyNode = null
-    this.m_PolyOuts.push(result)
-    result.Idx = this.m_PolyOuts.length - 1
+  public createOuterRectangle() {
+    const result = new OuterRectangle()
+    result.index = ClipperBase.UNASSIGNED
+    result.isHole = false
+    result.isOpen = false
+    result.firstLeft = null
+    result.points = null
+    result.bottomPoint = null
+    result.polyNode = null
+    this.polyOuts.push(result)
+    result.index = this.polyOuts.length - 1
     return result
   }
 
-  public DisposeOutRec(index: number) {
-    let outRec = this.m_PolyOuts[index]
-    outRec.Pts = null
-    outRec = null
-    this.m_PolyOuts[index] = null
+  public disposeOuterRectangle(index: number) {
+    let outerRectangle = this.polyOuts[index]
+    outerRectangle.points = null
+    outerRectangle = null
+    this.polyOuts[index] = null
   }
 
-  public UpdateEdgeIntoAEL(e: TEdge) {
-    if (e.NextInLML === null) {
+  public updateEdgeIntoAEL(e: TEdge) {
+    if (e.nextInLML === null) {
       ClipperLib.Error('UpdateEdgeIntoAEL: invalid call')
     }
-    const AelPrev = e.PrevInAEL
-    const AelNext = e.NextInAEL
-    e.NextInLML.OutIdx = e.OutIdx
-    if (AelPrev !== null) {
-      AelPrev.NextInAEL = e.NextInLML
+    const prevAEL = e.prevInAEL
+    const nextAEL = e.nextInAEL
+    e.nextInLML.outIndex = e.outIndex
+    if (prevAEL !== null) {
+      prevAEL.nextInAEL = e.nextInLML
     } else {
-      this.m_ActiveEdges = e.NextInLML
+      this.activeEdges = e.nextInLML
     }
-    if (AelNext !== null) {
-      AelNext.PrevInAEL = e.NextInLML
+    if (nextAEL !== null) {
+      nextAEL.prevInAEL = e.nextInLML
     }
-    e.NextInLML.Side = e.Side
-    e.NextInLML.WindDelta = e.WindDelta
-    e.NextInLML.WindCnt = e.WindCnt
-    e.NextInLML.WindCnt2 = e.WindCnt2
-    e = e.NextInLML
-    e.Curr.X = e.Bot.X
-    e.Curr.Y = e.Bot.Y
-    e.PrevInAEL = AelPrev
-    e.NextInAEL = AelNext
-    if (!ClipperBase.IsHorizontal(e)) {
-      this.InsertScanbeam(e.Top.Y)
+    e.nextInLML.side = e.side
+    e.nextInLML.windDelta = e.windDelta
+    e.nextInLML.windCount = e.windCount
+    e.nextInLML.windCount2 = e.windCount2
+    e = e.nextInLML
+    e.current.x = e.bottom.x
+    e.current.y = e.bottom.y
+    e.prevInAEL = prevAEL
+    e.nextInAEL = nextAEL
+    if (!ClipperBase.isHorizontal(e)) {
+      this.insertScanbeam(e.top.y)
     }
     return e
   }
 
-  public SwapPositionsInAEL(edge1: TEdge, edge2: TEdge) {
+  public swapPositionsInAEL(edge1: TEdge, edge2: TEdge) {
     // check that one or other edge hasn't already been removed from AEL ...
-    if (edge1.NextInAEL === edge1.PrevInAEL || edge2.NextInAEL === edge2.PrevInAEL) {
+    if (edge1.nextInAEL === edge1.prevInAEL || edge2.nextInAEL === edge2.prevInAEL) {
       return
     }
 
-    if (edge1.NextInAEL === edge2) {
-      const next = edge2.NextInAEL
+    if (edge1.nextInAEL === edge2) {
+      const next = edge2.nextInAEL
       if (next !== null) {
-        next.PrevInAEL = edge1
+        next.prevInAEL = edge1
       }
-      const prev = edge1.PrevInAEL
+      const prev = edge1.prevInAEL
       if (prev !== null) {
-        prev.NextInAEL = edge2
+        prev.nextInAEL = edge2
       }
-      edge2.PrevInAEL = prev
-      edge2.NextInAEL = edge1
-      edge1.PrevInAEL = edge2
-      edge1.NextInAEL = next
-    } else if (edge2.NextInAEL === edge1) {
-      const next = edge1.NextInAEL
+      edge2.prevInAEL = prev
+      edge2.nextInAEL = edge1
+      edge1.prevInAEL = edge2
+      edge1.nextInAEL = next
+    } else if (edge2.nextInAEL === edge1) {
+      const next = edge1.nextInAEL
       if (next !== null) {
-        next.PrevInAEL = edge2
+        next.prevInAEL = edge2
       }
-      const prev = edge2.PrevInAEL
+      const prev = edge2.prevInAEL
       if (prev !== null) {
-        prev.NextInAEL = edge1
+        prev.nextInAEL = edge1
       }
-      edge1.PrevInAEL = prev
-      edge1.NextInAEL = edge2
-      edge2.PrevInAEL = edge1
-      edge2.NextInAEL = next
+      edge1.prevInAEL = prev
+      edge1.nextInAEL = edge2
+      edge2.prevInAEL = edge1
+      edge2.nextInAEL = next
     } else {
-      const next = edge1.NextInAEL
-      const prev = edge1.PrevInAEL
-      edge1.NextInAEL = edge2.NextInAEL
-      if (edge1.NextInAEL !== null) {
-        edge1.NextInAEL.PrevInAEL = edge1
+      const next = edge1.nextInAEL
+      const prev = edge1.prevInAEL
+      edge1.nextInAEL = edge2.nextInAEL
+      if (edge1.nextInAEL !== null) {
+        edge1.nextInAEL.prevInAEL = edge1
       }
-      edge1.PrevInAEL = edge2.PrevInAEL
-      if (edge1.PrevInAEL !== null) {
-        edge1.PrevInAEL.NextInAEL = edge1
+      edge1.prevInAEL = edge2.prevInAEL
+      if (edge1.prevInAEL !== null) {
+        edge1.prevInAEL.nextInAEL = edge1
       }
-      edge2.NextInAEL = next
-      if (edge2.NextInAEL !== null) {
-        edge2.NextInAEL.PrevInAEL = edge2
+      edge2.nextInAEL = next
+      if (edge2.nextInAEL !== null) {
+        edge2.nextInAEL.prevInAEL = edge2
       }
-      edge2.PrevInAEL = prev
-      if (edge2.PrevInAEL !== null) {
-        edge2.PrevInAEL.NextInAEL = edge2
+      edge2.prevInAEL = prev
+      if (edge2.prevInAEL !== null) {
+        edge2.prevInAEL.nextInAEL = edge2
       }
     }
 
-    if (edge1.PrevInAEL === null) {
-      this.m_ActiveEdges = edge1
+    if (edge1.prevInAEL === null) {
+      this.activeEdges = edge1
     } else {
-      if (edge2.PrevInAEL === null) {
-        this.m_ActiveEdges = edge2
+      if (edge2.prevInAEL === null) {
+        this.activeEdges = edge2
       }
     }
   }
 
-  public DeleteFromAEL(e: TEdge) {
-    const AelPrev = e.PrevInAEL
-    const AelNext = e.NextInAEL
-    if (AelPrev === null && AelNext === null && e !== this.m_ActiveEdges) {
+  public deleteFromAEL(e: TEdge) {
+    const prevAEL = e.prevInAEL
+    const nextAEL = e.nextInAEL
+    if (prevAEL === null && nextAEL === null && e !== this.activeEdges) {
       return
     }
     // already deleted
-    if (AelPrev !== null) {
-      AelPrev.NextInAEL = AelNext
+    if (prevAEL !== null) {
+      prevAEL.nextInAEL = nextAEL
     } else {
-      this.m_ActiveEdges = AelNext
+      this.activeEdges = nextAEL
     }
-    if (AelNext !== null) {
-      AelNext.PrevInAEL = AelPrev
+    if (nextAEL !== null) {
+      nextAEL.prevInAEL = prevAEL
     }
-    e.NextInAEL = null
-    e.PrevInAEL = null
+    e.nextInAEL = null
+    e.prevInAEL = null
   }
 }

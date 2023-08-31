@@ -1,12 +1,12 @@
 import type { Direction } from './enums'
 
 export type HorizontalEdgeProps = {
-  Dir: Direction | null
-  Left: number | null
-  Right: number | null
+  direction: Direction | null
+  left: number | null
+  right: number | null
 }
 
 export type OverlapProps = {
-  Left: number | null
-  Right: number | null
+  left: number | null
+  right: number | null
 }

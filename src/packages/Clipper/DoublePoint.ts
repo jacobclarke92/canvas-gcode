@@ -1,13 +1,13 @@
 export class DoublePoint {
-  public X = 0
-  public Y = 0
+  public x = 0
+  public y = 0
   constructor(...args: [] | [x: number, y: number] | [dp: DoublePoint]) {
     if (args.length === 1) {
-      this.X = args[0].X
-      this.Y = args[0].Y
+      this.x = args[0].x
+      this.y = args[0].y
     } else if (args.length === 2) {
-      this.X = args[0]
-      this.Y = args[1]
+      this.x = args[0]
+      this.y = args[1]
     }
   }
 }

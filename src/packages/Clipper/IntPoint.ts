@@ -3,68 +3,68 @@ import { Clipper } from './Clipper'
 import { DoublePoint } from './DoublePoint'
 
 export class IntPoint {
-  public X: number
-  public Y: number
-  public Z: number
+  public x: number
+  public y: number
+  public z: number
   constructor(...args: [] | [dp: DoublePoint | IntPoint] | [x: number, y: number] | [x: number, y: number, z: number]) {
-    this.X = 0
-    this.Y = 0
+    this.x = 0
+    this.y = 0
 
-    if (ClipperLib.use_xyz) {
-      this.Z = 0
+    if (ClipperLib.USE_XYZ) {
+      this.z = 0
       if (args.length === 3) {
-        this.X = args[0]
-        this.Y = args[1]
-        this.Z = args[2]
+        this.x = args[0]
+        this.y = args[1]
+        this.z = args[2]
       } else if (args.length === 2) {
-        this.X = args[0]
-        this.Y = args[1]
-        this.Z = 0
+        this.x = args[0]
+        this.y = args[1]
+        this.z = 0
       } else if (args.length === 1) {
         if (args[0] instanceof DoublePoint) {
           const dp = args[0]
-          this.X = Clipper.Round(dp.X)
-          this.Y = Clipper.Round(dp.Y)
-          this.Z = 0
+          this.x = Clipper.round(dp.x)
+          this.y = Clipper.round(dp.y)
+          this.z = 0
         } else {
           const pt = args[0]
-          if (typeof pt.Z === 'undefined') pt.Z = 0
-          this.X = pt.X
-          this.Y = pt.Y
-          this.Z = pt.Z
+          if (typeof pt.z === 'undefined') pt.z = 0
+          this.x = pt.x
+          this.y = pt.y
+          this.z = pt.z
         }
       } else {
-        this.X = 0
-        this.Y = 0
-        this.Z = 0
+        this.x = 0
+        this.y = 0
+        this.z = 0
       }
     } else {
       if (args.length === 2) {
-        this.X = args[0]
-        this.Y = args[1]
+        this.x = args[0]
+        this.y = args[1]
       } else if (args.length === 1) {
         if (args[0] instanceof DoublePoint) {
           const dp = args[0]
-          this.X = Clipper.Round(dp.X)
-          this.Y = Clipper.Round(dp.Y)
+          this.x = Clipper.round(dp.x)
+          this.y = Clipper.round(dp.y)
         } else {
           const pt = args[0]
-          this.X = pt.X
-          this.Y = pt.Y
+          this.x = pt.x
+          this.y = pt.y
         }
       } else {
-        this.X = 0
-        this.Y = 0
+        this.x = 0
+        this.y = 0
       }
     }
   }
 
   public static op_Equality(a: IntPoint, b: IntPoint) {
-    return a.X === b.X && a.Y === b.Y
+    return a.x === b.x && a.y === b.y
   }
 
   public static op_Inequality(a: IntPoint, b: IntPoint) {
-    return a.X !== b.X || a.Y !== b.Y
+    return a.x !== b.x || a.y !== b.y
   }
 
   /*

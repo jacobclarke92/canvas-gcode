@@ -1,4 +1,4 @@
-import { BigInteger } from './BigInteger'
+import type { BigInteger } from './BigInteger'
 
 export class NullExp {
   public convert(x: unknown) {

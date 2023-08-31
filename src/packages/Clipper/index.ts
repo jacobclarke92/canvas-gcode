@@ -72,10 +72,10 @@ import { DoublePoint } from './DoublePoint'
 import { ClipType, Direction, EdgeSide, EndType, JoinType, PolyFillType, PolyType } from './enums'
 import { IntersectNode, MyIntersectNodeSort } from './IntersectNode'
 import { IntPoint } from './IntPoint'
-import { IntRect } from './IntRect'
-import { Join, LocalMinima, Maxima, OutPt, OutRec, Scanbeam } from './Misc'
+import { IntRectangle } from './IntRectangle'
+import { Join, LocalMinima, Maxima, OuterPoint, OuterRectangle, Scanbeam } from './Misc'
 import { Path, Paths } from './Path'
-import { PolyNode, PolyTree } from './PolyNode'
+import { PolygonNode, PolygonTree } from './PolygonNode'
 import { TEdge } from './TEdge'
 
 // UseLines: Enables open path clipping. Adds a very minor cost to performance.
@@ -86,12 +86,12 @@ const USE_XYZ = false
 
 export const ClipperLib = {
   use_lines: USE_LINES,
-  use_xyz: USE_XYZ,
+  USE_XYZ: USE_XYZ,
   Path,
   Paths,
   DoublePoint,
-  PolyNode,
-  PolyTree,
+  PolygonNode: PolyNode,
+  PolygonTree: PolyTree,
   Math_Abs_Int64: (a: number) => Math.abs(a),
   Math_Abs_Int32: (a: number) => Math.abs(a),
   Math_Abs_Double: (a: number) => Math.abs(a),
@@ -100,7 +100,7 @@ export const ClipperLib = {
   Cast_Int32: (a: number) => (browser.msie || browser.opera || browser.safari ? a | 0 : ~~a),
   PI: 3.141592653589793,
   PI2: 2 * 3.141592653589793,
-  Clear: <T extends Array<any>>(a: T) => {
+  clear: <T extends Array<any>>(a: T) => {
     a.length = 0
   },
   // This originally had a bunch of browser specific optimizations but i just opted for the chrome one
@@ -110,7 +110,7 @@ export const ClipperLib = {
     else return ~~a
   },
   IntPoint,
-  IntRect,
+  IntRectangle: IntRect,
   ClipType,
   PolyType,
   PolyFillType,
@@ -124,8 +124,8 @@ export const ClipperLib = {
   LocalMinima,
   Scanbeam,
   Maxima,
-  OutRec,
-  OutPt,
+  OuterRectangle: OutRec,
+  OuterPoint: OutPt,
   Join,
   ClipperBase,
   Clipper,
@@ -147,14 +147,14 @@ export const ClipperLib = {
 
 ClipperLib.JS.AreaOfPolygon = function (poly, scale) {
   if (!scale) scale = 1
-  return ClipperLib.Clipper.Area(poly) / (scale * scale)
+  return ClipperLib.Clipper.area(poly) / (scale * scale)
 }
 
 ClipperLib.JS.AreaOfPolygons = function (poly, scale) {
   if (!scale) scale = 1
   var area = 0
   for (var i = 0; i < poly.length; i++) {
-    area += ClipperLib.Clipper.Area(poly[i])
+    area += ClipperLib.Clipper.area(poly[i])
   }
   return area / (scale * scale)
 }
@@ -165,7 +165,7 @@ ClipperLib.JS.BoundsOfPath = function (path, scale) {
 
 ClipperLib.JS.BoundsOfPaths = function (paths, scale) {
   if (!scale) scale = 1
-  var bounds = ClipperLib.Clipper.GetBounds(paths)
+  var bounds = ClipperLib.Clipper.getBounds(paths)
   bounds.left /= scale
   bounds.bottom /= scale
   bounds.right /= scale

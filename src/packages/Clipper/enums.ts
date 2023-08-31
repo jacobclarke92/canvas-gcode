@@ -1,41 +1,41 @@
 export enum ClipType {
-  ctIntersection = 0,
-  ctUnion = 1,
-  ctDifference = 2,
-  ctXor = 3,
+  intersection = 0,
+  union = 1,
+  difference = 2,
+  xor = 3,
 }
 export enum PolyType {
-  ptSubject = 0,
-  ptClip = 1,
+  subject = 0,
+  clip = 1,
 }
 export enum PolyFillType {
-  pftEvenOdd = 0,
-  pftNonZero = 1,
-  pftPositive = 2,
-  pftNegative = 3,
+  evenOdd = 0,
+  nonZero = 1,
+  positive = 2,
+  negative = 3,
 }
 export enum JoinType {
-  jtSquare = 0,
-  jtRound = 1,
-  jtMiter = 2,
+  square = 0,
+  round = 1,
+  miter = 2,
 }
 export enum EndType {
-  etOpenSquare = 0,
-  etOpenRound = 1,
-  etOpenButt = 2,
-  etClosedLine = 3,
-  etClosedPolygon = 4,
+  openSquare = 0,
+  openRound = 1,
+  openButt = 2,
+  closedLine = 3,
+  closedPolygon = 4,
 }
 export enum EdgeSide {
-  esLeft = 0,
-  esRight = 1,
+  left = 0,
+  right = 1,
 }
 export enum Direction {
-  dRightToLeft = 0,
-  dLeftToRight = 1,
+  rightToLeft = 0,
+  leftToRight = 1,
 }
 export enum NodeType {
-  ntAny = 0,
-  ntOpen = 1,
-  ntClosed = 2,
+  any = 0,
+  open = 1,
+  closed = 2,
 }

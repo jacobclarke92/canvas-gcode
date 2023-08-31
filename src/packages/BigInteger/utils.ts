@@ -1,6 +1,6 @@
 // Digit conversions
 const BI_RM = '0123456789abcdefghijklmnopqrstuvwxyz'
-const BI_RC = new Array()
+const BI_RC: number[] = []
 
 let rr: number, vv: number
 rr = '0'.charCodeAt(0)
