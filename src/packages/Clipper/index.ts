@@ -69,6 +69,7 @@ import { Clipper } from './Clipper'
 import { ClipperBase } from './ClipperBase'
 import { ClipperOffset } from './ClipperOffset'
 import { DoublePoint } from './DoublePoint'
+import { Edge } from './Edge'
 import { ClipType, Direction, EdgeSide, EndType, JoinType, PolyFillType, PolyType } from './enums'
 import { IntersectNode, MyIntersectNodeSort } from './IntersectNode'
 import { IntPoint } from './IntPoint'
@@ -76,7 +77,6 @@ import { IntRectangle } from './IntRectangle'
 import { Join, LocalMinima, Maxima, OuterPoint, OuterRectangle, Scanbeam } from './Misc'
 import { Path, Paths } from './Path'
 import { PolygonNode, PolygonTree } from './PolygonNode'
-import { TEdge } from './TEdge'
 
 export const ClipperLib = {
   use_lines: true,
@@ -112,7 +112,7 @@ export const ClipperLib = {
   EndType,
   EdgeSide,
   Direction,
-  TEdge,
+  Edge,
   IntersectNode,
   MyIntersectNodeSort,
   LocalMinima,
@@ -382,29 +382,24 @@ export function scaleDownPaths(paths: Paths, scale = 1) {
 }
 
 export function scaleUpPath(path: Path, scale = 1) {
-  let i: number,
-    p: IntPoint,
-    round = Math.round
+  let i: number, p: IntPoint
   i = path.length
   while (i--) {
     p = path[i]
-    p.x = round(p.x * scale)
-    p.y = round(p.y * scale)
+    p.x = Math.round(p.x * scale)
+    p.y = Math.round(p.y * scale)
   }
 }
 
 export function scaleUpPaths(paths: Paths, scale = 1) {
-  let i: number,
-    j: number,
-    p: IntPoint,
-    round = Math.round
+  let i: number, j: number, p: IntPoint
   i = paths.length
   while (i--) {
     j = paths[i].length
     while (j--) {
       p = paths[i][j]
-      p.x = round(p.x * scale)
-      p.y = round(p.y * scale)
+      p.x = Math.round(p.x * scale)
+      p.y = Math.round(p.y * scale)
     }
   }
 }

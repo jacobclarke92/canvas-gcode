@@ -1,11 +1,11 @@
+import type { Edge } from './Edge'
 import { IntPoint } from './IntPoint'
 import type { PolygonNode } from './PolygonNode'
-import type { TEdge } from './TEdge'
 
 export class LocalMinima {
   public y = 0
-  public leftBoundary: TEdge | null = null
-  public rightBoundary: TEdge | null = null
+  public leftBoundary: Edge | null = null
+  public rightBoundary: Edge | null = null
   public next: LocalMinima | null = null
   public v: LocalMinima | null = null
 }

@@ -1,9 +1,9 @@
+import type { Edge } from './Edge'
 import { IntPoint } from './IntPoint'
-import type { TEdge } from './TEdge'
 
 export class IntersectNode {
-  public edge1: TEdge | null = null
-  public edge2: TEdge | null = null
+  public edge1: Edge | null = null
+  public edge2: Edge | null = null
   public point = new IntPoint()
 }
 

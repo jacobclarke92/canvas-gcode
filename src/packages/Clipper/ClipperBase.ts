@@ -1,22 +1,22 @@
 import { Int128 } from '../BigInteger'
 import { ClipperLib } from '.'
+import { Edge } from './Edge'
 import { PolyType } from './enums'
 import { IntPoint } from './IntPoint'
 import type { OuterPoint } from './Misc'
 import { LocalMinima, OuterRectangle, Scanbeam } from './Misc'
 import type { Path, Paths } from './Path'
-import type { TEdge } from './TEdge'
 
 export class ClipperBase {
   public preserveCollinear = false
   protected minimaList: LocalMinima | null = null
   protected currentLocalMinima: LocalMinima | null = null
-  protected edges: TEdge[][] = []
+  protected edges: Edge[][] = []
   protected useFullRange = false
   protected hasOpenPaths = false
   protected scanbeam: Scanbeam | null = null
   protected polyOuts: OuterRectangle[] = []
-  protected activeEdges: TEdge | null = null
+  protected activeEdges: Edge | null = null
 
   // Ranges are in original C# too high for Javascript (in current state 2013 september):
   // protected const double horizontal = -3.4E+38;
@@ -35,7 +35,7 @@ export class ClipperBase {
   public static isNearZero(val: number) {
     return val > -ClipperBase.TOLERANCE && val < ClipperBase.TOLERANCE
   }
-  public static isHorizontal(e: TEdge) {
+  public static isHorizontal(e: Edge) {
     return e.delta.y === 0
   }
 
@@ -82,7 +82,7 @@ export class ClipperBase {
 
   public static slopesEqual(
     ...args:
-      | [e1: TEdge, e2: TEdge, UseFullRange: boolean]
+      | [e1: Edge, e2: Edge, UseFullRange: boolean]
       | [pt1: IntPoint, pt2: IntPoint, pt3: IntPoint, UseFullRange: boolean]
       | [pt1: IntPoint, pt2: IntPoint, pt3: IntPoint, pt4: IntPoint, UseFullRange: boolean]
   ) {
@@ -148,7 +148,7 @@ export class ClipperBase {
         -point.x > ClipperBase.HIGH_RANGE ||
         -point.y > ClipperBase.HIGH_RANGE
       )
-        ClipperLib.Error('Coordinate outside allowed range in RangeTest().')
+        throw new Error('Coordinate outside allowed range in RangeTest().')
     } else if (
       point.x > ClipperBase.LOW_RANGE ||
       point.y > ClipperBase.LOW_RANGE ||
@@ -161,7 +161,7 @@ export class ClipperBase {
   }
 
   public initEdge(
-    ...args: [e: TEdge, eNext: TEdge | null, ePrev: TEdge | null, pt: IntPoint] | [e: TEdge, polyType: PolyType]
+    ...args: [e: Edge, eNext: Edge | null, ePrev: Edge | null, pt: IntPoint] | [e: Edge, polyType: PolyType]
   ) {
     if (args.length === 2) {
       const [e, polyType] = args
@@ -198,7 +198,7 @@ export class ClipperBase {
     }
   }
 
-  public findNextLocMin(edge: TEdge) {
+  public findNextLocMin(edge: Edge) {
     let edge2
     for (;;) {
       while (IntPoint.op_Inequality(edge.bottom, edge.prev.bottom) || IntPoint.op_Equality(edge.current, edge.top))
@@ -215,10 +215,10 @@ export class ClipperBase {
     return edge
   }
 
-  public processBoundary(edge: TEdge, leftBoundIsForward: boolean) {
-    let startEdge: TEdge
+  public processBoundary(edge: Edge, leftBoundIsForward: boolean) {
+    let startEdge: Edge
     let result = edge
-    let horizontal: TEdge
+    let horizontal: Edge
 
     if (result.outIndex === ClipperBase.SKIP) {
       // check if there are edges beyond the skip edge in the bound and if so
@@ -310,17 +310,17 @@ export class ClipperBase {
 
   public addPath(path: Path, polyType: PolyType, isClosed: boolean) {
     if (ClipperLib.use_lines) {
-      if (!isClosed && polyType === PolyType.clip) ClipperLib.Error('AddPath: Open paths must be subject.')
+      if (!isClosed && polyType === PolyType.clip) throw new Error('AddPath: Open paths must be subject.')
     } else {
-      if (!isClosed) ClipperLib.Error('AddPath: Open paths have been disabled.')
+      if (!isClosed) throw new Error('AddPath: Open paths have been disabled.')
     }
     let highIndex = path.length - 1
     if (isClosed) while (highIndex > 0 && IntPoint.op_Equality(path[highIndex], path[0])) --highIndex
     while (highIndex > 0 && IntPoint.op_Equality(path[highIndex], path[highIndex - 1])) --highIndex
     if ((isClosed && highIndex < 2) || (!isClosed && highIndex < 1)) return false
     //create a new edge array ...
-    const edges: TEdge[] = []
-    for (let i = 0; i <= highIndex; i++) edges.push(new ClipperLib.TEdge())
+    const edges: Edge[] = []
+    for (let i = 0; i <= highIndex; i++) edges.push(new Edge())
     let isFlat = true
     //1. Basic (first) edge initialization ...
 
@@ -423,7 +423,7 @@ export class ClipperBase {
     }
     this.edges.push(edges)
     let leftBoundIsForward: boolean
-    let EMin: TEdge | null = null
+    let EMin: Edge | null = null
 
     //workaround to avoid an endless loop in the while loop below when
     //open paths have matching start and end points ...
@@ -491,7 +491,7 @@ export class ClipperBase {
     else return pt2.y > pt1.y === pt2.y < pt3.y
   }
 
-  public removeEdge(edge: TEdge) {
+  public removeEdge(edge: Edge) {
     // removes e from double_linked_list (but without removing from memory)
     edge.prev.next = edge.next
     edge.next.prev = edge.prev
@@ -500,7 +500,7 @@ export class ClipperBase {
     return result
   }
 
-  public setDx(edge: TEdge) {
+  public setDx(edge: Edge) {
     edge.delta.x = edge.top.x - edge.bottom.x
     edge.delta.y = edge.top.y - edge.bottom.y
     if (edge.delta.y === 0) edge.dx = ClipperBase.HORIZONTAL
@@ -530,7 +530,7 @@ export class ClipperBase {
     return false
   }
 
-  public reverseHorizontal(edge: TEdge) {
+  public reverseHorizontal(edge: Edge) {
     // swap horizontal edges' top and bottom x's so they follow the natural
     // progression of the bounds - ie so their xbots will align with the
     // adjoining lower edge. [Helpful in the ProcessHorizontal() method.]
@@ -636,9 +636,9 @@ export class ClipperBase {
     this.polyOuts[index] = null
   }
 
-  public updateEdgeIntoAEL(e: TEdge) {
+  public updateEdgeIntoAEL(e: Edge) {
     if (e.nextInLML === null) {
-      ClipperLib.Error('UpdateEdgeIntoAEL: invalid call')
+      throw new Error('UpdateEdgeIntoAEL: invalid call')
     }
     const prevAEL = e.prevInAEL
     const nextAEL = e.nextInAEL
@@ -666,7 +666,7 @@ export class ClipperBase {
     return e
   }
 
-  public swapPositionsInAEL(edge1: TEdge, edge2: TEdge) {
+  public swapPositionsInAEL(edge1: Edge, edge2: Edge) {
     // check that one or other edge hasn't already been removed from AEL ...
     if (edge1.nextInAEL === edge1.prevInAEL || edge2.nextInAEL === edge2.prevInAEL) {
       return
@@ -728,7 +728,7 @@ export class ClipperBase {
     }
   }
 
-  public deleteFromAEL(e: TEdge) {
+  public deleteFromAEL(e: Edge) {
     const prevAEL = e.prevInAEL
     const nextAEL = e.nextInAEL
     if (prevAEL === null && nextAEL === null && e !== this.activeEdges) {

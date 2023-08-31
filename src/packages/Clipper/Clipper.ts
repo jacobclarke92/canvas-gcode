@@ -1,6 +1,7 @@
 import { ClipperLib } from '.'
 import { browser } from './browser'
 import { ClipperBase } from './ClipperBase'
+import { Edge } from './Edge'
 import { ClipType, Direction, EdgeSide, NodeType, PolyFillType as PolygonFillType, PolyType } from './enums'
 import { IntersectNode, MyIntersectNodeSort } from './IntersectNode'
 import { IntPoint } from './IntPoint'
@@ -9,7 +10,6 @@ import type { OuterRectangle } from './Misc'
 import { Join, LocalMinima, Maxima, OuterPoint, Scanbeam } from './Misc'
 import { Path, Paths } from './Path'
 import { PolygonNode, PolygonTree } from './PolygonNode'
-import { TEdge } from './TEdge'
 import type { HorizontalEdgeProps, OverlapProps } from './types'
 
 export class Clipper extends ClipperBase {
@@ -21,8 +21,8 @@ export class Clipper extends ClipperBase {
   public scanbeam: Scanbeam | null = null
   protected clipType = ClipType.intersection
   protected maxima: Maxima | null = null
-  public activeEdges: TEdge | null = null
-  protected sortedEdges: TEdge | null = null
+  public activeEdges: Edge | null = null
+  protected sortedEdges: Edge | null = null
   protected intersectList: IntersectNode[] = []
   protected intersectNodeComparer = MyIntersectNodeSort.compare
   protected executeLocked = false
@@ -258,7 +258,7 @@ export class Clipper extends ClipperBase {
     this.ghostJoins.push(join)
   }
 
-  public setZ(pt: IntPoint, e1: TEdge, e2: TEdge) {
+  public setZ(pt: IntPoint, e1: Edge, e2: Edge) {
     if (ClipperLib.USE_XYZ) {
       if (this.zFillFunction !== null) {
         if (pt.z !== 0 || this.zFillFunction === null) return
@@ -275,8 +275,8 @@ export class Clipper extends ClipperBase {
   public insertLocalMinimaIntoAEL(bottomY: number) {
     const localMinima = new LocalMinima()
 
-    let leftBoundary: TEdge
-    let rightBoundary: TEdge
+    let leftBoundary: Edge
+    let rightBoundary: Edge
     while (this.popLocalMinima(bottomY, localMinima)) {
       leftBoundary = localMinima.v.leftBoundary
       rightBoundary = localMinima.v.rightBoundary
@@ -383,7 +383,7 @@ export class Clipper extends ClipperBase {
     }
   }
 
-  public insertEdgeIntoAEL(edge: TEdge, startEdge: TEdge) {
+  public insertEdgeIntoAEL(edge: Edge, startEdge: Edge) {
     if (this.activeEdges === null) {
       edge.prevInAEL = null
       edge.nextInAEL = null
@@ -404,24 +404,24 @@ export class Clipper extends ClipperBase {
     }
   }
 
-  public edge2InsertsBeforeEdge1(e1: TEdge, e2: TEdge): boolean {
+  public edge2InsertsBeforeEdge1(e1: Edge, e2: Edge): boolean {
     if (e2.current.x === e1.current.x) {
       if (e2.top.y > e1.top.y) return e2.top.x < Clipper.topX(e1, e2.top.y)
       else return e1.top.x > Clipper.topX(e2, e1.top.y)
     } else return e2.current.x < e1.current.x
   }
 
-  public isEvenOddFillType(edge: TEdge): boolean {
+  public isEvenOddFillType(edge: Edge): boolean {
     if (edge.polyType === PolyType.subject) return this.subjectFillType === PolygonFillType.evenOdd
     else return this.clipFillType === PolygonFillType.evenOdd
   }
 
-  public isEvenOddAltFillType(edge: TEdge): boolean {
+  public isEvenOddAltFillType(edge: Edge): boolean {
     if (edge.polyType === PolyType.subject) return this.clipFillType === PolygonFillType.evenOdd
     else return this.subjectFillType === PolygonFillType.evenOdd
   }
 
-  public isContributing(edge: TEdge): boolean {
+  public isContributing(edge: Edge): boolean {
     let polyFillType1: PolygonFillType, polyFillType2: PolygonFillType
     if (edge.polyType === PolyType.subject) {
       polyFillType1 = this.subjectFillType
@@ -502,7 +502,7 @@ export class Clipper extends ClipperBase {
     return true
   }
 
-  public setWindingCount(edge: TEdge) {
+  public setWindingCount(edge: Edge) {
     let prevEdgeInAEL = edge.prevInAEL
     // find the edge of the same polyType that immediately precedes 'edge' in AEL
     while (prevEdgeInAEL !== null && (prevEdgeInAEL.polyType !== edge.polyType || prevEdgeInAEL.windDelta === 0)) {
@@ -579,7 +579,7 @@ export class Clipper extends ClipperBase {
     }
   }
 
-  public addEdgeToSEL(edge: TEdge) {
+  public addEdgeToSEL(edge: Edge) {
     // SEL pointers in PEdge are use to build transient lists of horizontal edges.
     // However, since we don't need to worry about processing order, all additions
     // are made to the front of the list ...
@@ -595,7 +595,7 @@ export class Clipper extends ClipperBase {
     }
   }
 
-  public popEdgeFromSEL(edge: TEdge) {
+  public popEdgeFromSEL(edge: Edge) {
     // Pop edge from front of SEL (ie SEL is a FILO list)
     edge.v = this.sortedEdges
     if (edge.v === null) return false
@@ -619,7 +619,7 @@ export class Clipper extends ClipperBase {
     }
   }
 
-  public swapPositionsInSEL(edge1: TEdge, edge2: TEdge) {
+  public swapPositionsInSEL(edge1: Edge, edge2: Edge) {
     if (edge1.nextInSEL === null && edge1.prevInSEL === null) return
     if (edge2.nextInSEL === null && edge2.prevInSEL === null) return
     if (edge1.nextInSEL === edge2) {
@@ -656,7 +656,7 @@ export class Clipper extends ClipperBase {
     else if (edge2.prevInSEL === null) this.sortedEdges = edge2
   }
 
-  public addLocalMaxPoly(edge1: TEdge, edge2: TEdge, point: IntPoint) {
+  public addLocalMaxPoly(edge1: Edge, edge2: Edge, point: IntPoint) {
     this.addOuterPoint(edge1, point)
     if (edge2.windDelta === 0) this.addOuterPoint(edge2, point)
     if (edge1.outIndex === edge2.outIndex) {
@@ -666,9 +666,9 @@ export class Clipper extends ClipperBase {
     else this.appendPolygon(edge2, edge1)
   }
 
-  public addLocalMinPoly(edge1: TEdge, edge2: TEdge, point: IntPoint) {
+  public addLocalMinPoly(edge1: Edge, edge2: Edge, point: IntPoint) {
     let result: OuterPoint
-    let edge: TEdge, prevEdge: TEdge
+    let edge: Edge, prevEdge: Edge
     if (ClipperBase.isHorizontal(edge2) || edge1.dx > edge2.dx) {
       result = this.addOuterPoint(edge1, point)
       edge2.outIndex = edge1.outIndex
@@ -709,7 +709,7 @@ export class Clipper extends ClipperBase {
     return result
   }
 
-  public addOuterPoint(e: TEdge, pt: IntPoint) {
+  public addOuterPoint(e: Edge, pt: IntPoint) {
     if (e.outIndex < 0) {
       const outerRectangle = this.createOuterRectangle()
       outerRectangle.isOpen = e.windDelta === 0
@@ -751,7 +751,7 @@ export class Clipper extends ClipperBase {
     }
   }
 
-  public getLastOutPoint(edge: TEdge) {
+  public getLastOutPoint(edge: Edge) {
     const outerRectangle = this.outerPolygons[edge.outIndex]
     if (edge.side === EdgeSide.left) {
       return outerRectangle.points
@@ -790,9 +790,9 @@ export class Clipper extends ClipperBase {
     return seg1a < seg2b && seg2a < seg1b
   }
 
-  public setHoleState(edge: TEdge, outerRectangle: OuterRectangle) {
+  public setHoleState(edge: Edge, outerRectangle: OuterRectangle) {
     let prevEdgeInAEL = edge.prevInAEL
-    let edgeTmp: TEdge | null = null
+    let edgeTmp: Edge | null = null
     while (prevEdgeInAEL !== null) {
       if (prevEdgeInAEL.outIndex >= 0 && prevEdgeInAEL.windDelta !== 0) {
         if (edgeTmp === null) edgeTmp = prevEdgeInAEL
@@ -895,7 +895,7 @@ export class Clipper extends ClipperBase {
     return outerRectangle
   }
 
-  public appendPolygon(edge1: TEdge, edge2: TEdge) {
+  public appendPolygon(edge1: Edge, edge2: Edge) {
     // get the start and ends of both output polygons ...
     const outerRectangle1 = this.outerPolygons[edge1.outIndex]
     const outerRectangle2 = this.outerPolygons[edge2.outIndex]
@@ -984,19 +984,19 @@ export class Clipper extends ClipperBase {
     } while (pp1 !== pp)
   }
 
-  public static swapSides(edge1: TEdge, edge2: TEdge) {
+  public static swapSides(edge1: Edge, edge2: Edge) {
     const side = edge1.side
     edge1.side = edge2.side
     edge2.side = side
   }
 
-  public static swapPolyIndexes(edge1: TEdge, edge2: TEdge) {
+  public static swapPolyIndexes(edge1: Edge, edge2: Edge) {
     const outIdx = edge1.outIndex
     edge1.outIndex = edge2.outIndex
     edge2.outIndex = outIdx
   }
 
-  public intersectEdges(edge1: TEdge, edge2: TEdge, point: IntPoint) {
+  public intersectEdges(edge1: Edge, edge2: Edge, point: IntPoint) {
     //e1 will be to the left of e2 BELOW the intersection. Therefore e1 is before
     //e2 in AEL except when e1 is being inserted at the intersection point ...
     const e1Contributing = edge1.outIndex >= 0
@@ -1184,7 +1184,7 @@ export class Clipper extends ClipperBase {
     }
   }
 
-  public deleteFromSEL(edge: TEdge) {
+  public deleteFromSEL(edge: Edge) {
     const prevSEL = edge.prevInSEL
     const nextSEL = edge.nextInSEL
     if (prevSEL === null && nextSEL === null && edge !== this.sortedEdges) return
@@ -1197,13 +1197,13 @@ export class Clipper extends ClipperBase {
   }
 
   public processHorizontals() {
-    const horizontalEdge = new TEdge() // {} //m_SortedEdges;
+    const horizontalEdge = new Edge() // {} //m_SortedEdges;
     while (this.popEdgeFromSEL(horizontalEdge)) {
       this.processHorizontal(horizontalEdge.v)
     }
   }
 
-  public getHorizontalDirection(horizontalEdge: TEdge, $var: HorizontalEdgeProps) {
+  public getHorizontalDirection(horizontalEdge: Edge, $var: HorizontalEdgeProps) {
     if (horizontalEdge.bottom.x < horizontalEdge.top.x) {
       $var.left = horizontalEdge.bottom.x
       $var.right = horizontalEdge.top.x
@@ -1215,7 +1215,7 @@ export class Clipper extends ClipperBase {
     }
   }
 
-  public processHorizontal(horizontalEdge: TEdge) {
+  public processHorizontal(horizontalEdge: Edge) {
     const $var: HorizontalEdgeProps = {
       direction: null,
       left: null,
@@ -1230,7 +1230,7 @@ export class Clipper extends ClipperBase {
     const isOpen = horizontalEdge.windDelta === 0
 
     let lastHorizontalEdge = horizontalEdge,
-      edgeMaxPair: TEdge = null
+      edgeMaxPair: Edge = null
     while (lastHorizontalEdge.nextInLML !== null && ClipperBase.isHorizontal(lastHorizontalEdge.nextInLML))
       lastHorizontalEdge = lastHorizontalEdge.nextInLML
     if (lastHorizontalEdge.nextInLML === null) edgeMaxPair = this.getMaximaPair(lastHorizontalEdge)
@@ -1434,23 +1434,23 @@ export class Clipper extends ClipperBase {
     }
   }
 
-  public getNextInAEL(edge: TEdge, direction: Direction) {
+  public getNextInAEL(edge: Edge, direction: Direction) {
     return direction === Direction.leftToRight ? edge.nextInAEL : edge.prevInAEL
   }
 
-  public isMinima(edge: TEdge) {
+  public isMinima(edge: Edge) {
     return edge !== null && edge.prev.nextInLML !== edge && edge.next.nextInLML !== edge
   }
 
-  public isMaxima(edge: TEdge, y: number) {
+  public isMaxima(edge: Edge, y: number) {
     return edge !== null && edge.top.y === y && edge.nextInLML === null
   }
 
-  public isIntermediate(edge: TEdge, y: number) {
+  public isIntermediate(edge: Edge, y: number) {
     return edge.top.y === y && edge.nextInLML !== null
   }
 
-  public getMaximaPair(edge: TEdge) {
+  public getMaximaPair(edge: Edge) {
     if (IntPoint.op_Equality(edge.next.top, edge.top) && edge.next.nextInLML === null) {
       return edge.next
     } else {
@@ -1463,7 +1463,7 @@ export class Clipper extends ClipperBase {
   }
 
   /** Same as getMaximaPair but returns null if MaxPair isn't in AEL (unless it's horizontal) */
-  public getMaximaPairEx(edge: TEdge) {
+  public getMaximaPairEx(edge: Edge) {
     const result = this.getMaximaPair(edge)
     if (
       result === null ||
@@ -1573,14 +1573,14 @@ export class Clipper extends ClipperBase {
     this.intersectList.length = 0
   }
 
-  public static topX(edge: TEdge, currentY: number) {
+  public static topX(edge: Edge, currentY: number) {
     //if (edge.Bot == edge.Curr) alert ("edge.Bot = edge.Curr");
     //if (edge.Bot == edge.Top) alert ("edge.Bot = edge.Top");
     if (currentY === edge.top.y) return edge.top.x
     return edge.bottom.x + Clipper.round(edge.dx * (currentY - edge.bottom.y))
   }
 
-  public intersectPoint(edge1: TEdge, edge2: TEdge, intersectionPoint: IntPoint) {
+  public intersectPoint(edge1: Edge, edge2: Edge, intersectionPoint: IntPoint) {
     intersectionPoint.x = 0
     intersectionPoint.y = 0
     let b1: number, b2: number
@@ -1742,7 +1742,7 @@ export class Clipper extends ClipperBase {
     }
   }
 
-  public doMaxima(e: TEdge) {
+  public doMaxima(e: Edge) {
     const edgeMaximaPair = this.getMaximaPairEx(e)
     if (edgeMaximaPair === null) {
       if (e.outIndex >= 0) this.addOuterPoint(e, e.top)

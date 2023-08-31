@@ -1,7 +1,7 @@
 import { EdgeSide, PolyType } from './enums'
 import { IntPoint } from './IntPoint'
 
-export class TEdge {
+export class Edge {
   public bottom = new IntPoint()
   public current = new IntPoint() //current (updated for every new scanbeam)
   public top = new IntPoint()
@@ -13,12 +13,12 @@ export class TEdge {
   public windCount = 0
   public windCount2 = 0 // winding count of the opposite polytype
   public outIndex = 0
-  public next: TEdge | null = null
-  public prev: TEdge | null = null
-  public nextInLML: TEdge | null = null
-  public nextInAEL: TEdge | null = null
-  public prevInAEL: TEdge | null = null
-  public nextInSEL: TEdge | null = null
-  public prevInSEL: TEdge | null = null
-  public v: TEdge | null = null
+  public next: Edge | null = null
+  public prev: Edge | null = null
+  public nextInLML: Edge | null = null
+  public nextInAEL: Edge | null = null
+  public prevInAEL: Edge | null = null
+  public nextInSEL: Edge | null = null
+  public prevInSEL: Edge | null = null
+  public v: Edge | null = null
 }

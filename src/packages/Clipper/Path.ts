@@ -5,7 +5,7 @@ export class Path extends Array<IntPoint> {
   constructor(...args: [] | [count: number] | [points: IntPoint[]]) {
     super(...(Array.isArray(args[0]) ? args[0] : []))
     if (typeof args[0] === 'number') this.length = args[0]
-    return []
+    return this
   }
 }
 
@@ -14,6 +14,6 @@ export class Paths extends Array<Path> {
   constructor(...args: [] | [count: number] | [paths: Path[]]) {
     super(...(Array.isArray(args[0]) ? args[0] : []))
     if (typeof args[0] === 'number') this.length = args[0]
-    return []
+    return this
   }
 }
