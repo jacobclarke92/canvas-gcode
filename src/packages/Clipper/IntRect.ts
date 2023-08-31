@@ -22,21 +22,3 @@ export class IntRect {
     }
   }
 }
-
-export class IntRect0 extends IntRect {
-  constructor() {
-    super()
-  }
-}
-
-export class IntRect1 extends IntRect {
-  constructor(ir: IntRect) {
-    super(ir)
-  }
-}
-
-export class IntRect4 extends IntRect {
-  constructor(left: number, top: number, right: number, bottom: number) {
-    super(left, top, right, bottom)
-  }
-}

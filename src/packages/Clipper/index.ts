@@ -64,6 +64,7 @@
  *                                                                              *
  *******************************************************************************/
 
+import { browser } from './browser'
 import { Clipper } from './Clipper'
 import { ClipperBase } from './ClipperBase'
 import { ClipperOffset } from './ClipperOffset'
@@ -83,24 +84,6 @@ const USE_LINES = true
 // ClipperLib.use_xyz: adds a Z member to IntPoint. Adds a minor cost to performance.
 const USE_XYZ = false
 
-// Browser test to speedup performance critical functions
-const nav = navigator.userAgent.toString().toLowerCase()
-const browser = {
-  chrome: nav.indexOf('chrome') != -1 && nav.indexOf('chromium') == -1,
-  chromium: nav.indexOf('chromium') != -1,
-  safari: nav.indexOf('safari') != -1 && nav.indexOf('chrome') == -1 && nav.indexOf('chromium') == -1,
-  firefox: nav.indexOf('firefox') != -1,
-  firefox17: nav.indexOf('firefox/17') != -1,
-  firefox15: nav.indexOf('firefox/15') != -1,
-  firefox3: nav.indexOf('firefox/3') != -1,
-  opera: nav.indexOf('opera') != -1,
-  msie10: nav.indexOf('msie 10') != -1,
-  msie9: nav.indexOf('msie 9') != -1,
-  msie8: nav.indexOf('msie 8') != -1,
-  msie7: nav.indexOf('msie 7') != -1,
-  msie: nav.indexOf('msie ') != -1,
-} as const
-
 export const ClipperLib = {
   use_lines: USE_LINES,
   use_xyz: USE_XYZ,
@@ -117,7 +100,7 @@ export const ClipperLib = {
   Cast_Int32: (a: number) => (browser.msie || browser.opera || browser.safari ? a | 0 : ~~a),
   PI: 3.141592653589793,
   PI2: 2 * 3.141592653589793,
-  Clear: (a: dunnoyet) => {
+  Clear: <T extends Array<any>>(a: T) => {
     a.length = 0
   },
   // This originally had a bunch of browser specific optimizations but i just opted for the chrome one

@@ -1,4 +1,10 @@
-import SubPath, {
+import { Clipper } from './packages/Clipper/Clipper'
+import { ClipperOffset } from './packages/Clipper/ClipperOffset'
+import type { ClipType } from './packages/Clipper/enums'
+import { EndType, JoinType, PolyFillType, PolyType } from './packages/Clipper/enums'
+import { PolyTree } from './packages/Clipper/PolyNode'
+import Point from './Point'
+import type {
   Action,
   ArcAction,
   BezierCurveToAction,
@@ -6,10 +12,8 @@ import SubPath, {
   LineToAction,
   QuadraticCurveToAction,
 } from './SubPath'
+import SubPath from './SubPath'
 import { arcToPoints, samePos } from './utils/pathUtils'
-
-import * as ClipperLib from './clipper_unminified'
-import Point from './Point'
 
 export type Bounds = {
   left: number
@@ -91,7 +95,7 @@ export default class Path {
     if (!scale) throw 'NO SCALE!'
     return this.subPaths.map((subPath) => subPath.toPoly(scale, divisions))
   }
-  public fromPolys(polygons: { X: number; Y: number }[][], scale: number) {
+  public fromPolys(polygons: PolyTree, scale: number) {
     if (!scale) throw 'NO SCALE!'
 
     this.subPaths = []
@@ -105,7 +109,8 @@ export default class Path {
 
     return this
   }
-  public clip(clipRegion: Path, clipType?: ClipperLib.ClipType, divisions?: number) {
+
+  public clip(clipRegion: Path, clipType?: ClipType, divisions?: number) {
     if (!clipRegion) return this
 
     clipType = clipType || 0
@@ -115,20 +120,19 @@ export default class Path {
     const clipPolys = clipRegion.toPolys(scale, divisions)
 
     // Clean both
-    // const subjPolys = ClipperLib.Clipper.CleanPolygons(subjPolys, 1);
-    // const clipPolys = ClipperLib.Clipper.CleanPolygons(clipPolys, 1);
-    // const subjPolys = ClipperLib.Clipper.SimplifyPolygons(subjPolys, ClipperLib.PolyFillType.pftNonZero);
-    // const clipPolys = ClipperLib.Clipper.SimplifyPolygons(clipPolys, ClipperLib.PolyFillType.pftNonZero);
+    // const subjPolys = Clipper.CleanPolygons(subjPolys, 1);
+    // const clipPolys = Clipper.CleanPolygons(clipPolys, 1);
+    // const subjPolys = Clipper.SimplifyPolygons(subjPolys, PolyFillType.pftNonZero);
+    // const clipPolys = Clipper.SimplifyPolygons(clipPolys, PolyFillType.pftNonZero);
 
-    const cpr = new ClipperLib.Clipper()
+    const cpr = new Clipper()
     // const cpr = new Clipper()
     // cpr.PreserveCollinear = true;
     // cpr.ReverseSolution = true;
 
-    // @ts-ignore
-    cpr.AddPaths(subjPolys, ClipperLib.PolyType.ptSubject, true)
-    // @ts-ignore
-    cpr.AddPaths(clipPolys, ClipperLib.PolyType.ptClip, true)
+    cpr.AddPaths(subjPolys, PolyType.ptSubject, true)
+
+    cpr.AddPaths(clipPolys, PolyType.ptClip, true)
 
     const clipped: any[] = []
     cpr.Execute(clipType, clipped)
@@ -232,13 +236,13 @@ export default class Path {
 
     const scale = 1000
     let polys = this.toPolys(scale, divisions)
-    let type = ClipperLib.PolyFillType.pftNonZero
+    let type = PolyFillType.pftNonZero
 
     if (windingRule === 'evenodd') {
-      type = ClipperLib.PolyFillType.pftEvenOdd
+      type = PolyFillType.pftEvenOdd
     }
 
-    polys = ClipperLib.Clipper.SimplifyPolygons(polys, type)
+    polys = Clipper.SimplifyPolygons(polys, type)
 
     const result = new Path()
     result.fromPolys(polys, scale)
@@ -279,14 +283,14 @@ export default class Path {
     // offset
     // const miterLimit = 1000 * scale
 
-    const co = new ClipperLib.ClipperOffset()
+    const co = new ClipperOffset()
     // co.PreserveCollinear = true;
     // co.ReverseSolution = true;
 
-    co.AddPaths(polygons, ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon)
+    co.AddPaths(polygons, JoinType.jtMiter, EndType.etClosedPolygon)
 
     // TODO:
-    const solution: any[] = []
+    const solution = new PolyTree()
 
     try {
       co.Execute(solution, delta * scale)
@@ -351,7 +355,7 @@ export default class Path {
 
   public connectEnds(diameter: number) {
     for (let i = this.subPaths.length - 1; i > 0; --i) {
-      let sp1 = this.subPaths[i - 1]
+      const sp1 = this.subPaths[i - 1]
       let sp2 = this.subPaths[i]
 
       const p1 = sp1.lastPoint()

@@ -4,6 +4,7 @@
  * Thanks zz85!
  **/
 
+import { IntPoint } from './clipper_unminified'
 import Path from './Path'
 import Point from './Point'
 import { arcToPoints, samePos } from './utils/pathUtils'
@@ -196,10 +197,10 @@ export default class SubPath {
   }
 
   public nearestPoint(p1: Point) {
-    let p2 = new Point()
+    const p2 = new Point()
     let rn: number
     let rp: Point
-    let rd: number = Infinity
+    let rd = Infinity
 
     this.actions.forEach((action, n) => {
       switch (action.type) {
@@ -294,7 +295,7 @@ export default class SubPath {
     this.addAction({ type: 'ELLIPSE', args })
   }
 
-  public getPoints(divisions: number = 40): Point[] {
+  public getPoints(divisions = 40): Point[] {
     // TODO: I don't understand what this does
     // if (this.pointsCache[divisions]) return this.pointsCache[divisions]
 
@@ -427,7 +428,7 @@ export default class SubPath {
 
   public toPoly(scale: number, divisions?: number) {
     return this.getPoints(divisions).map((p) => {
-      return { X: p.x * scale, Y: p.y * scale }
+      return new IntPoint(p.x * scale, p.y * scale)
     })
   }
 
@@ -453,7 +454,7 @@ export default class SubPath {
     if (this.isClosed()) return
 
     const curStart = this.actions[0].args
-    this.lineTo.apply(this, curStart)
+    this.lineTo(curStart[0], curStart[1])
   }
   public reverse() {
     const result = new SubPath()

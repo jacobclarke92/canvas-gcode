@@ -1,12 +1,12 @@
-import { DoublePoint } from './DoublePoint'
 import { ClipperLib } from '.'
 import { Clipper } from './Clipper'
+import { DoublePoint } from './DoublePoint'
 
 export class IntPoint {
   public X: number
   public Y: number
   public Z: number
-  constructor(...args: [] | [dp: DoublePoint] | [x: number, y: number] | [x: number, y: number, z: number]) {
+  constructor(...args: [] | [dp: DoublePoint | IntPoint] | [x: number, y: number] | [x: number, y: number, z: number]) {
     this.X = 0
     this.Y = 0
 

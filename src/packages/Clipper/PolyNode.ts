@@ -1,13 +1,14 @@
 import { Path } from './Path'
 
-export class PolyNode {
-  protected m_Parent: PolyNode | null = null
-  protected m_polygon: Path = new Path()
-  protected m_Index = 0
-  protected m_jointype = 0
-  protected m_endtype = 0
-  protected m_Childs: Array<PolyNode> = []
-  protected IsOpen = false
+// TODO: NOT SURE IF extends Array<self> is correct
+export class PolyNode extends Array<PolyNode> {
+  public m_Parent: PolyNode | null = null
+  public m_polygon: Path = new Path()
+  public m_Index = 0
+  public m_jointype = 0
+  public m_endtype = 0
+  public m_Childs: PolyNode[] = []
+  public IsOpen = false
 
   public IsHoleNode() {
     let result = true
@@ -59,7 +60,7 @@ export class PolyNode {
 }
 
 export class PolyTree extends PolyNode {
-  protected m_AllPolys: PolyNode[] = []
+  public m_AllPolys: PolyNode[] = []
 
   public Clear() {
     for (let i = 0, len = this.m_AllPolys.length; i < len; i++) this.m_AllPolys[i] = null

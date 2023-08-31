@@ -1,5 +1,6 @@
 import { EdgeSide, PolyType } from './enums'
 import { IntPoint } from './IntPoint'
+import type { LocalMinima } from './Misc'
 
 export class TEdge {
   public Bot = new IntPoint()
@@ -20,4 +21,5 @@ export class TEdge {
   public PrevInAEL: TEdge | null = null
   public NextInSEL: TEdge | null = null
   public PrevInSEL: TEdge | null = null
+  public v: TEdge | null = null
 }

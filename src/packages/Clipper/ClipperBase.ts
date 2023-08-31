@@ -1,8 +1,11 @@
 import { Int128 } from '../BigInteger'
 import { ClipperLib } from '.'
 import { PolyType } from './enums'
+import { IntersectNode } from './IntersectNode'
 import { IntPoint } from './IntPoint'
+import type { OutPt } from './Misc'
 import { LocalMinima, OutRec, Scanbeam } from './Misc'
+import type { Path, Paths } from './Path'
 import type { TEdge } from './TEdge'
 
 export class ClipperBase {
@@ -37,7 +40,7 @@ export class ClipperBase {
     return e.Delta.Y === 0
   }
 
-  public PointIsVertex(pt: IntPoint, pp: dunno) {
+  public PointIsVertex(pt: IntPoint, pp: OutPt) {
     let pp2 = pp
     do {
       if (IntPoint.op_Equality(pp2.Pt, pt)) return true
@@ -68,7 +71,7 @@ export class ClipperBase {
       )
   }
 
-  public PointOnPolygon(pt: IntPoint, pp: dunno, UseFullRange: boolean) {
+  public PointOnPolygon(pt: IntPoint, pp: OutPt, UseFullRange: boolean) {
     let pp2 = pp
     while (true) {
       if (this.PointOnLineSegment(pt, pp2.Pt, pp2.Next.Pt, UseFullRange)) return true
@@ -121,7 +124,7 @@ export class ClipperBase {
 
   public Clear() {
     this.DisposeLocalMinimaList()
-    for (let i = 0, ilen = this.m_edges.length; i < ilen; ++i) {
+    for (let i = 0, len = this.m_edges.length; i < len; ++i) {
       for (let j = 0, jlen = this.m_edges[i].length; j < jlen; ++j) this.m_edges[i][j] = null
       ClipperLib.Clear(this.m_edges[i])
     }
@@ -229,7 +232,7 @@ export class ClipperBase {
         if (LeftBoundIsForward) Result = E.Next
         else Result = E.Prev
       } else {
-        //there are more edges in the bound beyond result starting with E
+        // there are more edges in the bound beyond result starting with E
         if (LeftBoundIsForward) E = Result.Next
         else E = Result.Prev
         const locMin = new LocalMinima()
@@ -298,7 +301,7 @@ export class ClipperBase {
     return Result
   }
 
-  public AddPath(pg: dunno[], polyType: PolyType, Closed: boolean) {
+  public AddPath(pg: Path, polyType: PolyType, Closed: boolean) {
     if (ClipperLib.use_lines) {
       if (!Closed && polyType === PolyType.ptClip) ClipperLib.Error('AddPath: Open paths must be subject.')
     } else {
@@ -446,7 +449,7 @@ export class ClipperBase {
       else if (locMin.LeftBound.Next === locMin.RightBound) locMin.LeftBound.WindDelta = -1
       else locMin.LeftBound.WindDelta = 1
 
-      locMin.RightBound.WindDelta = -locMin.LeftBound.WindDelta
+      locMin.RightBound.WindDelta = -locMin.LeftBound.WindDelta as 1 | 0 | -1
       E = this.ProcessBound(locMin.LeftBound, leftBoundIsForward)
 
       if (E.OutIdx === ClipperBase.Skip) E = this.ProcessBound(E, leftBoundIsForward)
@@ -463,11 +466,11 @@ export class ClipperBase {
     return true
   }
 
-  public AddPaths(ppg: dunno[], polyType: PolyType, closed: boolean) {
+  public AddPaths(ppg: Paths, polyType: PolyType, closed: boolean) {
     //  console.log("-------------------------------------------");
     //  console.log(JSON.stringify(ppg));
     let result = false
-    for (let i = 0, ilen = ppg.length; i < ilen; ++i) {
+    for (let i = 0, len = ppg.length; i < len; ++i) {
       if (this.AddPath(ppg[i], polyType, closed)) result = true
     }
     return result
@@ -511,7 +514,7 @@ export class ClipperBase {
     }
   }
 
-  public PopLocalMinima(Y: number, current) {
+  public PopLocalMinima(Y: number, current: LocalMinima) {
     current.v = this.m_CurrentLM
     if (this.m_CurrentLM !== null && this.m_CurrentLM.Y === Y) {
       this.m_CurrentLM = this.m_CurrentLM.Next
@@ -591,7 +594,7 @@ export class ClipperBase {
     }
   }
 
-  public PopScanbeam(Y) {
+  public PopScanbeam(Y: Scanbeam) {
     if (this.m_Scanbeam === null) {
       Y.v = 0
       return false
