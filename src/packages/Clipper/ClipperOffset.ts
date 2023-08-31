@@ -5,8 +5,7 @@ import { DoublePoint } from './DoublePoint'
 import { ClipType, EndType, JoinType, PolyFillType, PolyType } from './enums'
 import { IntPoint } from './IntPoint'
 import { Path, Paths } from './Path'
-import type { PolygonTree } from './PolygonNode'
-import { PolygonNode } from './PolygonNode'
+import { PolygonNode, PolygonTree } from './PolygonNode'
 
 export class ClipperOffset {
   protected destinationPolygons = new Paths()
@@ -262,34 +261,59 @@ export class ClipperOffset {
     }
   }
 
-  public execute(...args: [p: PolygonTree] | [solution: PolygonTree, delta: number]) {
-    const [solution, delta] = args
-    solution.clear()
-    this.fixOrientations()
-    this.doOffset(delta)
-    //now clean up 'corners' ...
-    const clipper = new Clipper(0)
-    clipper.addPaths(this.destinationPolygons, PolyType.subject, true)
-    if (delta > 0) {
-      clipper.execute(ClipType.union, solution, PolyFillType.positive, PolyFillType.positive)
+  public execute(...args: [p: PolygonTree | Paths] | [solution: PolygonTree | Paths, delta: number]) {
+    if (args[0] instanceof PolygonTree) {
+      const [solution, delta] = args
+      solution.clear()
+      this.fixOrientations()
+      this.doOffset(delta)
+      //now clean up 'corners' ...
+      const clipper = new Clipper(0)
+      clipper.addPaths(this.destinationPolygons, PolyType.subject, true)
+      if (delta > 0) {
+        clipper.execute(ClipType.union, solution, PolyFillType.positive, PolyFillType.positive)
+      } else {
+        const r = Clipper.getBounds(this.destinationPolygons)
+        const outer = new Path()
+        outer.push(new IntPoint(r.left - 10, r.bottom + 10))
+        outer.push(new IntPoint(r.right + 10, r.bottom + 10))
+        outer.push(new IntPoint(r.right + 10, r.top - 10))
+        outer.push(new IntPoint(r.left - 10, r.top - 10))
+        clipper.addPath(outer, PolyType.subject, true)
+        clipper.reverseSolution = true
+        clipper.execute(ClipType.union, solution, PolyFillType.negative, PolyFillType.negative)
+        //remove the outer PolyNode rectangle ...
+        if (solution.childCount() === 1 && solution.children[0].childCount() > 0) {
+          const outerNode = solution.children[0]
+          //solution.Childs.set_Capacity(outerNode.ChildCount);
+          solution.children[0] = outerNode.children[0]
+          solution.children[0].parent = solution
+          for (let i = 1; i < outerNode.childCount(); i++) solution.addChild(outerNode.children[i])
+        } else solution.clear()
+      }
     } else {
-      const r = Clipper.getBounds(this.destinationPolygons)
-      const outer = new Path()
-      outer.push(new IntPoint(r.left - 10, r.bottom + 10))
-      outer.push(new IntPoint(r.right + 10, r.bottom + 10))
-      outer.push(new IntPoint(r.right + 10, r.top - 10))
-      outer.push(new IntPoint(r.left - 10, r.top - 10))
-      clipper.addPath(outer, PolyType.subject, true)
-      clipper.reverseSolution = true
-      clipper.execute(ClipType.union, solution, PolyFillType.negative, PolyFillType.negative)
-      //remove the outer PolyNode rectangle ...
-      if (solution.childCount() === 1 && solution.children[0].childCount() > 0) {
-        const outerNode = solution.children[0]
-        //solution.Childs.set_Capacity(outerNode.ChildCount);
-        solution.children[0] = outerNode.children[0]
-        solution.children[0].parent = solution
-        for (let i = 1; i < outerNode.childCount(); i++) solution.addChild(outerNode.children[i])
-      } else solution.clear()
+      const [solution, delta] = args
+      ClipperLib.clear(solution)
+      this.fixOrientations()
+      this.doOffset(delta)
+      // now clean up 'corners' ...
+      const clipper = new Clipper(0)
+      clipper.addPaths(this.destinationPolygons, PolyType.subject, true)
+      if (delta > 0) {
+        clipper.execute(ClipType.union, solution, PolyFillType.positive, PolyFillType.positive)
+      } else {
+        const bounds = Clipper.getBounds(this.destinationPolygons)
+        const outer = new Path()
+        outer.push(new IntPoint(bounds.left - 10, bounds.bottom + 10))
+        outer.push(new IntPoint(bounds.right + 10, bounds.bottom + 10))
+        outer.push(new IntPoint(bounds.right + 10, bounds.top - 10))
+        outer.push(new IntPoint(bounds.left - 10, bounds.top - 10))
+        clipper.addPath(outer, PolyType.subject, true)
+        clipper.reverseSolution = true
+        clipper.execute(ClipType.union, solution, PolyFillType.negative, PolyFillType.negative)
+        if (solution.length > 0) solution.splice(0, 1)
+      }
+      //console.log(JSON.stringify(solution));
     }
   }
 
@@ -380,7 +404,7 @@ export class ClipperOffset {
   public doRound(j: number, k: number) {
     const a = Math.atan2(this.sinA, this.normals[k].x * this.normals[j].x + this.normals[k].y * this.normals[j].y)
 
-    const steps = Math.max(ClipperLib.Cast_Int32(ClipperOffset.round(this.stepsPerRad * Math.abs(a))), 1)
+    const steps = Math.max(ClipperLib.castInt32(ClipperOffset.round(this.stepsPerRad * Math.abs(a))), 1)
 
     let X = this.normals[k].x,
       Y = this.normals[k].y,

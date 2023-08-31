@@ -90,7 +90,7 @@ export class ClipperBase {
       const [e1, e2, UseFullRange] = args
       if (UseFullRange)
         return Int128.op_Equality(Int128.Int128Mul(e1.delta.y, e2.delta.x), Int128.Int128Mul(e1.delta.x, e2.delta.y))
-      else return ClipperLib.Cast_Int64(e1.delta.y * e2.delta.x) === ClipperLib.Cast_Int64(e1.delta.x * e2.delta.y)
+      else return ClipperLib.castInt64(e1.delta.y * e2.delta.x) === ClipperLib.castInt64(e1.delta.x * e2.delta.y)
     } else if (args.length === 4) {
       const [pt1, pt2, pt3, UseFullRange] = args
       if (UseFullRange)
@@ -100,8 +100,8 @@ export class ClipperBase {
         )
       else
         return (
-          ClipperLib.Cast_Int64((pt1.y - pt2.y) * (pt2.x - pt3.x)) -
-            ClipperLib.Cast_Int64((pt1.x - pt2.x) * (pt2.y - pt3.y)) ===
+          ClipperLib.castInt64((pt1.y - pt2.y) * (pt2.x - pt3.x)) -
+            ClipperLib.castInt64((pt1.x - pt2.x) * (pt2.y - pt3.y)) ===
           0
         )
     } else {
@@ -113,8 +113,8 @@ export class ClipperBase {
         )
       else
         return (
-          ClipperLib.Cast_Int64((pt1.y - pt2.y) * (pt3.x - pt4.x)) -
-            ClipperLib.Cast_Int64((pt1.x - pt2.x) * (pt3.y - pt4.y)) ===
+          ClipperLib.castInt64((pt1.y - pt2.y) * (pt3.x - pt4.x)) -
+            ClipperLib.castInt64((pt1.x - pt2.x) * (pt3.y - pt4.y)) ===
           0
         )
     }

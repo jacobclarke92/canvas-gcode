@@ -114,7 +114,7 @@ export class Clipper extends ClipperBase {
   ): boolean {
     if (args.length === 4 && !(args[1] instanceof PolygonTree)) {
       if (this.executeLocked) return false
-      if (this.hasOpenPaths) ClipperLib.Error('Error: PolyTree struct is needed for open path clipping.')
+      if (this.hasOpenPaths) throw new Error('Error: PolyTree struct is needed for open path clipping.')
 
       const [clipType, solution, subjectFillType, clipFillType] = args
       this.executeLocked = true
@@ -1485,7 +1485,7 @@ export class Clipper extends ClipperBase {
     } catch ($$e2) {
       this.sortedEdges = null
       this.intersectList.length = 0
-      ClipperLib.Error('ProcessIntersections error')
+      throw new Error('ProcessIntersections error')
     }
     this.sortedEdges = null
     return true
@@ -1773,7 +1773,7 @@ export class Clipper extends ClipperBase {
         edgeMaximaPair.outIndex = ClipperBase.UNASSIGNED
       }
       this.deleteFromAEL(edgeMaximaPair)
-    } else ClipperLib.Error('DoMaxima error')
+    } else throw new Error('DoMaxima error')
   }
 
   public static reversePaths(polys: Paths) {

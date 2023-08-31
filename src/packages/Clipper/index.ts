@@ -78,39 +78,33 @@ import { Path, Paths } from './Path'
 import { PolygonNode, PolygonTree } from './PolygonNode'
 import { TEdge } from './TEdge'
 
-// UseLines: Enables open path clipping. Adds a very minor cost to performance.
-const USE_LINES = true
-
-// ClipperLib.use_xyz: adds a Z member to IntPoint. Adds a minor cost to performance.
-const USE_XYZ = false
-
 export const ClipperLib = {
-  use_lines: USE_LINES,
-  USE_XYZ: USE_XYZ,
+  use_lines: true,
+  USE_XYZ: false,
   Path,
   Paths,
   DoublePoint,
-  PolygonNode: PolyNode,
-  PolygonTree: PolyTree,
-  Math_Abs_Int64: (a: number) => Math.abs(a),
-  Math_Abs_Int32: (a: number) => Math.abs(a),
-  Math_Abs_Double: (a: number) => Math.abs(a),
-  Math_Max_Int32_Int32: (a: number, b: number) => Math.max(a, b),
+  PolygonNode,
+  PolygonTree,
+  mathAbsInt64: (a: number) => Math.abs(a),
+  mathAbsInt32: (a: number) => Math.abs(a),
+  mathAbsDouble: (a: number) => Math.abs(a),
+  mathMaxInt32Int32: (a: number, b: number) => Math.max(a, b),
   // http://jsperf.com/truncate-float-to-integer/2
-  Cast_Int32: (a: number) => (browser.msie || browser.opera || browser.safari ? a | 0 : ~~a),
+  castInt32: (a: number) => (browser.msie || browser.opera || browser.safari ? a | 0 : ~~a),
   PI: 3.141592653589793,
   PI2: 2 * 3.141592653589793,
   clear: <T extends Array<any>>(a: T) => {
     a.length = 0
   },
-  // This originally had a bunch of browser specific optimizations but i just opted for the chrome one
+  // Jacob: This originally had a bunch of browser specific optimizations but i just opted for the chrome one
   // http://jsperf.com/truncate-float-to-integer
-  Cast_Int64: (a: number) => {
+  castInt64: (a: number) => {
     if (a < -2147483648 || a > 2147483647) return a < 0 ? Math.ceil(a) : Math.floor(a)
     else return ~~a
   },
   IntPoint,
-  IntRectangle: IntRect,
+  IntRectangle,
   ClipType,
   PolyType,
   PolyFillType,
@@ -124,20 +118,12 @@ export const ClipperLib = {
   LocalMinima,
   Scanbeam,
   Maxima,
-  OuterRectangle: OutRec,
-  OuterPoint: OutPt,
+  OuterRectangle,
+  OuterPoint,
   Join,
   ClipperBase,
   Clipper,
   ClipperOffset,
-  Error: (message: string) => {
-    try {
-      throw new Error(message)
-    } catch (err) {
-      alert(err.message)
-    }
-  },
-  JS: {},
 }
 
 // ---------------------------------------------
@@ -145,27 +131,17 @@ export const ClipperLib = {
 // JS extension by Timo 2013
 // ClipperLib.JS = {}
 
-ClipperLib.JS.AreaOfPolygon = function (poly, scale) {
-  if (!scale) scale = 1
-  return ClipperLib.Clipper.area(poly) / (scale * scale)
-}
+export const areaOfPolygon = (polygon: Path, scale?: number) =>
+  typeof scale !== 'number' ? 1 : Clipper.area(polygon) / (scale * scale)
 
-ClipperLib.JS.AreaOfPolygons = function (poly, scale) {
-  if (!scale) scale = 1
-  var area = 0
-  for (var i = 0; i < poly.length; i++) {
-    area += ClipperLib.Clipper.area(poly[i])
-  }
-  return area / (scale * scale)
-}
+export const areaOfPolygons = (polygons: Paths, scale?: number) =>
+  typeof scale !== 'number' ? 0 : polygons.reduce((area, polygon) => area + areaOfPolygon(polygon, scale), 0)
 
-ClipperLib.JS.BoundsOfPath = function (path, scale) {
-  return ClipperLib.JS.BoundsOfPaths([path], scale)
-}
+export const boundsOfPath = (path: Path, scale?: number) => boundsOfPaths([path], scale)
 
-ClipperLib.JS.BoundsOfPaths = function (paths, scale) {
+export const boundsOfPaths = (paths: Paths, scale?: number) => {
   if (!scale) scale = 1
-  var bounds = ClipperLib.Clipper.getBounds(paths)
+  const bounds = Clipper.getBounds(paths)
   bounds.left /= scale
   bounds.bottom /= scale
   bounds.right /= scale
@@ -175,21 +151,20 @@ ClipperLib.JS.BoundsOfPaths = function (paths, scale) {
 
 // Clean() joins vertices that are too near each other
 // and causes distortion to offsetted polygons without cleaning
-ClipperLib.JS.Clean = function (polygon, delta) {
-  if (!(polygon instanceof Array)) return []
-  var isPolygons = polygon[0] instanceof Array
-  var polygon = ClipperLib.JS.Clone(polygon)
-  if (typeof delta !== 'number' || delta === null) {
-    ClipperLib.Error('Delta is not a number in Clean().')
-    return polygon
-  }
-  if (polygon.length === 0 || (polygon.length === 1 && polygon[0].length === 0) || delta < 0) return polygon
-  if (!isPolygons) polygon = [polygon]
-  var k_length = polygon.length
-  var len, poly, result, d, p, j, i
-  var results = []
-  for (var k = 0; k < k_length; k++) {
-    poly = polygon[k]
+export function clean(polygonOrPolygons: Path): Path
+export function clean(polygonOrPolygons: Paths): Paths
+export function clean(polygonOrPolygons: Path | Paths, delta?: number) {
+  if (typeof delta !== 'number') throw new Error('Delta is not a number in Clean().')
+  if (!(polygonOrPolygons instanceof Array)) throw new Error('Polygon is not a Path in Clean().')
+  const isPolygons = polygonOrPolygons[0] instanceof Array
+  const polygons = isPolygons ? clone(polygonOrPolygons as Paths) : new Paths([clone(polygonOrPolygons as Path)])
+  if (polygons.length === 0 || (polygons.length === 1 && polygons[0].length === 0) || delta < 0)
+    return polygonOrPolygons
+
+  let len: number, poly: Path, result: Path, d: number, p: IntPoint, j: number, i: number
+  const results = new Paths()
+  for (let k = 0; k < polygons.length; k++) {
+    poly = polygons[k]
     len = poly.length
     if (len === 0) continue
     else if (len < 3) {
@@ -199,117 +174,123 @@ ClipperLib.JS.Clean = function (polygon, delta) {
     }
     result = poly
     d = delta * delta
-    //d = Math.floor(c_delta * c_delta);
+    // d = Math.floor(c_delta * c_delta);
     p = poly[0]
     j = 1
     for (i = 1; i < len; i++) {
-      if ((poly[i].X - p.X) * (poly[i].X - p.X) + (poly[i].Y - p.Y) * (poly[i].Y - p.Y) <= d) continue
+      if ((poly[i].x - p.x) * (poly[i].x - p.x) + (poly[i].y - p.y) * (poly[i].y - p.y) <= d) continue
       result[j] = poly[i]
       p = poly[i]
       j++
     }
     p = poly[j - 1]
-    if ((poly[0].X - p.X) * (poly[0].X - p.X) + (poly[0].Y - p.Y) * (poly[0].Y - p.Y) <= d) j--
+    if ((poly[0].x - p.x) * (poly[0].x - p.x) + (poly[0].y - p.y) * (poly[0].y - p.y) <= d) j--
     if (j < len) result.splice(j, len - j)
     if (result.length) results.push(result)
   }
-  if (!isPolygons && results.length) results = results[0]
-  else if (!isPolygons && results.length === 0) results = []
-  else if (isPolygons && results.length === 0) results = [[]]
+  if (!isPolygons) return results[0]
   return results
 }
+
 // Make deep copy of Polygons or Polygon
 // so that also IntPoint objects are cloned and not only referenced
 // This should be the fastest way
-ClipperLib.JS.Clone = function (polygon) {
-  if (!(polygon instanceof Array)) return []
-  if (polygon.length === 0) return []
-  else if (polygon.length === 1 && polygon[0].length === 0) return [[]]
-  var isPolygons = polygon[0] instanceof Array
-  if (!isPolygons) polygon = [polygon]
-  var len = polygon.length,
-    plen,
-    i,
-    j,
-    result
-  var results = new Array(len)
-  for (i = 0; i < len; i++) {
-    plen = polygon[i].length
-    result = new Array(plen)
-    for (j = 0; j < plen; j++) {
-      result[j] = {
-        X: polygon[i][j].X,
-        Y: polygon[i][j].Y,
-      }
+
+export function clone(polygonOrPolygons: Path): Path
+export function clone(polygonOrPolygons: Paths): Paths
+export function clone(polygonOrPolygons: Paths | Path) {
+  if (!(polygonOrPolygons instanceof Array)) throw new Error('clone() only works with Path or Paths.')
+  if (polygonOrPolygons.length === 0) return new Path()
+  const isPolygons = polygonOrPolygons[0] instanceof Array
+  const polygons = isPolygons ? (polygonOrPolygons as Paths) : new Paths([polygonOrPolygons as Path])
+  if (polygons.length === 1 && polygons[0].length === 0) return new Paths()
+  let polygonPathLength: number, result: Path
+
+  const results = new Paths(polygons.length)
+  for (let i = 0; i < polygons.length; i++) {
+    polygonPathLength = polygons[i].length
+    result = new Path(polygonPathLength)
+    for (let j = 0; j < polygonPathLength; j++) {
+      result[j] = new IntPoint(polygons[i][j].x, polygons[i][j].y)
     }
     results[i] = result
   }
-  if (!isPolygons) results = results[0]
+  if (!isPolygons) return results[0]
   return results
 }
 
 // Removes points that doesn't affect much to the visual appearance.
 // If middle point is at or under certain distance (tolerance) of the line segment between
 // start and end point, the middle point is removed.
-ClipperLib.JS.Lighten = function (polygon, tolerance) {
-  if (!(polygon instanceof Array)) return []
-  if (typeof tolerance !== 'number' || tolerance === null) {
-    ClipperLib.Error('Tolerance is not a number in Lighten().')
-    return ClipperLib.JS.Clone(polygon)
-  }
-  if (polygon.length === 0 || (polygon.length === 1 && polygon[0].length === 0) || tolerance < 0) {
-    return ClipperLib.JS.Clone(polygon)
-  }
-  var isPolygons = polygon[0] instanceof Array
-  if (!isPolygons) polygon = [polygon]
-  var i, j, poly, k, poly2, plen, A, B, P, d, rem, addlast
-  var bxax, byay, l, ax, ay
-  var len = polygon.length
-  var toleranceSq = tolerance * tolerance
-  var results = []
+export function lighten(polygon: Path, tolerance: number): Path
+export function lighten(polygons: Paths, tolerance: number): Paths
+export function lighten(polygonOrPolygons: Path | Paths, tolerance: number) {
+  if (!(polygonOrPolygons instanceof Array)) throw new Error('lighten provided neither Path or Paths')
+  if (typeof tolerance !== 'number') throw new Error('Tolerance is not a number in Lighten().')
+  if (polygonOrPolygons.length === 0) return new Path()
+  const isPolygons = polygonOrPolygons[0] instanceof Array
+  const polygons = isPolygons ? (polygonOrPolygons as Paths) : new Paths([polygonOrPolygons as Path])
+  if (polygons.length === 1 && polygons[0].length === 0) return new Paths()
+
+  let i: number,
+    j: number,
+    polygon: Path,
+    k: number,
+    polygon2: Path,
+    pLen: number,
+    A: IntPoint,
+    B: IntPoint,
+    P: IntPoint,
+    d: number,
+    rem: number[],
+    addLast: number
+  let bxax: number, byay: number, l: number, ax: number, ay: number
+  const len = polygons.length
+  const toleranceSq = tolerance * tolerance
+  const results = new Paths()
   for (i = 0; i < len; i++) {
-    poly = polygon[i]
-    plen = poly.length
-    if (plen === 0) continue
+    polygon = polygons[i]
+    pLen = polygon.length
+    if (pLen === 0) continue
     for (
       k = 0;
       k < 1000000;
       k++ // could be forever loop, but wiser to restrict max repeat count
     ) {
-      poly2 = []
-      plen = poly.length
+      polygon2 = new Path()
+      pLen = polygon.length
       // the first have to added to the end, if first and last are not the same
       // this way we ensure that also the actual last point can be removed if needed
-      if (poly[plen - 1].X !== poly[0].X || poly[plen - 1].Y !== poly[0].Y) {
-        addlast = 1
-        poly.push({
-          X: poly[0].X,
-          Y: poly[0].Y,
+      if (polygon[pLen - 1].x !== polygon[0].x || polygon[pLen - 1].y !== polygon[0].y) {
+        addLast = 1
+        polygon.push({
+          X: polygon[0].x,
+          Y: polygon[0].y,
         })
-        plen = poly.length
-      } else addlast = 0
+        pLen = polygon.length
+      } else addLast = 0
       rem = [] // Indexes of removed points
-      for (j = 0; j < plen - 2; j++) {
-        A = poly[j] // Start point of line segment
-        P = poly[j + 1] // Middle point. This is the one to be removed.
-        B = poly[j + 2] // End point of line segment
-        ax = A.X
-        ay = A.Y
-        bxax = B.X - ax
-        byay = B.Y - ay
+      for (j = 0; j < pLen - 2; j++) {
+        A = polygon[j] // Start point of line segment
+        P = polygon[j + 1] // Middle point. This is the one to be removed.
+        B = polygon[j + 2] // End point of line segment
+        ax = A.x
+        ay = A.y
+        bxax = B.x - ax
+        byay = B.y - ay
         if (bxax !== 0 || byay !== 0) {
           // To avoid Nan, when A==P && P==B. And to avoid peaks (A==B && A!=P), which have lenght, but not area.
-          l = ((P.X - ax) * bxax + (P.Y - ay) * byay) / (bxax * bxax + byay * byay)
+          l = ((P.x - ax) * bxax + (P.y - ay) * byay) / (bxax * bxax + byay * byay)
           if (l > 1) {
-            ax = B.X
-            ay = B.Y
+            ax = B.x
+            ay = B.y
           } else if (l > 0) {
             ax += bxax * l
             ay += byay * l
           }
         }
-        bxax = P.X - ax
-        byay = P.Y - ay
+        bxax = P.x - ax
+        byay = P.y - ay
         d = bxax * bxax + byay * byay
         if (d <= toleranceSq) {
           rem[j + 1] = 1
@@ -317,56 +298,40 @@ ClipperLib.JS.Lighten = function (polygon, tolerance) {
         }
       }
       // add all unremoved points to poly2
-      poly2.push({
-        X: poly[0].X,
-        Y: poly[0].Y,
-      })
-      for (j = 1; j < plen - 1; j++)
-        if (!rem[j])
-          poly2.push({
-            X: poly[j].X,
-            Y: poly[j].Y,
-          })
-      poly2.push({
-        X: poly[plen - 1].X,
-        Y: poly[plen - 1].Y,
-      })
+      polygon2.push(new IntPoint(polygon[0].x, polygon[0].y))
+      for (j = 1; j < pLen - 1; j++) if (!rem[j]) polygon2.push(new IntPoint(polygon[j].x, polygon[j].y))
+      polygon2.push(new IntPoint(polygon[pLen - 1].x, polygon[pLen - 1].y))
       // if the first point was added to the end, remove it
-      if (addlast) poly.pop()
+      if (addLast) polygon.pop()
       // break, if there was not anymore removed points
       if (!rem.length) break
       // else continue looping using poly2, to check if there are points to remove
-      else poly = poly2
+      else polygon = polygon2
     }
-    plen = poly2.length
+    pLen = polygon2.length
     // remove duplicate from end, if needed
-    if (poly2[plen - 1].X === poly2[0].X && poly2[plen - 1].Y === poly2[0].Y) {
-      poly2.pop()
+    if (polygon2[pLen - 1].x === polygon2[0].x && polygon2[pLen - 1].y === polygon2[0].y) {
+      polygon2.pop()
     }
-    if (poly2.length > 2)
+    if (polygon2.length > 2)
       // to avoid two-point-polygons
-      results.push(poly2)
+      results.push(polygon2)
   }
-  if (!isPolygons) {
-    results = results[0]
-  }
-  if (typeof results === 'undefined') {
-    results = []
-  }
+  if (!isPolygons) results[0]
   return results
 }
 
-ClipperLib.JS.PerimeterOfPath = function (path, closed, scale) {
+export function perimeterOfPath(path: Path, closed: boolean, scale?: number) {
   if (typeof path === 'undefined') return 0
-  var sqrt = Math.sqrt
-  var perimeter = 0.0
-  var p1,
-    p2,
+  const sqrt = Math.sqrt
+  let perimeter = 0.0
+  let p1: IntPoint,
+    p2: IntPoint,
     p1x = 0.0,
     p1y = 0.0,
     p2x = 0.0,
     p2y = 0.0
-  var j = path.length
+  let j = path.length
   if (j < 2) return 0
   if (closed) {
     path[j] = path[0]
@@ -374,117 +339,108 @@ ClipperLib.JS.PerimeterOfPath = function (path, closed, scale) {
   }
   while (--j) {
     p1 = path[j]
-    p1x = p1.X
-    p1y = p1.Y
+    p1x = p1.x
+    p1y = p1.y
     p2 = path[j - 1]
-    p2x = p2.X
-    p2y = p2.Y
+    p2x = p2.x
+    p2y = p2.y
     perimeter += sqrt((p1x - p2x) * (p1x - p2x) + (p1y - p2y) * (p1y - p2y))
   }
   if (closed) path.pop()
   return perimeter / scale
 }
 
-ClipperLib.JS.PerimeterOfPaths = function (paths, closed, scale) {
-  if (!scale) scale = 1
-  var perimeter = 0
-  for (var i = 0; i < paths.length; i++) {
-    perimeter += ClipperLib.JS.PerimeterOfPath(paths[i], closed, scale)
+export function perimeterOfPaths(paths: Paths, closed: boolean, scale = 1) {
+  let perimeter = 0
+  for (let i = 0; i < paths.length; i++) {
+    perimeter += perimeterOfPath(paths[i], closed, scale)
   }
   return perimeter
 }
 
-ClipperLib.JS.ScaleDownPath = function (path, scale) {
-  var i, p
-  if (!scale) scale = 1
+export function scaleDownPath(path: Path, scale = 1) {
+  let i: number, p: IntPoint
   i = path.length
   while (i--) {
     p = path[i]
-    p.X = p.X / scale
-    p.Y = p.Y / scale
+    p.x = p.x / scale
+    p.y = p.y / scale
   }
 }
 
-ClipperLib.JS.ScaleDownPaths = function (paths, scale) {
-  var i, j, p
-  if (!scale) scale = 1
+export function scaleDownPaths(paths: Paths, scale = 1) {
+  let i: number, j: number, p: IntPoint
   i = paths.length
   while (i--) {
     j = paths[i].length
     while (j--) {
       p = paths[i][j]
-      p.X = p.X / scale
-      p.Y = p.Y / scale
+      p.x = p.x / scale
+      p.y = p.y / scale
     }
   }
 }
 
-ClipperLib.JS.ScaleUpPath = function (path, scale) {
-  var i,
-    p,
+export function scaleUpPath(path: Path, scale = 1) {
+  let i: number,
+    p: IntPoint,
     round = Math.round
-  if (!scale) scale = 1
   i = path.length
   while (i--) {
     p = path[i]
-    p.X = round(p.X * scale)
-    p.Y = round(p.Y * scale)
+    p.x = round(p.x * scale)
+    p.y = round(p.y * scale)
   }
 }
 
-ClipperLib.JS.ScaleUpPaths = function (paths, scale) {
-  var i,
-    j,
-    p,
+export function scaleUpPaths(paths: Paths, scale = 1) {
+  let i: number,
+    j: number,
+    p: IntPoint,
     round = Math.round
-  if (!scale) scale = 1
   i = paths.length
   while (i--) {
     j = paths[i].length
     while (j--) {
       p = paths[i][j]
-      p.X = round(p.X * scale)
-      p.Y = round(p.Y * scale)
+      p.x = round(p.x * scale)
+      p.y = round(p.y * scale)
     }
   }
 }
 
-/**
- * @constructor
- */
-ClipperLib.ExPolygons = function () {
+/*
+ClipperLib.ExPolygons = () => {
   return []
 }
-/**
- * @constructor
- */
-ClipperLib.ExPolygon = function () {
+
+ClipperLib.ExPolygon = () => {
   this.outer = null
   this.holes = null
 }
 
-ClipperLib.JS.AddOuterPolyNodeToExPolygons = function (polynode, expolygons) {
-  var ep = new ClipperLib.ExPolygon()
+export function AddOuterPolyNodeToExPolygons(polynode, expolygons) {
+  const ep = new ClipperLib.ExPolygon()
   ep.outer = polynode.Contour()
-  var childs = polynode.Childs()
-  var ilen = childs.length
+  const childs = polynode.Childs()
+  const ilen = childs.length
   ep.holes = new Array(ilen)
-  var node, n, i, j, childs2, jlen
+  let node, n, i, j, childs2, jlen
   for (i = 0; i < ilen; i++) {
     node = childs[i]
     ep.holes[i] = node.Contour()
     //Add outer polygons contained by (nested within) holes ...
     for (j = 0, childs2 = node.Childs(), jlen = childs2.length; j < jlen; j++) {
       n = childs2[j]
-      ClipperLib.JS.AddOuterPolyNodeToExPolygons(n, expolygons)
+      export function AddOuterPolyNodeToExPolygons expoly )
     }
   }
   expolygons.push(ep)
 }
 
-ClipperLib.JS.ExPolygonsToPaths = function (expolygons) {
-  var a, i, alen, ilen
-  var paths = new ClipperLib.Paths()
+export function ExPolygonsToPaths(expolygons) {
+  let a, i, alen, ilen
+  const paths = new ClipperLib.Paths()
   for (a = 0, alen = expolygons.length; a < alen; a++) {
     paths.push(expolygons[a].outer)
     for (i = 0, ilen = expolygons[a].holes.length; i < ilen; i++) {
@@ -493,12 +449,13 @@ ClipperLib.JS.ExPolygonsToPaths = function (expolygons) {
   }
   return paths
 }
-ClipperLib.JS.PolyTreeToExPolygons = function (polytree) {
-  var expolygons = new ClipperLib.ExPolygons()
-  var node, i, childs, ilen
+export function PolyTreeToExPolygons(polytree) {
+  const expolygons = new ClipperLib.ExPolygons()
+  let node, i, childs, ilen
   for (i = 0, childs = polytree.Childs(), ilen = childs.length; i < ilen; i++) {
     node = childs[i]
-    ClipperLib.JS.AddOuterPolyNodeToExPolygons(node, expolygons)
+    export function AddOuterPolyNodeToExPolygonsde, expoly )
   }
   return expolygons
 }
+*/
