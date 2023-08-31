@@ -31,8 +31,8 @@ export default class Tree extends Sketch {
     this.vs.maxBranchLevels = new Range({ initialValue: 14, min: 1, max: 24, step: 1, disableRandomize: true })
   }
 
-  private branchLevel: number = 0
-  private drawnCurrentStems: number = 0
+  private branchLevel = 0
+  private drawnCurrentStems = 0
   private currentStems: Stem[] = []
   private nextStems: Stem[] = []
 

@@ -8,7 +8,7 @@ import Range from './tools/Range'
 export default class Arcs extends Sketch {
   osc: Osc
   circlePoints: Point[]
-  count: number = 0
+  count = 0
   lastPoint: Point
 
   init() {

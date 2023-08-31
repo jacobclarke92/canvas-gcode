@@ -1,4 +1,4 @@
-import Point from '../Point'
+import type Point from '../Point'
 import { Sketch } from '../Sketch'
 import Range from './tools/Range'
 
@@ -46,5 +46,7 @@ export default class GridWaves extends Sketch {
     }
   }
 
-  draw(increment: number): void {}
+  draw(increment: number): void {
+    //
+  }
 }

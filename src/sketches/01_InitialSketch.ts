@@ -1,5 +1,5 @@
 import { Sketch } from '../Sketch'
-import { Vector } from '../types'
+import type { Vector } from '../types'
 import { randFloat, randInt, randIntRange, wrap } from '../utils/numberUtils'
 import Range from './tools/Range'
 

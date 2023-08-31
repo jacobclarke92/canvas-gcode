@@ -1,6 +1,6 @@
 import Point from '../Point'
 import { Sketch } from '../Sketch'
-import { Line } from '../types'
+import type { Line } from '../types'
 import { getLineIntersectionPoints } from '../utils/geomUtils'
 import { degToRad, randFloat, randFloatRange } from '../utils/numberUtils'
 import { lineToPoints, sameFloat } from '../utils/pathUtils'
@@ -127,7 +127,7 @@ export default class Perpendicularity extends Sketch {
     if (this.increment > this.vs.stopAfter.value) return
     const spawnPoints = [...this.nextSpawnPoints]
     this.nextSpawnPoints = []
-    for (let [pt, line] of spawnPoints) {
+    for (const [pt, line] of spawnPoints) {
       const angle = this.vs.offsetPerpAngle.value + randFloat(this.vs.offsetPerpAngleWonk.value)
       this.drawLineFromPointAtAngle(pt, line, angle)
     }
