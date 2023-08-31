@@ -1,6 +1,7 @@
 import type {
   AllCommandParams,
   ArcParams,
+  BezierCurveParams,
   EllipseParams,
   LinearParams,
   RapidParams,
@@ -91,6 +92,22 @@ export default class Motion {
 
     if (newPosition) this.position = newPosition
   }
+
+  /**
+   * I<pos> Offset from the X start point to first control point
+   * J<pos> Offset from the Y start point to first control point
+   * P<pos> Offset from the X end point to second control point
+   * Q<pos> Offset from the Y end point to the second control point
+   * X<pos> A destination coordinate on the X axis
+   * Y<pos> A destination coordinate on the Y axis
+   **/
+  /*
+  public bezierCurve(params: BezierCurveParams) {
+    this.ctx.driver.bezierCurve(params)
+    const newPosition = this.postProcess({ ...params, z: this.position.z || 0 })
+    if (newPosition) this.position = newPosition
+  }
+  */
 
   public postProcess(params: Partial<AllCommandParams>) {
     // Sync meta
@@ -275,6 +292,17 @@ export default class Motion {
         }
       },
       ['BEZIER_CURVE_TO' as BezierCurveToAction['type']]: (...args: BezierCurveToAction['args']) => {
+        /*if (this.ctx.driver.bezierCurve) {
+          // args: [aCP1x: number, aCP1y: number, aCP2x: number, aCP2y: number, aX: number, aY: number]
+          this.bezierCurve({
+            i: args[0] - this.position.x,
+            j: args[1] - this.position.y,
+            p: args[2] - this.position.x,
+            q: args[3] - this.position.y,
+            x: args[4],
+            y: args[5],
+          })
+        } else */
         interpolate(this, 'bezierCurveTo', args)
       },
       ['QUADRATIC_CURVE_TO' as QuadraticCurveToAction['type']]: (...args: QuadraticCurveToAction['args']) => {

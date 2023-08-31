@@ -1,4 +1,13 @@
-import type { AllCommandParams, ArcParams, DriverStream, LinearParams, RapidParams, Unit, ZeroParams } from './Driver'
+import type {
+  AllCommandParams,
+  ArcParams,
+  BezierCurveParams,
+  DriverStream,
+  LinearParams,
+  RapidParams,
+  Unit,
+  ZeroParams,
+} from './Driver'
 import Driver from './Driver'
 
 type Stream = {
@@ -27,7 +36,7 @@ export default class GCode extends Driver {
   public send(code: string, params?: Partial<AllCommandParams>) {
     let command = `${code}`
     if (params) {
-      const keys = 'xyzabcijkft'.split('') as (keyof AllCommandParams)[]
+      const keys = 'zabcijkfpqstxy'.split('') as (keyof AllCommandParams)[]
       keys.forEach((k) => {
         if (params[k] === undefined || params[k] === null || isNaN(params[k])) return
         command += ` ${k.toUpperCase()}${params[k]}`
@@ -78,6 +87,10 @@ export default class GCode extends Driver {
   public arcCCW(params: ArcParams) {
     this.send('G2', params)
   }
+  // this is not widely supported
+  // public bezierCurve(params: BezierCurveParams) {
+  //   this.send('G5', params)
+  // }
   public comment(string: string) {
     this.send(`(${string})`)
   }

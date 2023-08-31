@@ -32,7 +32,21 @@ export default class GCodeTest extends Sketch {
 
     this.ctx.driver.comment('Drawing arc')
     this.ctx.beginPath()
-    this.ctx.arc(70, 70, 5, Math.PI / 2, Math.PI, true)
+    this.ctx.arc(70, 50, 5, Math.PI / 2, -Math.PI * 0.75, true)
+    this.ctx.stroke()
+    this.ctx.closePath()
+
+    this.ctx.driver.comment('Drawing bezier curve')
+    this.ctx.beginPath()
+    this.ctx.moveTo(10, 60)
+    this.ctx.bezierCurveTo(20, 70, 30, 50, 40, 60)
+    this.ctx.stroke()
+    this.ctx.closePath()
+
+    this.ctx.driver.comment('Drawing quadratic curve')
+    this.ctx.beginPath()
+    this.ctx.moveTo(50, 30)
+    this.ctx.quadraticCurveTo(60, 60, 70, 30)
     this.ctx.stroke()
     this.ctx.closePath()
   }
