@@ -4,6 +4,7 @@ import type GCodeDriver from './drivers/GCodeDriver'
 import NullDriver from './drivers/NullDriver'
 import Matrix from './Matrix'
 import Motion from './Motion'
+import { ClipperLib } from './packages/Clipper'
 import type { Bounds, WindingRule } from './Path'
 import Path from './Path'
 import Point from './Point'
@@ -260,23 +261,21 @@ export default class GCanvas {
   public arcTo(_x1: number, _y1: number, _x2: number, _y2: number, radius: number) {
     // console.log(this.constructor.name, 'arcTo')
     // TODO: this doesn't mutate the arguments array yet
-    const { x: x1, y: y1 } = this.transformPoint([_x1, _y1])
-    const { x: x2, y: y2 } = this.transformPoint([_x2, _y2])
+    const pt1 = this.transformPoint([_x1, _y1])
+    const pt2 = this.transformPoint([_x2, _y2])
 
-    this.ensurePath(x1, y1)
+    this.ensurePath(pt1.x, pt1.y)
 
     const p0 = this.path.lastPoint() || new Point()
-    const p1 = new Point(x1, y1)
-    const p2 = new Point(x2, y2)
-    const v01 = p0.subtract(p1)
-    const v21 = p2.subtract(p1)
+    const v01 = p0.subtract(pt1)
+    const v21 = pt2.subtract(pt1)
 
     // sin(A - B) = sin(A) * cos(B) - sin(B) * cos(A)
     const cross = v01.x * v21.y - v01.y * v21.x
 
     if (Math.abs(cross) < 1e-10) {
       // on one line
-      this.lineTo(x1, y1)
+      this.lineTo(pt1.x, pt1.y)
       return
     }
 
@@ -286,29 +285,29 @@ export default class GCanvas {
     const span = radius * Math.tan(angle)
     let rate = span / d01
 
-    const startPoint = new Point(p1.x + v01.x * rate, p1.y + v01.y * rate)
+    const startPoint = new Point(pt1.x + v01.x * rate, pt1.y + v01.y * rate)
 
     rate = span / d21
 
-    const endPoint = new Point(p1.x + v21.x * rate, p1.y + v21.y * rate)
+    const endPoint = new Point(pt1.x + v21.x * rate, pt1.y + v21.y * rate)
 
     const midPoint = new Point((startPoint.x + endPoint.x) / 2, (startPoint.y + endPoint.y) / 2)
 
-    const vm1 = midPoint.subtract(p1)
+    const vm1 = midPoint.subtract(pt1)
     const dm1 = vm1.magnitude()
     const d = Math.sqrt(radius * radius + span * span)
 
     const centerPoint = new Point()
     rate = d / dm1
-    centerPoint.x = p1.x + vm1.x * rate
-    centerPoint.y = p1.y + vm1.y * rate
+    centerPoint.x = pt1.x + vm1.x * rate
+    centerPoint.y = pt1.y + vm1.y * rate
 
     const arc = pointsToArc(centerPoint, startPoint, endPoint)
 
     this.path.lineTo(startPoint.x, startPoint.y)
     this.path.arc(centerPoint.x, centerPoint.y, arc.radius, arc.start, arc.end, cross > 0)
 
-    this.ctx?.arcTo(x1, y1, x2, y2, radius)
+    this.ctx?.arcTo(pt1.x, pt1.y, pt2.x, pt2.y, radius)
   }
 
   public arc(...args: ArcAction['args']) {
@@ -317,7 +316,6 @@ export default class GCanvas {
     // In the conversion to points we lose the distinction
     // between 0 and pi2 so we must optimize out 0 here
     // or else they will be treated as full circles.
-
     if (aStartAngle - aEndAngle === 0) return
 
     // See portal2 example
@@ -526,6 +524,7 @@ export default class GCanvas {
       }
 
       if (path.subPaths) {
+        // ClipperLib.Clipper.simplifyPolygons ??? maybe
         path.subPaths.forEach((subPath) => {
           // Climb milling
           if (align == 'inner') subPath = subPath.reverse()

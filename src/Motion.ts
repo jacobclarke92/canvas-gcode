@@ -182,13 +182,7 @@ export default class Motion {
     let curLen = 0
     const totalLen = path.getLength()
     const zStart = this.position.z
-
-    function helix() {
-      const fullDelta = zEnd - zStart
-      const ratio = curLen / totalLen
-      const curDelta = fullDelta * ratio
-      return zStart + curDelta
-    }
+    const fullDelta = zEnd - zStart
 
     const pts = path.getPoints(40)
     for (let i = 0, l = pts.length; i < l; ++i) {
@@ -198,7 +192,7 @@ export default class Motion {
       const yo = p.y - this.position.y
       curLen += Math.sqrt(xo * xo + yo * yo)
 
-      this.linear({ x: p.x, y: p.y, z: helix() })
+      this.linear({ x: p.x, y: p.y, z: zStart + (curLen / totalLen) * fullDelta })
     }
   }
 
@@ -222,8 +216,7 @@ export default class Motion {
     function helix() {
       if (!ramping) return zEnd
 
-      // Avoid divide by 0 in case of
-      // a single moveTo action
+      // Avoid divide by 0 in case of a single moveTo action
       if (totalLen === 0) return 0
 
       const fullDelta = zEnd - zStart
@@ -233,16 +226,16 @@ export default class Motion {
       return zStart + curDelta
     }
 
-    function interpolate(name: keyof SubPath, args: any[]) {
+    function interpolate(motion: Motion, name: keyof SubPath, args: any[]) {
       const path = new SubPath()
-      path.moveTo(this.position.x, this.position.y)
+      path.moveTo(motion.position.x, motion.position.y)
       const func = path[name]
       if (typeof func === 'function') func.apply(path, args)
 
       const pts = path.getPoints(40)
       for (let i = 0, l = pts.length; i < l; ++i) {
         const p = pts[i]
-        this.linear({ x: p.x, y: p.y, z: helix() })
+        motion.linear({ x: p.x, y: p.y, z: helix() })
       }
     }
 
@@ -278,14 +271,14 @@ export default class Motion {
           }
           this.arc(params, ccw)
         } else {
-          interpolate('ellipse', args)
+          interpolate(this, 'ellipse', args)
         }
       },
       ['BEZIER_CURVE_TO' as BezierCurveToAction['type']]: (...args: BezierCurveToAction['args']) => {
-        interpolate('bezierCurveTo', args)
+        interpolate(this, 'bezierCurveTo', args)
       },
       ['QUADRATIC_CURVE_TO' as QuadraticCurveToAction['type']]: (...args: QuadraticCurveToAction['args']) => {
-        interpolate('quadraticCurveTo', args)
+        interpolate(this, 'quadraticCurveTo', args)
       },
     }
 
