@@ -1,12 +1,5 @@
-import Driver, {
-  AllCommandParams,
-  ArcParams,
-  DriverStream,
-  LinearParams,
-  RapidParams,
-  Unit,
-  ZeroParams,
-} from './Driver'
+import type { AllCommandParams, ArcParams, DriverStream, LinearParams, RapidParams, Unit, ZeroParams } from './Driver'
+import Driver from './Driver'
 
 type Stream = {
   write: (str: string) => void
@@ -20,7 +13,9 @@ export default class GCode extends Driver {
     super(stream)
     this.stream = stream || {
       write: (str) => console.log(str),
-      reset: () => {},
+      reset: () => {
+        //
+      },
     }
   }
 
@@ -78,17 +73,17 @@ export default class GCode extends Driver {
     this.send('G1', params)
   }
   public arcCW(params: ArcParams) {
-    this.send('G2', params)
+    this.send('G3', params)
   }
   public arcCCW(params: ArcParams) {
-    this.send('G3', params)
+    this.send('G2', params)
   }
   public comment(string: string) {
     this.send(`(${string})`)
   }
   public meta(params: { [key: string]: any }) {
     let comment = '('
-    for (var k in params) {
+    for (const k in params) {
       comment += `${k}=${params[k]}`
     }
     comment += ')'

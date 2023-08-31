@@ -29,5 +29,11 @@ export default class GCodeTest extends Sketch {
     if ('circle' in this.ctx) this.ctx.circle(40, 40, 5)
     this.ctx.stroke()
     this.ctx.closePath()
+
+    this.ctx.driver.comment('Drawing arc')
+    this.ctx.beginPath()
+    this.ctx.arc(70, 70, 5, Math.PI / 2, Math.PI, true)
+    this.ctx.stroke()
+    this.ctx.closePath()
   }
 }
