@@ -74,57 +74,9 @@ import { ClipType, Direction, EdgeSide, EndType, JoinType, PolyFillType, PolyTyp
 import { IntersectNode, MyIntersectNodeSort } from './IntersectNode'
 import { IntPoint } from './IntPoint'
 import { IntRectangle } from './IntRectangle'
-import { Join, LocalMinima, Maxima, OuterPoint, OuterRectangle, Scanbeam } from './Misc'
+import { Join, LocalMinimum, Maxima, OuterPoint, OuterRectangle, Scanbeam } from './Misc'
 import { Path, Paths } from './Path'
 import { PolygonNode, PolygonTree } from './PolygonNode'
-
-export const ClipperLib = {
-  use_lines: true,
-  USE_XYZ: false,
-  Path,
-  Paths,
-  DoublePoint,
-  PolygonNode,
-  PolygonTree,
-  mathAbsInt64: (a: number) => Math.abs(a),
-  mathAbsInt32: (a: number) => Math.abs(a),
-  mathAbsDouble: (a: number) => Math.abs(a),
-  mathMaxInt32Int32: (a: number, b: number) => Math.max(a, b),
-  // http://jsperf.com/truncate-float-to-integer/2
-  castInt32: (a: number) => (browser.msie || browser.opera || browser.safari ? a | 0 : ~~a),
-  PI: 3.141592653589793,
-  PI2: 2 * 3.141592653589793,
-  clear: <T extends Array<any>>(a: T) => {
-    a.length = 0
-  },
-  // Jacob: This originally had a bunch of browser specific optimizations but i just opted for the chrome one
-  // http://jsperf.com/truncate-float-to-integer
-  castInt64: (a: number) => {
-    if (a < -2147483648 || a > 2147483647) return a < 0 ? Math.ceil(a) : Math.floor(a)
-    else return ~~a
-  },
-  IntPoint,
-  IntRectangle,
-  ClipType,
-  PolyType,
-  PolyFillType,
-  JoinType,
-  EndType,
-  EdgeSide,
-  Direction,
-  Edge,
-  IntersectNode,
-  MyIntersectNodeSort,
-  LocalMinima,
-  Scanbeam,
-  Maxima,
-  OuterRectangle,
-  OuterPoint,
-  Join,
-  ClipperBase,
-  Clipper,
-  ClipperOffset,
-}
 
 // ---------------------------------------------
 
@@ -454,3 +406,68 @@ export function PolyTreeToExPolygons(polytree) {
   return expolygons
 }
 */
+
+export const ClipperLib = {
+  use_lines: true,
+  USE_XYZ: false,
+  Path,
+  Paths,
+  DoublePoint,
+  PolygonNode,
+  PolygonTree,
+  mathAbsInt64: (a: number) => Math.abs(a),
+  mathAbsInt32: (a: number) => Math.abs(a),
+  mathAbsDouble: (a: number) => Math.abs(a),
+  mathMaxInt32Int32: (a: number, b: number) => Math.max(a, b),
+  // http://jsperf.com/truncate-float-to-integer/2
+  castInt32: (a: number) => (browser.msie || browser.opera || browser.safari ? a | 0 : ~~a),
+  PI: 3.141592653589793,
+  PI2: 2 * 3.141592653589793,
+  clear: <T extends Array<any>>(a: T) => {
+    a.length = 0
+  },
+  // Jacob: This originally had a bunch of browser specific optimizations but i just opted for the chrome one
+  // http://jsperf.com/truncate-float-to-integer
+  castInt64: (a: number) => {
+    if (a < -2147483648 || a > 2147483647) return a < 0 ? Math.ceil(a) : Math.floor(a)
+    else return ~~a
+  },
+  IntPoint,
+  IntRectangle,
+  ClipType,
+  PolyType,
+  PolyFillType,
+  JoinType,
+  EndType,
+  EdgeSide,
+  Direction,
+  Edge,
+  IntersectNode,
+  MyIntersectNodeSort,
+  LocalMinimum,
+  Scanbeam,
+  Maxima,
+  OuterRectangle,
+  OuterPoint,
+  Join,
+  ClipperBase,
+  Clipper,
+  ClipperOffset,
+  JS: {
+    areaOfPolygon,
+    areaOfPolygons,
+    boundsOfPath,
+    boundsOfPaths,
+    clean,
+    clone,
+    lighten,
+    perimeterOfPath,
+    perimeterOfPaths,
+    scaleDownPath,
+    scaleDownPaths,
+    scaleUpPath,
+    scaleUpPaths,
+  },
+}
+
+export default ClipperLib
