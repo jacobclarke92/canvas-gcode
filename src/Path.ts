@@ -1,7 +1,6 @@
 import { Clipper } from './packages/Clipper/Clipper'
 import { ClipperOffset } from './packages/Clipper/ClipperOffset'
-import type { ClipType } from './packages/Clipper/enums'
-import { EndType, JoinType, PolyFillType, PolyType } from './packages/Clipper/enums'
+import { ClipType, EndType, JoinType, PolyFillType, PolyType } from './packages/Clipper/enums'
 import { Path as ClipperPath } from './packages/Clipper/Path'
 import Point from './Point'
 import type {
@@ -27,6 +26,14 @@ export type WindingRule = 'evenodd' | 'nonzero' | 'positive' | 'negative'
 export default class Path extends ClipperPath {
   public subPaths: SubPath[] = []
   public current: SubPath
+
+  constructor(...args: [] | [points: Point[]]) {
+    super()
+    if (args.length === 1 && args[0].length > 0) {
+      this.subPaths = [new SubPath(args[0])]
+      this.current = this.subPaths[0]
+    }
+  }
 
   public clone() {
     const copy = new Path()
@@ -89,7 +96,7 @@ export default class Path extends ClipperPath {
     this.lineTo(x, y)
   }
 
-  public toPolygons(scale: number, divisions?: number): Paths {
+  public toPolygons(scale = 1, divisions?: number): Paths {
     if (!scale) throw 'NO SCALE!'
     const polygons = new Paths()
     for (const subPath of this.subPaths) {
@@ -97,7 +104,8 @@ export default class Path extends ClipperPath {
     }
     return polygons
   }
-  public fromPolygons(polygons: Paths, scale: number) {
+
+  public fromPolygons(polygons: Paths, scale = 1) {
     if (!scale) throw 'NO SCALE!'
 
     this.subPaths = []
@@ -112,15 +120,15 @@ export default class Path extends ClipperPath {
     return this
   }
 
-  public clip(clipRegion: Path, clipType?: ClipType, divisions?: number) {
+  public clip(clipRegion: Path, clipType: ClipType = ClipType.intersection, divisions?: number) {
     if (!clipRegion) return this
 
-    clipType = clipType || 0
-
-    const scale = 1000
+    const scale = 1
     const subjectPolygons = this.toPolygons(scale, divisions)
     const clipPolygons = clipRegion.toPolygons(scale, divisions)
 
+    console.log(subjectPolygons)
+    console.log(clipPolygons)
     // Clean both
     // const subjPolys = Clipper.CleanPolygons(subjPolys, 1);
     // const clipPolys = Clipper.CleanPolygons(clipPolys, 1);
@@ -128,16 +136,19 @@ export default class Path extends ClipperPath {
     // const clipPolys = Clipper.SimplifyPolygons(clipPolys, PolyFillType.pftNonZero);
 
     const clipper = new Clipper()
-    // const cpr = new Clipper()
-    // cpr.PreserveCollinear = true;
-    // cpr.ReverseSolution = true;
+    // clipper.preserveCollinear = true
+    // clipper.reverseSolution = true
 
     clipper.addPaths(subjectPolygons, PolyType.subject, true)
 
     clipper.addPaths(clipPolygons, PolyType.clip, true)
 
+    // debugger
+
     const clipped = new Paths()
-    clipper.execute(clipType, clipped)
+    clipper.execute(clipType, clipped, PolyFillType.nonZero) // dunno if evenOdd is right: ;
+
+    console.log('clipped', clipped)
 
     const path = new Path()
     path.fromPolygons(clipped, scale)

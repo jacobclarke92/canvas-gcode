@@ -5,11 +5,13 @@ import NullDriver from './drivers/NullDriver'
 import Matrix from './Matrix'
 import Motion from './Motion'
 import { ClipperLib } from './packages/Clipper'
+import { Clipper } from './packages/Clipper/Clipper'
+import { ClipType } from './packages/Clipper/enums'
 import type { Bounds, WindingRule } from './Path'
 import Path from './Path'
 import Point from './Point'
-import type { ArcAction, BezierCurveToAction, QuadraticCurveToAction } from './SubPath'
 import type SubPath from './SubPath'
+import { type ArcAction, type BezierCurveToAction, DEFAULT_DIVISIONS, type QuadraticCurveToAction } from './SubPath'
 import type { OverloadedFunctionWithOptionals } from './types'
 import { arcToPoints, convertPointsToEdges, pointsToArc } from './utils/pathUtils'
 
@@ -81,7 +83,7 @@ export default class GCanvas {
   private filters: any[] = [] // no idea hey
   private stack: CanvasStackItem[] = []
 
-  private pathHistory: any[] = []
+  private pathHistory: SubPath[] = []
 
   // vars that get relayed to canvas
   private _strokeStyle = '#000000'
@@ -379,12 +381,15 @@ export default class GCanvas {
     const y = args.length === 3 || (args.length === 4 && args[3] === true) ? args[0].y : args[1]
     const w = args.length === 3 || (args.length === 4 && args[3] === true) ? args[1] : args[2]
     const h = args.length === 3 || (args.length === 4 && args[3] === true) ? args[2] : args[3]
-    if (cutout) this.cutoutRect(x, y, w, h)
-    this.moveTo(x, y)
-    this.lineTo(x + w, y)
-    this.lineTo(x + w, y + h)
-    this.lineTo(x, y + h)
-    this.lineTo(x, y)
+    if (cutout) {
+      this.clearRect(x, y, w, h)
+    } else {
+      this.moveTo(x, y)
+      this.lineTo(x + w, y)
+      this.lineTo(x + w, y + h)
+      this.lineTo(x, y + h)
+      this.lineTo(x, y)
+    }
   }
 
   public strokeRect: OverloadedFunctionWithOptionals<
@@ -554,7 +559,7 @@ export default class GCanvas {
 
     let path = this.path
     path = path.simplify(windingRule, this.precision)
-    path = path.clip(this.clipRegion, 0, this.precision)
+    path = path.clip(this.clipRegion, ClipType.intersection, this.precision)
     path = path.fillPath(this.toolDiameter, this.precision)
 
     if (path.subPaths)
@@ -572,7 +577,54 @@ export default class GCanvas {
   }
 
   public clearRect(x: number, y: number, width: number, height: number) {
-    this.ctx?.clearRect(x, y, width, height)
+    console.log('clearRect', this.path, this.subPaths)
+    // do it on canvas
+    this.ctx.clearRect(x, y, width, height)
+    const prevFillStyle = this.ctx.fillStyle
+    this.ctx.fillStyle = this._background
+    this.ctx.fillRect(x, y, width, height)
+    this.ctx.fillStyle = prevFillStyle
+
+    // do it on existing paths
+    const cutoutRect = new Path([
+      this.transformPoint([x, y]),
+      this.transformPoint([x + width, y]),
+      this.transformPoint([x + width, y + height]),
+      this.transformPoint([x, y + height]),
+      this.transformPoint([x, y]),
+    ])
+
+    console.log('clearing all gcode and starting again')
+    this.motion.reset()
+    this.driver.reset()
+
+    console.log(cutoutRect.getPoints())
+    // Clipper.cleanPolygon(cutoutRect)
+    // console.log(cutoutRect.getPoints())
+
+    for (let i = 0; i < this.pathHistory.length; i++) {
+      const subPath = this.pathHistory[i]
+      const oldPts = subPath.getPoints()
+
+      // console.log('before:', oldPts)
+      // const cleanPts = Clipper.cleanPolygon(oldPts, 0.5).map((pt) => new Point(pt.x, pt.y))
+      // console.log('after:', cleanPts)
+      // const subject = new Path(cleanPts)
+      const subject = new Path(oldPts)
+
+      const clippedSubject = subject.clip(cutoutRect, ClipType.union, DEFAULT_DIVISIONS)
+      console.log('clipped subject:', clippedSubject)
+      const newPts = clippedSubject.getPoints(DEFAULT_DIVISIONS)
+      subPath.pointsCache[DEFAULT_DIVISIONS] = newPts
+      subPath.hasBeenCutInto = true
+      // console.log(oldPts, newPts)
+    }
+
+    for (const subPath of this.pathHistory) {
+      this.layer(subPath, (z) => {
+        this.motion.followPath(subPath, z)
+      })
+    }
   }
 
   public closePath() {

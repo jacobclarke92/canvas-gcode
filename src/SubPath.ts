@@ -62,9 +62,12 @@ export const actions = {
   ELLIPSE: 'ellipse',
 } as const
 
+export const DEFAULT_DIVISIONS = 40
+
 export default class SubPath {
   public actions: Action[] = []
   public pointsCache: Point[][] = []
+  public hasBeenCutInto = false
 
   constructor(points?: Point[]) {
     if (points) this.fromPoints(points)
@@ -294,7 +297,7 @@ export default class SubPath {
     this.addAction({ type: 'ELLIPSE', args })
   }
 
-  public getPoints(divisions = 40): Point[] {
+  public getPoints(divisions = DEFAULT_DIVISIONS): Point[] {
     // TODO: I don't understand what this does
     if (this.pointsCache[divisions]) return this.pointsCache[divisions]
 
@@ -430,7 +433,7 @@ export default class SubPath {
     for (const pt of this.getPoints(divisions)) {
       polygon.push(new Point(pt.x * scale, pt.y * scale))
     }
-    return [polygon]
+    return polygon
   }
 
   // public fromPoly(poly: {X: number; Y: number}, scale: number) {

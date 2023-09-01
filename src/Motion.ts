@@ -12,7 +12,7 @@ import type GCanvas from './GCanvas'
 import type Path from './Path'
 import Point from './Point'
 import type { BezierCurveToAction, EllipseAction, LineToAction, MoveToAction, QuadraticCurveToAction } from './SubPath'
-import SubPath from './SubPath'
+import SubPath, { DEFAULT_DIVISIONS } from './SubPath'
 import { arcToPoints, pointsToArc, sameFloat, samePos } from './utils/pathUtils'
 
 export default class Motion {
@@ -277,7 +277,7 @@ export default class Motion {
       ['ELLIPSE' as EllipseAction['type']]: (...args: EllipseAction['args']) => {
         const [x, y, rx, ry, aStart, aEnd, ccw] = args
         // Detect plain arc
-        if (sameFloat(rx, ry)) {
+        if (!path.hasBeenCutInto && sameFloat(rx, ry)) {
           const points = arcToPoints(x, y, aStart, aEnd, rx)
           const params: EllipseParams = {
             x: points.end.x,
@@ -324,7 +324,19 @@ export default class Motion {
       // motion.plunge();
       // }
 
-      each[action.type].apply(this, action.args)
+      if (path.hasBeenCutInto && path.pointsCache[DEFAULT_DIVISIONS]) {
+        const points = path.pointsCache[DEFAULT_DIVISIONS]
+        for (let p = 0; p < points.length; p++) {
+          const pt = points[p]
+          if (p == 0) {
+            each['MOVE_TO'].apply(this, [pt.x, pt.y] as MoveToAction['args'])
+          } else {
+            each['LINE_TO'].apply(this, [pt.x, pt.y] as LineToAction['args'])
+          }
+        }
+      } else {
+        each[action.type].apply(this, action.args)
+      }
     }
   }
 }
