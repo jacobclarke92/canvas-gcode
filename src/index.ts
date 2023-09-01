@@ -1,4 +1,4 @@
-import { throttle } from 'lodash'
+import throttle from 'lodash-es/throttle'
 
 import GCode from './drivers/GCodeDriver'
 import GCanvas from './GCanvas'
