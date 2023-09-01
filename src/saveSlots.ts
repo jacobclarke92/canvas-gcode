@@ -1,4 +1,4 @@
-import { Sketch } from './Sketch'
+import type { Sketch } from './Sketch'
 import { loadValue, saveValue } from './utils/localStorageUtils'
 
 export const saveNewPreset = (sketch: Sketch) => {

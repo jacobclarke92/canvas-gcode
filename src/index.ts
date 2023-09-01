@@ -1,12 +1,12 @@
-import GCanvas from './GCanvas'
-import GCode from './drivers/GCodeDriver'
-import { Sketch } from './Sketch'
+import throttle from 'lodash-es/throttle'
 
-import sketches from './sketches'
-import { loadValue, saveValue } from './utils/localStorageUtils'
-import { throttle } from 'lodash'
+import GCode from './drivers/GCodeDriver'
+import GCanvas from './GCanvas'
 import { renderSketchSaveSlots, saveNewPreset } from './saveSlots'
+import type { Sketch } from './Sketch'
+import sketches from './sketches'
 import { renderSketchSliders, updateSliderValues } from './sliders'
+import { loadValue, saveValue } from './utils/localStorageUtils'
 
 const CANVAS_WIDTH = 140
 const CANVAS_HEIGHT = 100
@@ -24,7 +24,7 @@ const gcodeTextarea = document.getElementById('gcode')
 
 let currentSketchIndex = loadValue('sketchIndex', 0)
 let CurrentSketch: Sketch
-let rafRef: number = 0
+let rafRef = 0
 let animateIncrement = 0
 
 const init = () => {

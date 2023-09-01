@@ -1,4 +1,4 @@
-import { Sketch } from './Sketch'
+import type { Sketch } from './Sketch'
 import { floatString } from './utils/numberUtils'
 
 const sliderArea = document.getElementById('slider-area')

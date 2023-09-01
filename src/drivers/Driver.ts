@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 export type Unit = 'mm' | 'inch'
 
 export type DriverStream = {
@@ -12,14 +13,19 @@ export type AllCommandParams = {
   a: number
   b: number
   c: number
+  e: number
+  f: number
   i: number
   j: number
   k: number
-  f: number
+  p: number
+  q: number
+  s: number
   t: number
 }
 
 export type ArcParams = Partial<Pick<AllCommandParams, 'x' | 'y' | 'z' | 'i' | 'j' | 'f'>>
+export type BezierCurveParams = Partial<Pick<AllCommandParams, 'x' | 'y' | 'z' | 'i' | 'j' | 'p' | 'q' | 'f' | 's'>>
 export type EllipseParams = ArcParams
 export type RapidParams = Partial<Pick<AllCommandParams, 'x' | 'y' | 'z' | 'f'>>
 export type LinearParams = Partial<Pick<AllCommandParams, 'x' | 'y' | 'z' | 'f' | 'a'>>
@@ -52,6 +58,7 @@ export default class Driver {
   public linear(params: LinearParams) {}
   public arcCW(params: ArcParams) {}
   public arcCCW(params: ArcParams) {}
+  // public bezierCurve(params: BezierCurveParams) {}
   public comment(string: string) {}
   public meta(params: { [key: string]: any }) {}
 }

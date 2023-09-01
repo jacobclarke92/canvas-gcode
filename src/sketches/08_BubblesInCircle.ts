@@ -73,7 +73,7 @@ export default class BubblesInCircle extends Sketch {
       newRadius = distToEdge
     } else {
       const radiuses: number[] = []
-      for (let circle of this.circles) {
+      for (const circle of this.circles) {
         const dist = Point.distance(circle.position, point)
         if (dist <= circle.radius) {
           allowed = false

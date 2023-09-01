@@ -1,4 +1,4 @@
-import Point from './Point'
+import type Point from './Point'
 
 export type Vector = { x: number; y: number }
 

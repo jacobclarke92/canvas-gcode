@@ -1,5 +1,6 @@
-import GCanvas from './GCanvas'
-import Range from './sketches/tools/Range'
+/* eslint-disable @typescript-eslint/no-empty-function */
+import type GCanvas from './GCanvas'
+import type Range from './sketches/tools/Range'
 
 export interface SketchConfig {
   ctx: GCanvas
@@ -21,8 +22,8 @@ export class Sketch {
   public cy: number
   /** editable values object */
   public vs: { [key: string]: Range } = {}
-  static generateGCode: boolean = true
-  static enableCutouts: boolean = true
+  static generateGCode = true
+  static enableCutouts = true
 
   constructor(config: SketchConfig) {
     this.ctx = config.ctx

@@ -1,6 +1,6 @@
 import Point from '../Point'
 import { Sketch } from '../Sketch'
-import { Line } from '../types'
+import type { Line } from '../types'
 import { debugDot } from '../utils/debugUtils'
 import {
   circleOverlapsCircles,
@@ -10,7 +10,7 @@ import {
   getPointsWhereLineIntersectsCircle,
   pointInCircles,
 } from '../utils/geomUtils'
-import { smallestAngleDiff, degToRad, radToDeg, randFloat, randFloatRange, angleDiff } from '../utils/numberUtils'
+import { angleDiff, degToRad, radToDeg, randFloat, randFloatRange, smallestAngleDiff } from '../utils/numberUtils'
 import { lineToPoints, sameFloat } from '../utils/pathUtils'
 import { seedRandom } from '../utils/random'
 import Range from './tools/Range'
@@ -70,7 +70,7 @@ export default class Rays extends Sketch {
   drawLines(drawingPoints: typeof this.drawingPoints) {
     for (const [pt, angle, insideShape] of drawingPoints) {
       const line: Line = [pt, pt.moveAlongAngle(angle, 1000)]
-      let intersectionPoints: [intersection: Point, circle: Point, radius: number][] = []
+      const intersectionPoints: [intersection: Point, circle: Point, radius: number][] = []
       for (const [pos, rad] of this.reflectiveCircles) {
         const lineAngleCirclePosDiff = angleDiff(angle, line[0].angleTo(pos))
         // console.log('angle to circle:', radToDeg(lineAngleCirclePosDiff, true))

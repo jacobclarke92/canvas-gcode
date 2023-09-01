@@ -8,7 +8,7 @@ export default class Matrix {
   public tx: number
   public ty: number
 
-  constructor(a: number = 1, b: number = 0, c: number = 0, d: number = 1, tx: number = 0, ty: number = 0) {
+  constructor(a = 1, b = 0, c = 0, d = 1, tx = 0, ty = 0) {
     this.a = a
     this.b = b
     this.c = c
@@ -85,7 +85,15 @@ export default class Matrix {
   translate(tx: number, ty: number) {
     return this.concat(Matrix.translation(tx, ty))
   }
-  transformPoint(point: Point) {
-    return new Point(this.a * point.x + this.c * point.y + this.tx, this.b * point.x + this.d * point.y + this.ty)
+  transformPoint(point: Point | [x: number, y: number]) {
+    let x: number, y: number
+    if (Array.isArray(point)) {
+      x = point[0]
+      y = point[1]
+    } else {
+      x = point.x
+      y = point.y
+    }
+    return new Point(this.a * x + this.c * y + this.tx, this.b * x + this.d * y + this.ty)
   }
 }

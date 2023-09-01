@@ -22,8 +22,8 @@ export default class PerlinLines extends Sketch {
     this.vs.outerGap = new Range({ initialValue: 18, min: 0, max: 25, step: 1, disableRandomize: true })
   }
 
-  private drawCount: number = 0
-  private maxDrawCount: number = 0
+  private drawCount = 0
+  private maxDrawCount = 0
   private effectiveWidth: number
   private effectiveHeight: number
 

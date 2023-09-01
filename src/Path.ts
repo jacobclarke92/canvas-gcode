@@ -1,4 +1,10 @@
-import SubPath, {
+import { Clipper } from './packages/Clipper/Clipper'
+import { ClipperOffset } from './packages/Clipper/ClipperOffset'
+import type { ClipType } from './packages/Clipper/enums'
+import { EndType, JoinType, PolyFillType, PolyType } from './packages/Clipper/enums'
+import { Path as ClipperPath } from './packages/Clipper/Path'
+import Point from './Point'
+import type {
   Action,
   ArcAction,
   BezierCurveToAction,
@@ -6,10 +12,8 @@ import SubPath, {
   LineToAction,
   QuadraticCurveToAction,
 } from './SubPath'
+import SubPath from './SubPath'
 import { arcToPoints, samePos } from './utils/pathUtils'
-
-import * as ClipperLib from './clipper_unminified'
-import Point from './Point'
 
 export type Bounds = {
   left: number
@@ -20,10 +24,8 @@ export type Bounds = {
 
 export type WindingRule = 'evenodd' | 'nonzero' | 'positive' | 'negative'
 
-export default class Path {
+export default class Path extends ClipperPath {
   public subPaths: SubPath[] = []
-  static actions = SubPath.actions
-
   public current: SubPath
 
   public clone() {
@@ -87,54 +89,59 @@ export default class Path {
     this.lineTo(x, y)
   }
 
-  public toPolys(scale: number, divisions?: number) {
+  public toPolygons(scale: number, divisions?: number): Paths {
     if (!scale) throw 'NO SCALE!'
-    return this.subPaths.map((subPath) => subPath.toPoly(scale, divisions))
+    const polygons = new Paths()
+    for (const subPath of this.subPaths) {
+      polygons.push(subPath.toPolygon(scale, divisions))
+    }
+    return polygons
   }
-  public fromPolys(polygons: { X: number; Y: number }[][], scale: number) {
+  public fromPolygons(polygons: Paths, scale: number) {
     if (!scale) throw 'NO SCALE!'
 
     this.subPaths = []
 
     for (let i = 0, l = polygons.length; i < l; ++i) {
       const subPath = new SubPath()
-      subPath.fromPolys(polygons[i], scale)
+      subPath.fromPolygon(polygons[i], scale)
       this.subPaths.push(subPath)
       this.current = subPath
     }
 
     return this
   }
-  public clip(clipRegion: Path, clipType?: ClipperLib.ClipType, divisions?: number) {
+
+  public clip(clipRegion: Path, clipType?: ClipType, divisions?: number) {
     if (!clipRegion) return this
 
     clipType = clipType || 0
 
     const scale = 1000
-    const subjPolys = this.toPolys(scale, divisions)
-    const clipPolys = clipRegion.toPolys(scale, divisions)
+    const subjectPolygons = this.toPolygons(scale, divisions)
+    const clipPolygons = clipRegion.toPolygons(scale, divisions)
 
     // Clean both
-    // const subjPolys = ClipperLib.Clipper.CleanPolygons(subjPolys, 1);
-    // const clipPolys = ClipperLib.Clipper.CleanPolygons(clipPolys, 1);
-    // const subjPolys = ClipperLib.Clipper.SimplifyPolygons(subjPolys, ClipperLib.PolyFillType.pftNonZero);
-    // const clipPolys = ClipperLib.Clipper.SimplifyPolygons(clipPolys, ClipperLib.PolyFillType.pftNonZero);
+    // const subjPolys = Clipper.CleanPolygons(subjPolys, 1);
+    // const clipPolys = Clipper.CleanPolygons(clipPolys, 1);
+    // const subjPolys = Clipper.SimplifyPolygons(subjPolys, PolyFillType.pftNonZero);
+    // const clipPolys = Clipper.SimplifyPolygons(clipPolys, PolyFillType.pftNonZero);
 
-    const cpr = new ClipperLib.Clipper()
+    const clipper = new Clipper()
     // const cpr = new Clipper()
     // cpr.PreserveCollinear = true;
     // cpr.ReverseSolution = true;
 
-    // @ts-ignore
-    cpr.AddPaths(subjPolys, ClipperLib.PolyType.ptSubject, true)
-    // @ts-ignore
-    cpr.AddPaths(clipPolys, ClipperLib.PolyType.ptClip, true)
+    clipper.addPaths(subjectPolygons, PolyType.subject, true)
 
-    const clipped: any[] = []
-    cpr.Execute(clipType, clipped)
+    clipper.addPaths(clipPolygons, PolyType.clip, true)
+
+    const clipped = new Paths()
+    clipper.execute(clipType, clipped)
 
     const path = new Path()
-    path.fromPolys(clipped, scale)
+    path.fromPolygons(clipped, scale)
+
     return path
   }
 
@@ -231,17 +238,17 @@ export default class Path {
     // }
 
     const scale = 1000
-    let polys = this.toPolys(scale, divisions)
-    let type = ClipperLib.PolyFillType.pftNonZero
+    let polys = this.toPolygons(scale, divisions)
+    let type = PolyFillType.nonZero
 
     if (windingRule === 'evenodd') {
-      type = ClipperLib.PolyFillType.pftEvenOdd
+      type = PolyFillType.evenOdd
     }
 
-    polys = ClipperLib.Clipper.SimplifyPolygons(polys, type)
+    polys = Clipper.simplifyPolygons(polys, type) as Paths
 
     const result = new Path()
-    result.fromPolys(polys, scale)
+    result.fromPolygons(polys, scale)
 
     return result
   }
@@ -274,22 +281,22 @@ export default class Path {
 
     const scale = 1000
 
-    const polygons = this.toPolys(scale, divisions)
+    const polygons = this.toPolygons(scale, divisions)
 
     // offset
     // const miterLimit = 1000 * scale
 
-    const co = new ClipperLib.ClipperOffset()
+    const co = new ClipperOffset()
     // co.PreserveCollinear = true;
     // co.ReverseSolution = true;
 
-    co.AddPaths(polygons, ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon)
+    co.addPaths(polygons, JoinType.miter, EndType.closedPolygon)
 
     // TODO:
-    const solution: any[] = []
+    const solution = new Paths()
 
     try {
-      co.Execute(solution, delta * scale)
+      co.execute(solution, delta * scale)
     } catch (err) {
       return false
     }
@@ -297,13 +304,15 @@ export default class Path {
     if (!solution || solution.length === 0 || solution[0].length === 0) return false
 
     const result = new Path()
-    result.fromPolys(solution, scale)
+    result.fromPolygons(solution, scale)
 
     result.close() // Not sure why I need to do this now
     return result
   }
 
-  public ramp(depth: number) {}
+  public ramp(depth: number) {
+    //
+  }
 
   public addPath(path2: Path) {
     this.subPaths = this.subPaths.concat(path2.subPaths)
@@ -330,20 +339,19 @@ export default class Path {
   public fillPath(diameter: number, divisions: number) {
     const result = new Path()
     const overlap = Math.sin(Math.PI / 4)
-    const path = this
 
-    let max = path.estimateMaxOffset(5).lt
+    let max = this.estimateMaxOffset(5).lt
     max -= diameter / 2
 
     for (let i = -max; i < -diameter / 2; i += diameter * overlap) {
-      let offsetPath = path.offset(i, divisions)
+      let offsetPath = this.offset(i, divisions)
       if (!offsetPath) break
       offsetPath = offsetPath.reverse()
       result.addPath(offsetPath)
     }
 
     // Finishing pass
-    const finish = path.offset(-diameter / 2, divisions)
+    const finish = this.offset(-diameter / 2, divisions)
     if (finish) result.addPath(finish.reverse())
 
     return result
@@ -351,7 +359,7 @@ export default class Path {
 
   public connectEnds(diameter: number) {
     for (let i = this.subPaths.length - 1; i > 0; --i) {
-      let sp1 = this.subPaths[i - 1]
+      const sp1 = this.subPaths[i - 1]
       let sp2 = this.subPaths[i]
 
       const p1 = sp1.lastPoint()
@@ -396,7 +404,7 @@ export default class Path {
     return result
   }
 
-  public sort() {
+  public sortCustom() {
     if (this.subPaths.length === 0) return this
 
     const copy = new Path()
@@ -457,5 +465,14 @@ export default class Path {
     })
 
     return res
+  }
+}
+
+export class Paths extends Array<Path> {
+  public push: typeof Array.prototype.push
+  constructor() {
+    super()
+    this.push = Array.prototype.push
+    return []
   }
 }

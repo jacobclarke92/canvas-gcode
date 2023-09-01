@@ -5,19 +5,19 @@ import { degToRad, normalizeRadian, randFloat, randFloatRange, randInt, randIntR
 import { random, seedRandom } from '../utils/random'
 import Range from './tools/Range'
 
-import * as ClipperLib from '../clipper_unminified'
-
 export default class CutoutTest extends Sketch {
   // static generateGCode = false
   static enableCutouts = true
 
-  init() {}
+  init() {
+    //
+  }
 
   increment = 0
 
   initDraw(): void {
     this.ctx.strokeRect(25, 25, 25, 25)
-    var bounds = this.ctx.path?.getBounds()
+    let bounds = this.ctx.path?.getBounds()
     console.log('bounds', bounds)
     this.ctx.strokeRect(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top, {
       debug: true,
@@ -35,7 +35,7 @@ export default class CutoutTest extends Sketch {
     this.ctx.rotate(degToRad(5))
     this.ctx.strokeRect(0, 0, 25, 25, { cutout: true })
     this.ctx.restore()
-    var bounds = this.ctx.path?.getBounds()
+    bounds = this.ctx.path?.getBounds()
     console.log('bounds', bounds)
     console.log('points', this.ctx.path?.getPoints())
     console.log('closed', this.ctx.path?.current.isClosed())
@@ -53,7 +53,7 @@ export default class CutoutTest extends Sketch {
     this.ctx.lineTo(30 + 40, 25)
     this.ctx.stroke({ cutout: true })
     this.ctx.closePath()
-    var bounds = this.ctx.path?.getBounds()
+    bounds = this.ctx.path?.getBounds()
     console.log('bounds', bounds)
     this.ctx.strokeRect(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top, {
       debug: true,
@@ -62,5 +62,7 @@ export default class CutoutTest extends Sketch {
     console.log('closed', this.ctx.path?.current.isClosed())
   }
 
-  draw(increment: number): void {}
+  draw(increment: number): void {
+    //
+  }
 }

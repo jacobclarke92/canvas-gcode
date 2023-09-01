@@ -1,12 +1,14 @@
-import Driver, {
+import type {
   AllCommandParams,
   ArcParams,
+  BezierCurveParams,
   DriverStream,
   LinearParams,
   RapidParams,
   Unit,
   ZeroParams,
 } from './Driver'
+import Driver from './Driver'
 
 type Stream = {
   write: (str: string) => void
@@ -20,7 +22,9 @@ export default class GCode extends Driver {
     super(stream)
     this.stream = stream || {
       write: (str) => console.log(str),
-      reset: () => {},
+      reset: () => {
+        //
+      },
     }
   }
 
@@ -32,7 +36,7 @@ export default class GCode extends Driver {
   public send(code: string, params?: Partial<AllCommandParams>) {
     let command = `${code}`
     if (params) {
-      const keys = 'xyzabcijkft'.split('') as (keyof AllCommandParams)[]
+      const keys = 'zabcijkfpqstxy'.split('') as (keyof AllCommandParams)[]
       keys.forEach((k) => {
         if (params[k] === undefined || params[k] === null || isNaN(params[k])) return
         command += ` ${k.toUpperCase()}${params[k]}`
@@ -78,17 +82,21 @@ export default class GCode extends Driver {
     this.send('G1', params)
   }
   public arcCW(params: ArcParams) {
-    this.send('G2', params)
-  }
-  public arcCCW(params: ArcParams) {
     this.send('G3', params)
   }
+  public arcCCW(params: ArcParams) {
+    this.send('G2', params)
+  }
+  // this is not widely supported
+  // public bezierCurve(params: BezierCurveParams) {
+  //   this.send('G5', params)
+  // }
   public comment(string: string) {
     this.send(`(${string})`)
   }
   public meta(params: { [key: string]: any }) {
     let comment = '('
-    for (var k in params) {
+    for (const k in params) {
       comment += `${k}=${params[k]}`
     }
     comment += ')'
