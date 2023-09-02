@@ -1,3 +1,5 @@
+import * as clipperLib from 'js-angusj-clipper/web'
+
 import type { Unit } from './drivers/Driver'
 import type Driver from './drivers/Driver'
 import type GCodeDriver from './drivers/GCodeDriver'
@@ -13,7 +15,7 @@ import Point from './Point'
 import type SubPath from './SubPath'
 import { type ArcAction, type BezierCurveToAction, DEFAULT_DIVISIONS, type QuadraticCurveToAction } from './SubPath'
 import type { OverloadedFunctionWithOptionals } from './types'
-import { arcToPoints, convertPointsToEdges, pointsToArc } from './utils/pathUtils'
+import { arcToPoints, convertPointsToEdges, ellipseToPoints, pointsToArc } from './utils/pathUtils'
 
 export interface GCanvasConfig {
   width: number
@@ -47,6 +49,17 @@ export type StrokeOptions = {
   cutout?: boolean
   debug?: boolean
 }
+
+let clipper: clipperLib.ClipperLibWrapper
+let inited = false
+async function loadClipper() {
+  clipper = await clipperLib.loadNativeClipperLibInstanceAsync(
+    // let it autodetect which one to use, but also available WasmOnly and AsmJsOnly
+    clipperLib.NativeClipperLibRequestedFormat.AsmJsOnly
+  )
+  inited = true
+}
+if (!inited) loadClipper()
 
 export default class GCanvas {
   public canvasWidth: number
@@ -576,48 +589,69 @@ export default class GCanvas {
     this.ctx?.fill()
   }
 
-  public clearRect(x: number, y: number, width: number, height: number) {
-    console.log('clearRect', this.path, this.subPaths)
-    // do it on canvas
-    this.ctx.clearRect(x, y, width, height)
-    const prevFillStyle = this.ctx.fillStyle
-    this.ctx.fillStyle = this._background
-    this.ctx.fillRect(x, y, width, height)
-    this.ctx.fillStyle = prevFillStyle
+  public cutOutShape(shape: Path) {
+    const SCALE = 1000
 
-    // do it on existing paths
-    const cutoutRect = new Path([
-      this.transformPoint([x, y]),
-      this.transformPoint([x + width, y]),
-      this.transformPoint([x + width, y + height]),
-      this.transformPoint([x, y + height]),
-      this.transformPoint([x, y]),
-    ])
+    const cutoutRectPtsTransformed = shape
+      .getPoints()
+      .map((pt) => ({ x: Math.round(pt.x * SCALE), y: Math.round(pt.y * SCALE) }))
 
-    console.log('clearing all gcode and starting again')
+    console.log('------------------------------------')
+    console.log('CLEARING all GCode and starting again')
     this.motion.reset()
     this.driver.reset()
 
-    console.log(cutoutRect.getPoints())
-    // Clipper.cleanPolygon(cutoutRect)
-    // console.log(cutoutRect.getPoints())
+    // console.log(cutoutRectPtsTransformed)
 
     for (let i = 0; i < this.pathHistory.length; i++) {
       const subPath = this.pathHistory[i]
+
       const oldPts = subPath.getPoints()
+      const oldPtsTransformed = oldPts.map((pt) => ({ x: Math.round(pt.x * SCALE), y: Math.round(pt.y * SCALE) }))
+      // console.log(oldPtsTransformed)
 
-      // console.log('before:', oldPts)
-      // const cleanPts = Clipper.cleanPolygon(oldPts, 0.5).map((pt) => new Point(pt.x, pt.y))
-      // console.log('after:', cleanPts)
-      // const subject = new Path(cleanPts)
-      const subject = new Path(oldPts)
+      if (clipper) {
+        // const myClipper = new clipper.instance.Clipper(0)
+        const cleaned = clipper.cleanPolygon(oldPtsTransformed)
+        const subject = cleaned.length ? cleaned : oldPtsTransformed
 
-      const clippedSubject = subject.clip(cutoutRect, ClipType.union, DEFAULT_DIVISIONS)
-      console.log('clipped subject:', clippedSubject)
-      const newPts = clippedSubject.getPoints(DEFAULT_DIVISIONS)
-      subPath.pointsCache[DEFAULT_DIVISIONS] = newPts
-      subPath.hasBeenCutInto = true
-      // console.log(oldPts, newPts)
+        try {
+          const diffPath = clipper.clipToPolyTree({
+            clipType: clipperLib.ClipType.Difference,
+            subjectInputs: [{ data: subject, closed: false }],
+            clipInputs: [{ data: cutoutRectPtsTransformed }],
+            subjectFillType: clipperLib.PolyFillType.NonZero,
+            clipFillType: clipperLib.PolyFillType.NonZero,
+          })
+
+          const lengthDiff = Math.abs(subject.length - diffPath.total)
+          if (lengthDiff > 0 && cleaned.length !== 0) {
+            // const pts = []
+            subPath.pointsCache[DEFAULT_DIVISIONS] = []
+            subPath.hasBeenCutInto = true
+            subPath.actions = []
+            let node = diffPath.getFirst()
+            while (node) {
+              const pts = node.contour.map((pt) => new Point(pt.x / SCALE, pt.y / SCALE))
+              subPath.addAction({
+                type: 'MOVE_TO',
+                args: [pts[0].x, pts[0].y],
+              })
+              for (const pt of pts)
+                subPath.addAction({
+                  type: 'LINE_TO',
+                  args: [pt.x, pt.y],
+                })
+
+              node = node.getNext()
+            }
+          }
+        } catch (e) {
+          console.log('unable to clip shape', subPath)
+        }
+      } else {
+        console.log('clipper not loaded yet')
+      }
     }
 
     for (const subPath of this.pathHistory) {
@@ -625,6 +659,56 @@ export default class GCanvas {
         this.motion.followPath(subPath, z)
       })
     }
+  }
+
+  public clearRect(
+    ...args: [pt: Point, width: number, height: number] | [x: number, y: number, width: number, height: number]
+  ) {
+    const x = args.length === 3 ? args[0].x : args[0]
+    const y = args.length === 3 ? args[0].y : args[1]
+    const width = args.length === 3 ? args[1] : args[2]
+    const height = args.length === 3 ? args[2] : args[3]
+
+    console.log('clearRect', this.path, this.subPaths)
+
+    // do it on canvas
+    // this.ctx.clearRect(x, y, width, height)
+    const prevFillStyle = this.ctx.fillStyle
+    this.ctx.fillStyle = this._background
+    this.ctx.fillRect(x, y, width, height)
+    this.ctx.fillStyle = prevFillStyle
+
+    // do it on existing paths
+    const cutOutRect = new Path([
+      this.transformPoint([x, y]),
+      this.transformPoint([x + width, y]),
+      this.transformPoint([x + width, y + height]),
+      this.transformPoint([x, y + height]),
+      this.transformPoint([x, y]),
+    ])
+
+    this.cutOutShape(cutOutRect)
+  }
+
+  public clearCircle(...args: [pt: Point, radius: number] | [x: number, y: number, radius: number]): void {
+    const x = args.length === 2 ? args[0].x : args[0]
+    const y = args.length === 2 ? args[0].y : args[1]
+    const radius = args.length === 2 ? args[1] : args[2]
+
+    // do it on canvas
+    // this.ctx.clearRect(x, y, width, height)
+    const prevFillStyle = this.ctx.fillStyle
+    this.ctx.fillStyle = this._background
+    this.ctx.beginPath()
+    this.ctx.arc(x, y, radius, 0, Math.PI * 2)
+    this.ctx.fill()
+    this.ctx.closePath()
+    this.ctx.fillStyle = prevFillStyle
+
+    const pts = ellipseToPoints(x, y, radius, radius, 0, Math.PI * 2, false, DEFAULT_DIVISIONS)
+    const cutoutCircle = new Path(pts.map((pt) => this.transformPoint([pt.x, pt.y])))
+
+    this.cutOutShape(cutoutCircle)
   }
 
   public closePath() {

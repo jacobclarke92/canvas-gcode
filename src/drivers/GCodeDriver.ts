@@ -33,7 +33,7 @@ export default class GCode extends Driver {
     this.init()
   }
 
-  public send(code: string, params?: Partial<AllCommandParams>) {
+  public send(code: string, params?: Partial<AllCommandParams>, comment?: string) {
     let command = `${code}`
     if (params) {
       const keys = 'zabcijkfpqstxy'.split('') as (keyof AllCommandParams)[]
@@ -42,6 +42,7 @@ export default class GCode extends Driver {
         command += ` ${k.toUpperCase()}${params[k]}`
       })
     }
+    if (comment) command += ` (${comment})`
     this.stream.write(command)
   }
 
@@ -61,31 +62,31 @@ export default class GCode extends Driver {
     this.send(`S${n} (set speed to ${n})`)
   }
   public feed(n: number) {
-    this.send('F' + n)
+    this.send(`F${n} (set feed to ${n})`)
   }
   public coolant(type: 'mist' | 'flood' | 'off') {
     if (type === 'mist') this.send('M07') // special
     else if (type) this.send('M08') // flood
     else this.send('M09') // off
   }
-  public zero(params: ZeroParams) {
-    this.send('G28.3', params)
+  public zero(params: ZeroParams, comment?: string) {
+    this.send('G28.3', params, comment)
   }
   // tool selection
-  public atc(id: number) {
+  public atc(id: number, comment?: string) {
     this.send('M6', { t: id })
   }
-  public rapid(params: RapidParams) {
-    this.send('G0', params)
+  public rapid(params: RapidParams, comment?: string) {
+    this.send('G0', params, comment)
   }
-  public linear(params: LinearParams) {
-    this.send('G1', params)
+  public linear(params: LinearParams, comment?: string) {
+    this.send('G1', params, comment)
   }
-  public arcCW(params: ArcParams) {
-    this.send('G3', params)
+  public arcCW(params: ArcParams, comment?: string) {
+    this.send('G3', params, comment)
   }
-  public arcCCW(params: ArcParams) {
-    this.send('G2', params)
+  public arcCCW(params: ArcParams, comment?: string) {
+    this.send('G2', params, comment)
   }
   // this is not widely supported
   // public bezierCurve(params: BezierCurveParams) {

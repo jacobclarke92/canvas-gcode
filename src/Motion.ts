@@ -38,10 +38,10 @@ export default class Motion {
   }
 
   public retract() {
-    this.ctx.driver.send(`M03 S090`)
+    this.ctx.driver.send(`M03 S090 (pen up)`)
   }
   public plunge() {
-    this.ctx.driver.send(`M03 S070`)
+    this.ctx.driver.send(`M03 S070 (pen down)`)
   }
   public zero(params: ZeroParams) {
     this.ctx.driver.zero(params)
@@ -83,9 +83,9 @@ export default class Motion {
     if (f) params.f = Math.abs(f)
 
     if (!ccw && this.ctx.driver.arcCW) {
-      this.ctx.driver.arcCW(params)
+      this.ctx.driver.arcCW(params, 'arc clockwise')
     } else if (ccw && this.ctx.driver.arcCCW) {
-      this.ctx.driver.arcCCW(params)
+      this.ctx.driver.arcCCW(params, 'arc counter-clockwise')
     } else {
       this.interpolate('arc', [cx, cy, arc.radius, arc.start, arc.end, ccw], params.z || 0)
     }
@@ -230,6 +230,8 @@ export default class Motion {
     const ctx = this.ctx
     const ramping = path.isClosed() && ctx.ramping != false
 
+    // console.log('tracing motion subpath', path)
+
     function helix() {
       if (!ramping) return zEnd
 
@@ -258,6 +260,7 @@ export default class Motion {
 
     const each = {
       ['MOVE_TO' as MoveToAction['type']]: (...args: MoveToAction['args']) => {
+        // console.log('[motion] move to', args)
         const [x, y] = args
         // Optimize out 0 distances moves
         const sameXY = sameFloat(x, this.position.x) && sameFloat(y, this.position.y)
@@ -271,14 +274,16 @@ export default class Motion {
         zStart = this.position.z
       },
       ['LINE_TO' as LineToAction['type']]: (...args: LineToAction['args']) => {
+        // console.log('[motion] line to', args)
         const [x, y] = args
         this.linear({ x, y, z: helix() })
       },
       ['ELLIPSE' as EllipseAction['type']]: (...args: EllipseAction['args']) => {
+        // console.log('[motion] ellipse', args)
         const [x, y, rx, ry, aStart, aEnd, ccw] = args
         // Detect plain arc
         if (!path.hasBeenCutInto && sameFloat(rx, ry)) {
-          const points = arcToPoints(x, y, aStart, aEnd, rx)
+          const points = arcToPoints(x, y, aStart, aEnd, rx, ry)
           const params: EllipseParams = {
             x: points.end.x,
             y: points.end.y,
@@ -292,6 +297,7 @@ export default class Motion {
         }
       },
       ['BEZIER_CURVE_TO' as BezierCurveToAction['type']]: (...args: BezierCurveToAction['args']) => {
+        // console.log('[motion] bezierCurveTo', args)
         /*if (this.ctx.driver.bezierCurve) {
           // args: [aCP1x: number, aCP1y: number, aCP2x: number, aCP2y: number, aX: number, aY: number]
           this.bezierCurve({
@@ -306,35 +312,40 @@ export default class Motion {
         interpolate(this, 'bezierCurveTo', args)
       },
       ['QUADRATIC_CURVE_TO' as QuadraticCurveToAction['type']]: (...args: QuadraticCurveToAction['args']) => {
+        // console.log('[motion] quadraticCurveTo', args)
         interpolate(this, 'quadraticCurveTo', args)
       },
     }
 
-    for (let i = 0, l = path.actions.length; i < l; ++i) {
-      const action = path.actions[i]
-
-      if (i != 0) {
-        const x0 = this.position.x
-        const y0 = this.position.y
-        curLen += path.getActionLength(x0, y0, i)
-      }
-
-      // Every action should be plunged except for move
-      // if(item.action !== Path.actions.MOVE_TO) {
-      // motion.plunge();
-      // }
-
-      if (path.hasBeenCutInto && path.pointsCache[DEFAULT_DIVISIONS]) {
-        const points = path.pointsCache[DEFAULT_DIVISIONS]
-        for (let p = 0; p < points.length; p++) {
-          const pt = points[p]
-          if (p == 0) {
-            each['MOVE_TO'].apply(this, [pt.x, pt.y] as MoveToAction['args'])
-          } else {
-            each['LINE_TO'].apply(this, [pt.x, pt.y] as LineToAction['args'])
-          }
+    if (path.hasBeenCutInto && path.pointsCache[DEFAULT_DIVISIONS]) {
+      console.log('[motion] path has been cut into (using point cache for path)')
+      const points = path.pointsCache[DEFAULT_DIVISIONS]
+      for (let p = 0; p < points.length; p++) {
+        const pt = points[p]
+        if (p == 0) {
+          each['MOVE_TO'].apply(this, [pt.x, pt.y] as MoveToAction['args'])
+        } else {
+          each['LINE_TO'].apply(this, [pt.x, pt.y] as LineToAction['args'])
         }
-      } else {
+        // if (p == points.length - 1) {
+        //   const dist = pt.distanceTo(points[0])
+        //   if (dist < 2) {
+        //     console.log('[motion] path is done, adding final line to start, based on dist:', dist)
+        //     each['LINE_TO'].apply(this, [points[0].x, points[0].y] as LineToAction['args'])
+        //   }
+        // }
+      }
+    } else {
+      console.log('[motion] path has not been tampered with so generating fresh points')
+      for (let i = 0, l = path.actions.length; i < l; ++i) {
+        const action = path.actions[i]
+
+        if (i != 0) {
+          const x0 = this.position.x
+          const y0 = this.position.y
+          curLen += path.getActionLength(x0, y0, i)
+        }
+
         each[action.type].apply(this, action.args)
       }
     }

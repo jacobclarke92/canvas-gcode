@@ -6,7 +6,7 @@
 
 import Path from './Path'
 import Point from './Point'
-import { arcToPoints, samePos } from './utils/pathUtils'
+import { arcToPoints, ellipseToPoints, EPSILON, samePos } from './utils/pathUtils'
 
 export type MoveToAction = {
   type: 'MOVE_TO'
@@ -62,11 +62,11 @@ export const actions = {
   ELLIPSE: 'ellipse',
 } as const
 
-export const DEFAULT_DIVISIONS = 40
+export const DEFAULT_DIVISIONS = 128
 
 export default class SubPath {
   public actions: Action[] = []
-  public pointsCache: Point[][] = []
+  public pointsCache: Record<number, Point[]> = {}
   public hasBeenCutInto = false
 
   constructor(points?: Point[]) {
@@ -79,8 +79,9 @@ export default class SubPath {
     return path
   }
 
-  public isClosed() {
-    return samePos(this.firstPoint(), this.lastPoint())
+  public isClosed(limit = EPSILON) {
+    // console.log('isClosed Pts:', this.firstPoint(), this.lastPoint())
+    return samePos(this.firstPoint(), this.lastPoint(), limit)
   }
 
   public get closed() {
@@ -113,39 +114,85 @@ export default class SubPath {
   }
 
   public firstPoint() {
-    let p = new Point(0, 0)
-    const action = this.actions[0]
+    const cachedPts = this.pointsCache[DEFAULT_DIVISIONS]
+    if (this.hasBeenCutInto && cachedPts?.length) {
+      return cachedPts[0]
+    } else {
+      let p = new Point(0, 0)
+      const action = this.actions[0]
 
-    switch (action.type) {
-      case 'ELLIPSE':
-        p = arcToPoints(action.args[0], action.args[1], action.args[4], action.args[5], action.args[2]).start
-        break
+      switch (action.type) {
+        case 'ELLIPSE':
+          const [aX, aY, xRadius, yRadius, aStartAngle, aEndAngle, antiClockwise] = action.args
+          p = arcToPoints(aX, aY, aStartAngle, aEndAngle, xRadius, yRadius).start
+          break
 
-      default:
-        p.x = action.args[action.args.length - 2]
-        p.y = action.args[action.args.length - 1]
-        break
+        case 'MOVE_TO': {
+          const [x, y] = action.args
+          p.x = x
+          p.y = y
+          break
+        }
+
+        case 'BEZIER_CURVE_TO':
+        case 'QUADRATIC_CURVE_TO':
+        case 'LINE_TO': {
+          console.warn(action.type + ' cannot be first action!')
+          break
+        }
+
+        default: {
+          console.warn('Unknown type unaccounted for in SubPath->firstPoint')
+        }
+      }
+      return p
     }
-
-    return p
   }
 
   public lastPoint() {
-    let p = new Point(0, 0)
-    const action = this.actions[this.actions.length - 1]
+    const cachedPts = this.pointsCache[DEFAULT_DIVISIONS]
+    if (this.hasBeenCutInto && cachedPts?.length) {
+      return cachedPts[cachedPts.length - 1]
+    } else {
+      let p = new Point(0, 0)
+      const action = this.actions[this.actions.length - 1]
 
-    switch (action.type) {
-      case 'ELLIPSE':
-        p = arcToPoints(action.args[0], action.args[1], action.args[4], action.args[5], action.args[2]).end
-        break
+      switch (action.type) {
+        case 'ELLIPSE': {
+          const [aX, aY, xRadius, yRadius, aStartAngle, aEndAngle, antiClockwise] = action.args
+          p = arcToPoints(aX, aY, aStartAngle, aEndAngle, xRadius, yRadius).end
+          break
+        }
 
-      default:
-        p.x = action.args[action.args.length - 2]
-        p.y = action.args[action.args.length - 1]
-        break
+        case 'BEZIER_CURVE_TO': {
+          const [aCP1x, aCP1y, aCP2x, aCP2y, aX, aY] = action.args
+          p.x = aX
+          p.y = aY
+          break
+        }
+
+        case 'QUADRATIC_CURVE_TO': {
+          const [aCPx, aCPy, aX, aY] = action.args
+          p.x = aX
+          p.y = aY
+          break
+        }
+
+        case 'LINE_TO':
+        case 'MOVE_TO': {
+          const [x, y] = action.args
+          p.x = x
+          p.y = y
+          break
+        }
+
+        default: {
+          console.warn('Unknown type unaccounted for in SubPath->lastPoint')
+        }
+      }
+
+      return p
     }
-
-    return p
   }
 
   public fromPoints(points: Point[]) {
@@ -298,7 +345,6 @@ export default class SubPath {
   }
 
   public getPoints(divisions = DEFAULT_DIVISIONS): Point[] {
-    // TODO: I don't understand what this does
     if (this.pointsCache[divisions]) return this.pointsCache[divisions]
 
     const points: Point[] = []
@@ -389,33 +435,8 @@ export default class SubPath {
         }
 
         case 'ELLIPSE': {
-          let j, t
           const [aX, aY, xRadius, yRadius, aStartAngle, aEndAngle, antiClockwise] = action.args
-
-          let deltaAngle = aEndAngle - aStartAngle
-          let angle
-
-          for (j = 0; j <= divisions; j++) {
-            t = j / divisions
-
-            if (deltaAngle === -Math.PI * 2) deltaAngle = Math.PI * 2
-            if (deltaAngle < 0) deltaAngle += Math.PI * 2
-            if (deltaAngle > Math.PI * 2) deltaAngle -= Math.PI * 2
-
-            if (antiClockwise) {
-              // sin(pi) and sin(0) are the same
-              // So we have to special case for full circles
-              if (deltaAngle === Math.PI * 2) deltaAngle = 0
-              angle = aEndAngle + (1 - t) * (Math.PI * 2 - deltaAngle)
-            } else {
-              angle = aStartAngle + t * deltaAngle
-            }
-
-            const tx = aX + xRadius * Math.cos(angle)
-            const ty = aY + yRadius * Math.sin(angle)
-
-            points.push(new Point(tx, ty))
-          }
+          points.push(...ellipseToPoints(aX, aY, xRadius, yRadius, aStartAngle, aEndAngle, antiClockwise, divisions))
 
           break
         }
