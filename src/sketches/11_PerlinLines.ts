@@ -26,6 +26,7 @@ export default class PerlinLines extends Sketch {
   private maxDrawCount = 0
   private effectiveWidth: number
   private effectiveHeight: number
+  private cutOutCircle = false
 
   initDraw(): void {
     seedRandom(this.vs.seed.value)
@@ -40,7 +41,13 @@ export default class PerlinLines extends Sketch {
   }
 
   draw(increment: number): void {
-    if (this.drawCount >= this.maxDrawCount) return
+    if (this.drawCount >= this.maxDrawCount) {
+      if (!this.cutOutCircle) {
+        // this.ctx.clearCircle(this.cx, this.cy, 20)
+        this.cutOutCircle = true
+      }
+      return
+    }
 
     const cols = this.vs.cols.value
     const rows = this.vs.rows.value
