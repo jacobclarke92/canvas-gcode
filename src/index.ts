@@ -29,12 +29,28 @@ let animateIncrement = 0
 
 const init = () => {
   // initialize canvas
+  canvas.style.display = 'block'
   canvas.width = CANVAS_WIDTH * VIRTUAL_SCALE * window.devicePixelRatio
   canvas.height = CANVAS_HEIGHT * VIRTUAL_SCALE * window.devicePixelRatio
   canvas.style.width = `${CANVAS_WIDTH * VIRTUAL_SCALE}px`
   canvas.style.height = `${CANVAS_HEIGHT * VIRTUAL_SCALE}px`
-  if (canvasArea) canvasArea.appendChild(canvas)
-  else document.body.appendChild(canvas)
+  if (canvasArea) {
+    canvasArea.appendChild(canvas)
+
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.textContent = 'Download Image'
+    button.onclick = () => {
+      const downloadLink = document.createElement('a')
+      downloadLink.setAttribute('download', 'CanvasAsImage.png')
+      canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob)
+        downloadLink.setAttribute('href', url)
+        downloadLink.click()
+      })
+    }
+    canvasArea.appendChild(button)
+  } else document.body.appendChild(canvas)
 
   // create buttons for all sketches
   sketches.forEach((sketch, index) => {
@@ -53,6 +69,13 @@ const init = () => {
   })
 
   // initialize first sketch
+
+  if (window.location.hash) {
+    const hash = window.location.hash.slice(1).toLowerCase()
+    const index = sketches.findIndex((s) => s.name.toLowerCase() === hash)
+    if (index !== -1) currentSketchIndex = index
+  }
+
   initSketch(sketches[currentSketchIndex])
 
   // bind main function buttons
