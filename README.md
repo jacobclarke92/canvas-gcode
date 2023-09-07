@@ -1,6 +1,8 @@
 # Canvas GCode
 
-Based on the great work done by Emery Denuccio on their `gcanvas` project https://github.com/em/gcanvas
+Based on the great work done by Emery Denuccio on their [`gcanvas` project](https://github.com/em/gcanvas)
+
+## [View demo here](https://jacobclarke92.github.io/canvas-gcode/dist/)
 
 I've written this with the intention of generating GCode for use with a Pen Plotter (instead of a CNC machine), but could also be easily adapted for laser cutting.
 

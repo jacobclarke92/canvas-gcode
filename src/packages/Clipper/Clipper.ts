@@ -1,13 +1,14 @@
 import { ClipperLib } from '.'
 import { browser } from './browser'
 import { ClipperBase } from './ClipperBase'
+import { panicker } from './debugUtils'
 import { Edge } from './Edge'
 import { ClipType, Direction, EdgeSide, NodeType, PolyFillType as PolygonFillType, PolyType } from './enums'
 import { IntersectNode, MyIntersectNodeSort } from './IntersectNode'
 import { IntPoint } from './IntPoint'
 import { IntRectangle } from './IntRectangle'
 import type { OuterRectangle } from './Misc'
-import { Join, LocalMinima, Maxima, OuterPoint, Scanbeam } from './Misc'
+import { Join, LocalMinimum, Maxima, OuterPoint, Scanbeam } from './Misc'
 import { Path, Paths } from './Path'
 import { PolygonNode, PolygonTree } from './PolygonNode'
 import type { HorizontalEdgeProps, OverlapProps } from './types'
@@ -17,10 +18,11 @@ export class Clipper extends ClipperBase {
   public static ioStrictlySimple = 2
   public static ioPreserveCollinear = 4
 
-  public outerPolygons: OuterRectangle[] = []
-  public scanbeam: Scanbeam | null = null
+  public polygonOutList: OuterRectangle[] = []
+  public scanbeamList: Scanbeam[] = []
   protected clipType = ClipType.intersection
-  protected maxima: Maxima | null = null
+  /** double-linked list: sorted ascending, ignoring dups. */
+  protected maximaList: Maxima[] = []
   public activeEdges: Edge | null = null
   protected sortedEdges: Edge | null = null
   protected intersectList: IntersectNode[] = []
@@ -68,37 +70,24 @@ export class Clipper extends ClipperBase {
 
   public clear() {
     if (this.edges.length === 0) return
-    //avoids problems with ClipperBase destructor
+    // avoids problems with ClipperBase destructor
     this.disposeAllPolyPoints()
     super.clear()
   }
 
   public insertMaxima(x: number) {
-    //double-linked list: sorted ascending, ignoring dups.
     const newMaxima = new Maxima()
     newMaxima.x = x
-    if (this.maxima === null) {
-      this.maxima = newMaxima
-      this.maxima.next = null
-      this.maxima.prev = null
-    } else if (x < this.maxima.x) {
-      newMaxima.next = this.maxima
-      newMaxima.prev = null
-      this.maxima = newMaxima
+    if (!this.maximaList.length) {
+      this.maximaList.push(newMaxima)
+      return
+    }
+    if (this.maximaList.find((m) => m.x === x)) return
+    if (x < this.maximaList[this.maximaList.length - 1].x) {
+      this.maximaList.push(newMaxima)
     } else {
-      let maxima = this.maxima
-      while (maxima.next !== null && x >= maxima.next.x) {
-        maxima = maxima.next
-      }
-      if (x === maxima.x) {
-        return
-      }
-      // ie ignores duplicates (& CG to clean up newMax)
-      // insert newMax between m and m.Next ...
-      newMaxima.next = maxima.next
-      newMaxima.prev = maxima
-      if (maxima.next !== null) maxima.next.prev = newMaxima
-      maxima.next = newMaxima
+      this.maximaList.push(newMaxima)
+      this.maximaList = this.maximaList.sort((a, b) => a.x - b.x)
     }
   }
 
@@ -110,58 +99,51 @@ export class Clipper extends ClipperBase {
           subjectFillType: PolygonFillType,
           clipFillType: PolygonFillType
         ]
-      | [clipType: ClipType, solution: PolygonTree | Paths]
+      | [clipType: ClipType, solution: PolygonTree | Paths, fillType: PolygonFillType]
   ): boolean {
+    if (args.length === 3 && !(args[1] instanceof PolygonTree)) {
+      const [clipType, solution, fillType] = args
+      return this.execute(clipType, solution, fillType, fillType)
+    } else if (args.length === 3 && args[1] instanceof PolygonTree) {
+      const [clipType, polygonTree, fillType] = args
+      return this.execute(clipType, polygonTree, fillType, fillType)
+    }
+
+    // For Paths
     if (args.length === 4 && !(args[1] instanceof PolygonTree)) {
       if (this.executeLocked) return false
       if (this.hasOpenPaths) throw new Error('Error: PolyTree struct is needed for open path clipping.')
 
       const [clipType, solution, subjectFillType, clipFillType] = args
       this.executeLocked = true
-      ClipperLib.clear(solution)
-
       this.subjectFillType = subjectFillType
       this.clipFillType = clipFillType
       this.clipType = clipType
       this.usingPolygonTree = false
 
-      let succeeded = false
-      try {
-        succeeded = this.executeInternal()
-        // build the return polygons ...
-        if (succeeded) this.buildResult(solution)
-      } finally {
-        this.disposeAllPolyPoints()
-        this.executeLocked = false
-      }
+      const succeeded = this.executeInternal()
+      if (succeeded) this.buildResult(solution)
+      this.disposeAllPolyPoints()
+      this.executeLocked = false
       return succeeded
+
+      // For PolygonTree
     } else if (args.length === 4 && args[1] instanceof PolygonTree) {
       if (this.executeLocked) return false
 
       const [clipType, polygonTree, subjectFillType, clipFillType] = args
-
       this.executeLocked = true
       this.subjectFillType = subjectFillType
       this.clipFillType = clipFillType
       this.clipType = clipType
       this.usingPolygonTree = true
 
-      let succeeded = false
-      try {
-        succeeded = this.executeInternal()
-        //build the return polygons ...
-        if (succeeded) this.buildResult(polygonTree)
-      } finally {
-        this.disposeAllPolyPoints()
-        this.executeLocked = false
-      }
+      const succeeded = this.executeInternal()
+      // build the return polygons ...
+      if (succeeded) this.buildResult(polygonTree)
+      this.disposeAllPolyPoints()
+      this.executeLocked = false
       return succeeded
-    } else if (args.length === 2 && !(args[1] instanceof PolygonTree)) {
-      const [clipType, solution] = args
-      return this.execute(clipType, solution, PolygonFillType.evenOdd, PolygonFillType.evenOdd)
-    } else if (args.length === 2 && args[1] instanceof PolygonTree) {
-      const [clipType, polygonTree] = args
-      return this.execute(clipType, polygonTree, PolygonFillType.evenOdd, PolygonFillType.evenOdd)
     }
   }
 
@@ -182,59 +164,72 @@ export class Clipper extends ClipperBase {
   }
 
   public executeInternal() {
+    let succeeded = true
     try {
       this.reset()
+      this.maximaList = []
       this.sortedEdges = null
-      this.maxima = null
 
       const bottomY = new Scanbeam()
       const topY = new Scanbeam()
 
       if (!this.popScanbeam(bottomY)) {
+        console.warn('execute clipper failed: unable to get scanbeam')
         return false
       }
-      this.insertLocalMinimaIntoAEL(bottomY.v)
-      while (this.popScanbeam(topY) || this.localMinimaPending()) {
-        this.processHorizontals()
-        this.ghostJoins.length = 0
-        if (!this.processIntersections(topY.v)) {
-          return false
-        }
-        this.processEdgesAtTopOfScanbeam(topY.v)
-        bottomY.v = topY.v
-        this.insertLocalMinimaIntoAEL(bottomY.v)
-      }
 
+      // debugger
+
+      this.insertLocalMinimumIntoAEL(bottomY)
+      const timeToPanic = panicker()
+      while (this.popScanbeam(topY) || this.localMinimaPending()) {
+        if (timeToPanic()) {
+          succeeded = false
+          break
+        }
+        this.processHorizontals()
+        this.ghostJoins = []
+        if (!this.processIntersections(topY.y)) {
+          console.warn('execute clipper failed: unable process intersections for topY at', topY.y)
+          succeeded = false
+          break
+        }
+        this.processEdgesAtTopOfScanbeam(topY.y)
+        bottomY.y = topY.y
+        this.insertLocalMinimumIntoAEL(bottomY)
+      }
+    } catch (e) {
+      succeeded = false
+    }
+
+    if (succeeded) {
       // fix orientations ...
-      for (let i = 0, len = this.outerPolygons.length; i < len; i++) {
-        const outerRectangle = this.outerPolygons[i]
-        if (outerRectangle.points === null || outerRectangle.isOpen) continue
+      for (const polygonOut of this.polygonOutList) {
+        if (polygonOut.points === null || polygonOut.isOpen) continue
         // Jacob: fixed error here where boolean wasn't correctly being coerced to number (added + at start of each)
-        if ((+outerRectangle.isHole ^ +this.reverseSolution) === +(this.area(outerRectangle.points) > 0))
-          this.reversePolyPointLinks(outerRectangle.points)
+        if ((+polygonOut.isHole ^ +this.reverseSolution) === +(this.area(polygonOut.points) > 0))
+          this.reversePolyPointLinks(polygonOut.points)
       }
 
       this.joinCommonEdges()
 
-      for (let i = 0, len = this.outerPolygons.length; i < len; i++) {
-        const outerRectangle = this.outerPolygons[i]
+      for (const outerRectangle of this.polygonOutList) {
         if (outerRectangle.points === null) continue
         else if (outerRectangle.isOpen) this.fixupOutPolyline(outerRectangle)
         else this.fixupOutPolygon(outerRectangle)
       }
 
       if (this.strictlySimple) this.doSimplePolygons()
-      return true
-    } finally {
-      //catch { return false; }
-      this.joins.length = 0
-      this.ghostJoins.length = 0
     }
+    this.joins = []
+    this.ghostJoins = []
+    return succeeded
   }
 
   public disposeAllPolyPoints() {
-    for (let i = 0, len = this.outerPolygons.length; i < len; ++i) this.disposeOuterRectangle(i)
-    ClipperLib.clear(this.outerPolygons)
+    for (let i = 0, len = this.polygonOutList.length; i < len; ++i) this.disposeOuterRectangle(i)
+    // ClipperLib.clear(this.polygonOutList)
+    this.polygonOutList = []
   }
 
   public addJoin(outerPoint1: OuterPoint, outerPoint2: OuterPoint, offPoint: IntPoint) {
@@ -272,24 +267,20 @@ export class Clipper extends ClipperBase {
     }
   }
 
-  public insertLocalMinimaIntoAEL(bottomY: number) {
-    const localMinima = new LocalMinima()
+  public insertLocalMinimumIntoAEL(bottomY: LocalMinimum | Scanbeam) {
+    const localMinimum = new LocalMinimum()
+    while (this.popLocalMinimums(bottomY.y, localMinimum)) {
+      const { leftBoundary, rightBoundary } = localMinimum
 
-    let leftBoundary: Edge
-    let rightBoundary: Edge
-    while (this.popLocalMinima(bottomY, localMinima)) {
-      leftBoundary = localMinima.v.leftBoundary
-      rightBoundary = localMinima.v.rightBoundary
-
-      let Op1 = null
+      let outPoint1: OuterPoint | null = null
       if (leftBoundary === null) {
         this.insertEdgeIntoAEL(rightBoundary, null)
         this.setWindingCount(rightBoundary)
-        if (this.isContributing(rightBoundary)) Op1 = this.addOuterPoint(rightBoundary, rightBoundary.bottom)
+        if (this.isContributing(rightBoundary)) outPoint1 = this.addOuterPoint(rightBoundary, rightBoundary.bottom)
       } else if (rightBoundary === null) {
         this.insertEdgeIntoAEL(leftBoundary, null)
         this.setWindingCount(leftBoundary)
-        if (this.isContributing(leftBoundary)) Op1 = this.addOuterPoint(leftBoundary, leftBoundary.bottom)
+        if (this.isContributing(leftBoundary)) outPoint1 = this.addOuterPoint(leftBoundary, leftBoundary.bottom)
         this.insertScanbeam(leftBoundary.top.y)
       } else {
         this.insertEdgeIntoAEL(leftBoundary, null)
@@ -298,40 +289,38 @@ export class Clipper extends ClipperBase {
         rightBoundary.windCount = leftBoundary.windCount
         rightBoundary.windCount2 = leftBoundary.windCount2
         if (this.isContributing(leftBoundary))
-          Op1 = this.addLocalMinPoly(leftBoundary, rightBoundary, leftBoundary.bottom)
+          outPoint1 = this.addLocalMinimumPoly(leftBoundary, rightBoundary, leftBoundary.bottom)
         this.insertScanbeam(leftBoundary.top.y)
       }
       if (rightBoundary !== null) {
         if (ClipperBase.isHorizontal(rightBoundary)) {
+          this.addEdgeToSEL(rightBoundary)
           if (rightBoundary.nextInLML !== null) {
             this.insertScanbeam(rightBoundary.nextInLML.top.y)
           }
-          this.addEdgeToSEL(rightBoundary)
         } else {
           this.insertScanbeam(rightBoundary.top.y)
         }
       }
       if (leftBoundary === null || rightBoundary === null) continue
+
       // if output polygons share an Edge with a horizontal rb, they'll need joining later ...
       if (
-        Op1 !== null &&
+        outPoint1 !== null &&
         ClipperBase.isHorizontal(rightBoundary) &&
         this.ghostJoins.length > 0 &&
         rightBoundary.windDelta !== 0
       ) {
-        for (let i = 0, len = this.ghostJoins.length; i < len; i++) {
-          // if the horizontal Rb and a 'ghost' horizontal overlap, then convert the 'ghost' join to a real join ready for later ...
-          const j = this.ghostJoins[i]
-
+        for (const ghostJoin of this.ghostJoins) {
           if (
             this.horizontalSegmentsOverlap(
-              j.outerPoint1.point.x,
-              j.offPoint.x,
+              ghostJoin.outerPoint1.point.x,
+              ghostJoin.offPoint.x,
               rightBoundary.bottom.x,
               rightBoundary.top.x
             )
           )
-            this.addJoin(j.outerPoint1, Op1, j.offPoint)
+            this.addJoin(ghostJoin.outerPoint1, outPoint1, ghostJoin.offPoint)
         }
       }
 
@@ -341,7 +330,7 @@ export class Clipper extends ClipperBase {
         leftBoundary.prevInAEL.current.x === leftBoundary.bottom.x &&
         leftBoundary.prevInAEL.outIndex >= 0 &&
         ClipperBase.slopesEqual(
-          leftBoundary.prevInAEL.current,
+          leftBoundary.prevInAEL.bottom,
           leftBoundary.prevInAEL.top,
           leftBoundary.current,
           leftBoundary.top,
@@ -350,8 +339,8 @@ export class Clipper extends ClipperBase {
         leftBoundary.windDelta !== 0 &&
         leftBoundary.prevInAEL.windDelta !== 0
       ) {
-        const Op2 = this.addOuterPoint(leftBoundary.prevInAEL, leftBoundary.bottom)
-        this.addJoin(Op1, Op2, leftBoundary.top)
+        const outPoint2 = this.addOuterPoint(leftBoundary.prevInAEL, leftBoundary.bottom)
+        this.addJoin(outPoint1, outPoint2, leftBoundary.top)
       }
       if (leftBoundary.nextInAEL !== rightBoundary) {
         if (
@@ -367,23 +356,23 @@ export class Clipper extends ClipperBase {
           rightBoundary.windDelta !== 0 &&
           rightBoundary.prevInAEL.windDelta !== 0
         ) {
-          const Op2 = this.addOuterPoint(rightBoundary.prevInAEL, rightBoundary.bottom)
-          this.addJoin(Op1, Op2, rightBoundary.top)
+          const outPoint2 = this.addOuterPoint(rightBoundary.prevInAEL, rightBoundary.bottom)
+          this.addJoin(outPoint1, outPoint2, rightBoundary.top)
         }
+
         let e = leftBoundary.nextInAEL
         if (e !== null)
           while (e !== rightBoundary) {
             // nb: For calculating winding counts etc, IntersectEdges() assumes
             // that param1 will be to the right of param2 ABOVE the intersection ...
-            this.intersectEdges(rightBoundary, e, leftBoundary.current)
-            //order important here
+            this.intersectEdges(rightBoundary, e, leftBoundary.current) // order important here
             e = e.nextInAEL
           }
       }
     }
   }
 
-  public insertEdgeIntoAEL(edge: Edge, startEdge: Edge) {
+  public insertEdgeIntoAEL(edge: Edge, startEdge: Edge | null) {
     if (this.activeEdges === null) {
       edge.prevInAEL = null
       edge.nextInAEL = null
@@ -666,7 +655,7 @@ export class Clipper extends ClipperBase {
     else this.appendPolygon(edge2, edge1)
   }
 
-  public addLocalMinPoly(edge1: Edge, edge2: Edge, point: IntPoint) {
+  public addLocalMinimumPoly(edge1: Edge, edge2: Edge, point: IntPoint) {
     let result: OuterPoint
     let edge: Edge, prevEdge: Edge
     if (ClipperBase.isHorizontal(edge2) || edge1.dx > edge2.dx) {
@@ -709,39 +698,39 @@ export class Clipper extends ClipperBase {
     return result
   }
 
-  public addOuterPoint(e: Edge, pt: IntPoint) {
-    if (e.outIndex < 0) {
+  public addOuterPoint(edge: Edge, point: IntPoint) {
+    if (edge.outIndex < 0) {
       const outerRectangle = this.createOuterRectangle()
-      outerRectangle.isOpen = e.windDelta === 0
+      outerRectangle.isOpen = edge.windDelta === 0
 
       const newOuterPoint = new OuterPoint()
       outerRectangle.points = newOuterPoint
       newOuterPoint.index = outerRectangle.index
       //newOuterPoint.Pt = pt;
-      newOuterPoint.point.x = pt.x
-      newOuterPoint.point.y = pt.y
+      newOuterPoint.point.x = point.x
+      newOuterPoint.point.y = point.y
 
-      if (ClipperLib.USE_XYZ) newOuterPoint.point.z = pt.z
+      if (ClipperLib.USE_XYZ) newOuterPoint.point.z = point.z
       newOuterPoint.next = newOuterPoint
       newOuterPoint.prev = newOuterPoint
 
-      if (!outerRectangle.isOpen) this.setHoleState(e, outerRectangle)
-      e.outIndex = outerRectangle.index
+      if (!outerRectangle.isOpen) this.setHoleState(edge, outerRectangle)
+      edge.outIndex = outerRectangle.index
       //nb: do this after SetZ !
       return newOuterPoint
     } else {
-      const outerRectangle = this.outerPolygons[e.outIndex]
+      const outerRectangle = this.polygonOutList[edge.outIndex]
       //OutRec.Pts is the 'Left-most' point & OutRec.Pts.Prev is the 'Right-most'
       const outerPoints = outerRectangle.points
-      const toFront = e.side === EdgeSide.left
-      if (toFront && IntPoint.op_Equality(pt, outerPoints.point)) return outerPoints
-      else if (!toFront && IntPoint.op_Equality(pt, outerPoints.prev.point)) return outerPoints.prev
+      const toFront = edge.side === EdgeSide.left
+      if (toFront && IntPoint.op_Equality(point, outerPoints.point)) return outerPoints
+      else if (!toFront && IntPoint.op_Equality(point, outerPoints.prev.point)) return outerPoints.prev
       const newOuterPoint = new OuterPoint()
       newOuterPoint.index = outerRectangle.index
       //newOuterPoint.Pt = pt;
-      newOuterPoint.point.x = pt.x
-      newOuterPoint.point.y = pt.y
-      if (ClipperLib.USE_XYZ) newOuterPoint.point.z = pt.z
+      newOuterPoint.point.x = point.x
+      newOuterPoint.point.y = point.y
+      if (ClipperLib.USE_XYZ) newOuterPoint.point.z = point.z
       newOuterPoint.next = outerPoints
       newOuterPoint.prev = outerPoints.prev
       newOuterPoint.prev.next = newOuterPoint
@@ -751,8 +740,8 @@ export class Clipper extends ClipperBase {
     }
   }
 
-  public getLastOutPoint(edge: Edge) {
-    const outerRectangle = this.outerPolygons[edge.outIndex]
+  public getLastOuterPoint(edge: Edge) {
+    const outerRectangle = this.polygonOutList[edge.outIndex]
     if (edge.side === EdgeSide.left) {
       return outerRectangle.points
     } else {
@@ -805,12 +794,12 @@ export class Clipper extends ClipperBase {
       outerRectangle.firstLeft = null
       outerRectangle.isHole = false
     } else {
-      outerRectangle.firstLeft = this.outerPolygons[edgeTmp.outIndex]
+      outerRectangle.firstLeft = this.polygonOutList[edgeTmp.outIndex]
       outerRectangle.isHole = !outerRectangle.firstLeft.isHole
     }
   }
 
-  public getDx(pt1: IntPoint, pt2: IntPoint) {
+  public getDx(pt1: IntPoint, pt2: IntPoint): typeof ClipperBase.HORIZONTAL | number {
     if (pt1.y === pt2.y) return ClipperBase.HORIZONTAL
     else return (pt2.x - pt1.x) / (pt2.y - pt1.y)
   }
@@ -888,17 +877,17 @@ export class Clipper extends ClipperBase {
     return false
   }
 
-  public getOutRec(index: number) {
-    let outerRectangle = this.outerPolygons[index]
-    while (outerRectangle !== this.outerPolygons[outerRectangle.index])
-      outerRectangle = this.outerPolygons[outerRectangle.index]
+  public getOuterRec(index: number) {
+    let outerRectangle = this.polygonOutList[index]
+    while (outerRectangle !== this.polygonOutList[outerRectangle.index])
+      outerRectangle = this.polygonOutList[outerRectangle.index]
     return outerRectangle
   }
 
   public appendPolygon(edge1: Edge, edge2: Edge) {
     // get the start and ends of both output polygons ...
-    const outerRectangle1 = this.outerPolygons[edge1.outIndex]
-    const outerRectangle2 = this.outerPolygons[edge2.outIndex]
+    const outerRectangle1 = this.polygonOutList[edge1.outIndex]
+    const outerRectangle2 = this.polygonOutList[edge2.outIndex]
     let holeStateRec: OuterRectangle
     if (this.outerRectangle1RightOfOutRec2(outerRectangle1, outerRectangle2)) holeStateRec = outerRectangle2
     else if (this.outerRectangle1RightOfOutRec2(outerRectangle2, outerRectangle1)) holeStateRec = outerRectangle1
@@ -953,12 +942,13 @@ export class Clipper extends ClipperBase {
     outerRectangle2.points = null
     outerRectangle2.bottomPoint = null
     outerRectangle2.firstLeft = outerRectangle1
+
     const okIndex = edge1.outIndex
     const obsoleteIndex = edge2.outIndex
-    edge1.outIndex = -1
 
-    // nb: safe because we only get here via AddLocalMaxPoly
-    edge2.outIndex = -1
+    edge1.outIndex = ClipperBase.UNASSIGNED // nb: safe because we only get here via AddLocalMaxPoly
+    edge2.outIndex = ClipperBase.UNASSIGNED
+
     let e = this.activeEdges
     while (e !== null) {
       if (e.outIndex === obsoleteIndex) {
@@ -1072,6 +1062,7 @@ export class Clipper extends ClipperBase {
       e2FillType1: PolygonFillType,
       e1FillType2: PolygonFillType,
       e2FillType2: PolygonFillType
+
     if (edge1.polyType === PolyType.subject) {
       e1FillType1 = this.subjectFillType
       e1FillType2 = this.clipFillType
@@ -1160,27 +1151,29 @@ export class Clipper extends ClipperBase {
           break
       }
       if (edge1.polyType !== edge2.polyType) {
-        this.addLocalMinPoly(edge1, edge2, point)
-      } else if (e1WindCount === 1 && e2WindCount === 1)
+        this.addLocalMinimumPoly(edge1, edge2, point)
+      } else if (e1WindCount === 1 && e2WindCount === 1) {
         switch (this.clipType) {
           case ClipType.intersection:
-            if (e1WindCount2 > 0 && e2WindCount2 > 0) this.addLocalMinPoly(edge1, edge2, point)
+            if (e1WindCount2 > 0 && e2WindCount2 > 0) this.addLocalMinimumPoly(edge1, edge2, point)
             break
           case ClipType.union:
-            if (e1WindCount2 <= 0 && e2WindCount2 <= 0) this.addLocalMinPoly(edge1, edge2, point)
+            if (e1WindCount2 <= 0 && e2WindCount2 <= 0) this.addLocalMinimumPoly(edge1, edge2, point)
             break
           case ClipType.difference:
             if (
               (edge1.polyType === PolyType.clip && e1WindCount2 > 0 && e2WindCount2 > 0) ||
               (edge1.polyType === PolyType.subject && e1WindCount2 <= 0 && e2WindCount2 <= 0)
             )
-              this.addLocalMinPoly(edge1, edge2, point)
+              this.addLocalMinimumPoly(edge1, edge2, point)
             break
           case ClipType.xor:
-            this.addLocalMinPoly(edge1, edge2, point)
+            this.addLocalMinimumPoly(edge1, edge2, point)
             break
         }
-      else Clipper.swapSides(edge1, edge2)
+      } else {
+        Clipper.swapSides(edge1, edge2)
+      }
     }
   }
 
@@ -1215,69 +1208,95 @@ export class Clipper extends ClipperBase {
     }
   }
 
+  /*******************************************************************************
+   * Notes: Horizontal edges (HEs) at scanline intersections (ie at the Top or    *
+   * Bottom of a scanbeam) are processed as if layered. The order in which HEs    *
+   * are processed doesn't matter. HEs intersect with other HE Bot.Xs only [#]    *
+   * (or they could intersect with Top.Xs only, ie EITHER Bot.Xs OR Top.Xs),      *
+   * and with other non-horizontal edges [*]. Once these intersections are        *
+   * processed, intermediate HEs then 'promote' the Edge above (NextInLML) into   *
+   * the AEL. These 'promoted' edges may in turn intersect [%] with other HEs.    *
+   *******************************************************************************/
   public processHorizontal(horizontalEdge: Edge) {
+    const isOpen = horizontalEdge.windDelta === 0
+
     const $var: HorizontalEdgeProps = {
       direction: null,
       left: null,
       right: null,
     }
-
     this.getHorizontalDirection(horizontalEdge, $var)
     let direction = $var.direction
     let horizontalLeft = $var.left
     let horizontalRight = $var.right
 
-    const isOpen = horizontalEdge.windDelta === 0
-
-    let lastHorizontalEdge = horizontalEdge,
-      edgeMaxPair: Edge = null
-    while (lastHorizontalEdge.nextInLML !== null && ClipperBase.isHorizontal(lastHorizontalEdge.nextInLML))
+    let lastHorizontalEdge = horizontalEdge
+    let edgeMaximaPair: Edge | null = null
+    while (lastHorizontalEdge.nextInLML !== null && ClipperBase.isHorizontal(lastHorizontalEdge.nextInLML)) {
       lastHorizontalEdge = lastHorizontalEdge.nextInLML
-    if (lastHorizontalEdge.nextInLML === null) edgeMaxPair = this.getMaximaPair(lastHorizontalEdge)
+    }
+    if (lastHorizontalEdge.nextInLML === null) edgeMaximaPair = this.getMaximaPair(lastHorizontalEdge)
 
-    let currMax = this.maxima
-    if (currMax !== null) {
-      //get the first maxima in range (X) ...
+    const firstX = this.maximaList[0].x
+    const lastX = this.maximaList[this.maximaList.length - 1].x
+
+    let maxX: number | null = null
+    let minX: number | null = null
+    let maximaIndex: number
+    if (this.maximaList.length > 0) {
+      // get the first maxima in range (X) ...
       if (direction === Direction.leftToRight) {
-        while (currMax !== null && currMax.x <= horizontalEdge.bottom.x) {
-          currMax = currMax.next
+        maximaIndex = 0
+        maxX = this.maximaList[maximaIndex].x
+        while (maximaIndex < this.maximaList.length - 1 && maxX <= horizontalEdge.bottom.x) {
+          maximaIndex++
+          maxX = this.maximaList[maximaIndex].x
         }
-        if (currMax !== null && currMax.x >= lastHorizontalEdge.top.x) {
-          currMax = null
+        if (maxX !== lastX && maxX >= lastHorizontalEdge.top.x) {
+          maxX = lastX
         }
       } else {
-        while (currMax.next !== null && currMax.next.x < horizontalEdge.bottom.x) {
-          currMax = currMax.next
+        maximaIndex = this.maximaList.length - 1
+        minX = this.maximaList[0].x
+        while (maximaIndex > 0 && minX > horizontalEdge.bottom.x) {
+          maximaIndex--
+          minX = this.maximaList[maximaIndex].x
         }
-        if (currMax.x <= lastHorizontalEdge.top.x) {
-          currMax = null
+        if (minX !== firstX && minX <= lastHorizontalEdge.top.x) {
+          minX = null
         }
       }
     }
 
     let outerPoint1: OuterPoint | null = null
-    for (;;) //loop through consecutive horizontal edges
-    {
+    //loop through consecutive horizontal edges
+    const timeToPanic = panicker()
+    while (true) {
+      if (timeToPanic()) break
       const isLastHorizontal = horizontalEdge === lastHorizontalEdge
       let edge = this.getNextInAEL(horizontalEdge, direction)
       while (edge !== null) {
         // This code block inserts extra coords into horizontal edges (in output polygons)
         // wherever maxima touch these horizontal edges.
         // This helps 'simplifying' polygons (ie if the Simplify property is set).
-        if (currMax !== null) {
+        if (this.maximaList.length > 0) {
           if (direction === Direction.leftToRight) {
-            while (currMax !== null && currMax.x < edge.current.x) {
+            // let maximaIndex = this.maximaList.length - 1
+
+            while (maximaIndex < this.maximaList.length - 1 && maxX < edge.current.x) {
               if (horizontalEdge.outIndex >= 0 && !isOpen) {
-                this.addOuterPoint(horizontalEdge, new IntPoint(currMax.x, horizontalEdge.bottom.y))
+                this.addOuterPoint(horizontalEdge, new IntPoint(maxX, horizontalEdge.bottom.y))
               }
-              currMax = currMax.next
+              maximaIndex++
+              maxX = this.maximaList[maximaIndex].x
             }
           } else {
-            while (currMax !== null && currMax.x > edge.current.x) {
+            while (maximaIndex > 0 && maxX > edge.current.x) {
               if (horizontalEdge.outIndex >= 0 && !isOpen) {
-                this.addOuterPoint(horizontalEdge, new IntPoint(currMax.x, horizontalEdge.bottom.y))
+                this.addOuterPoint(horizontalEdge, new IntPoint(maxX, horizontalEdge.bottom.y))
               }
-              currMax = currMax.prev
+              maximaIndex--
+              maxX = this.maximaList[maximaIndex].x
             }
           }
         }
@@ -1289,14 +1308,15 @@ export class Clipper extends ClipperBase {
           break
         }
 
-        //Also break if we've got to the end of an intermediate horizontal edge ...
-        //nb: Smaller Dx's are to the right of larger Dx's ABOVE the horizontal.
+        // Also break if we've got to the end of an intermediate horizontal edge ...
+        // nb: Smaller Dx's are to the right of larger Dx's ABOVE the horizontal.
         if (
           edge.current.x === horizontalEdge.top.x &&
           horizontalEdge.nextInLML !== null &&
           edge.dx < horizontalEdge.nextInLML.dx
-        )
+        ) {
           break
+        }
 
         if (horizontalEdge.outIndex >= 0 && !isOpen) {
           //note: may be done multiple times
@@ -1306,46 +1326,46 @@ export class Clipper extends ClipperBase {
           }
 
           outerPoint1 = this.addOuterPoint(horizontalEdge, edge.current)
-          let nextEdgeHorizontal = this.sortedEdges
-          while (nextEdgeHorizontal !== null) {
+          let nextHorizontalEdge = this.sortedEdges
+          while (nextHorizontalEdge !== null) {
             if (
-              nextEdgeHorizontal.outIndex >= 0 &&
+              nextHorizontalEdge.outIndex >= 0 &&
               this.horizontalSegmentsOverlap(
                 horizontalEdge.bottom.x,
                 horizontalEdge.top.x,
-                nextEdgeHorizontal.bottom.x,
-                nextEdgeHorizontal.top.x
+                nextHorizontalEdge.bottom.x,
+                nextHorizontalEdge.top.x
               )
             ) {
-              const outerPoint2 = this.getLastOutPoint(nextEdgeHorizontal)
-              this.addJoin(outerPoint2, outerPoint1, nextEdgeHorizontal.top)
+              const outerPoint2 = this.getLastOuterPoint(nextHorizontalEdge)
+              this.addJoin(outerPoint2, outerPoint1, nextHorizontalEdge.top)
             }
-            nextEdgeHorizontal = nextEdgeHorizontal.nextInSEL
+            nextHorizontalEdge = nextHorizontalEdge.nextInSEL
           }
           this.addGhostJoin(outerPoint1, horizontalEdge.bottom)
         }
 
-        // OK, so far we're still in range of the horizontal Edge  but make sure
+        // OK, so far we're still in range of the horizontal Edge but make sure
         // we're at the last of consecutively horizontals when matching with eMaxPair
-        if (edge === edgeMaxPair && isLastHorizontal) {
+        if (edge === edgeMaximaPair && isLastHorizontal) {
           if (horizontalEdge.outIndex >= 0) {
-            this.addLocalMaxPoly(horizontalEdge, edgeMaxPair, horizontalEdge.top)
+            this.addLocalMaxPoly(horizontalEdge, edgeMaximaPair, horizontalEdge.top)
           }
           this.deleteFromAEL(horizontalEdge)
-          this.deleteFromAEL(edgeMaxPair)
+          this.deleteFromAEL(edgeMaximaPair)
           return
         }
 
         if (direction === Direction.leftToRight) {
-          const Pt = new IntPoint(edge.current.x, horizontalEdge.current.y)
-          this.intersectEdges(horizontalEdge, edge, Pt)
+          const pt = new IntPoint(edge.current.x, horizontalEdge.current.y)
+          this.intersectEdges(horizontalEdge, edge, pt)
         } else {
-          const Pt = new IntPoint(edge.current.x, horizontalEdge.current.y)
-          this.intersectEdges(edge, horizontalEdge, Pt)
+          const pt = new IntPoint(edge.current.x, horizontalEdge.current.y)
+          this.intersectEdges(edge, horizontalEdge, pt)
         }
-        const eNext = this.getNextInAEL(edge, direction)
+        const nextEdge = this.getNextInAEL(edge, direction)
         this.swapPositionsInAEL(horizontalEdge, edge)
-        edge = eNext
+        edge = nextEdge
       } //end while(e !== null)
 
       // Break out of loop if HorizontalEdge.NextInLML is not also horizontal ...
@@ -1363,30 +1383,29 @@ export class Clipper extends ClipperBase {
         left: horizontalLeft,
         right: horizontalRight,
       }
-
       this.getHorizontalDirection(horizontalEdge, $var)
       direction = $var.direction
       horizontalLeft = $var.left
       horizontalRight = $var.right
-    } //end for (;;)
+    } // end while(true)
 
     if (horizontalEdge.outIndex >= 0 && outerPoint1 === null) {
-      outerPoint1 = this.getLastOutPoint(horizontalEdge)
-      let nextEdgeHorizontal = this.sortedEdges
-      while (nextEdgeHorizontal !== null) {
+      outerPoint1 = this.getLastOuterPoint(horizontalEdge)
+      let nextHorizontalEdge = this.sortedEdges
+      while (nextHorizontalEdge !== null) {
         if (
-          nextEdgeHorizontal.outIndex >= 0 &&
+          nextHorizontalEdge.outIndex >= 0 &&
           this.horizontalSegmentsOverlap(
             horizontalEdge.bottom.x,
             horizontalEdge.top.x,
-            nextEdgeHorizontal.bottom.x,
-            nextEdgeHorizontal.top.x
+            nextHorizontalEdge.bottom.x,
+            nextHorizontalEdge.top.x
           )
         ) {
-          const outerPoint2 = this.getLastOutPoint(nextEdgeHorizontal)
-          this.addJoin(outerPoint2, outerPoint1, nextEdgeHorizontal.top)
+          const outerPoint2 = this.getLastOuterPoint(nextHorizontalEdge)
+          this.addJoin(outerPoint2, outerPoint1, nextHorizontalEdge.top)
         }
-        nextEdgeHorizontal = nextEdgeHorizontal.nextInSEL
+        nextHorizontalEdge = nextHorizontalEdge.nextInSEL
       }
       this.addGhostJoin(outerPoint1, horizontalEdge.top)
     }
@@ -1434,23 +1453,23 @@ export class Clipper extends ClipperBase {
     }
   }
 
-  public getNextInAEL(edge: Edge, direction: Direction) {
+  public getNextInAEL(edge: Edge, direction: Direction): Edge | null {
     return direction === Direction.leftToRight ? edge.nextInAEL : edge.prevInAEL
   }
 
-  public isMinima(edge: Edge) {
+  public isMinima(edge: Edge): boolean {
     return edge !== null && edge.prev.nextInLML !== edge && edge.next.nextInLML !== edge
   }
 
-  public isMaxima(edge: Edge, y: number) {
+  public isMaxima(edge: Edge, y: number): boolean {
     return edge !== null && edge.top.y === y && edge.nextInLML === null
   }
 
-  public isIntermediate(edge: Edge, y: number) {
+  public isIntermediate(edge: Edge, y: number): boolean {
     return edge.top.y === y && edge.nextInLML !== null
   }
 
-  public getMaximaPair(edge: Edge) {
+  public getMaximaPair(edge: Edge): Edge | null {
     if (IntPoint.op_Equality(edge.next.top, edge.top) && edge.next.nextInLML === null) {
       return edge.next
     } else {
@@ -1463,7 +1482,7 @@ export class Clipper extends ClipperBase {
   }
 
   /** Same as getMaximaPair but returns null if MaxPair isn't in AEL (unless it's horizontal) */
-  public getMaximaPairEx(edge: Edge) {
+  public getMaximaPairEx(edge: Edge): Edge | null {
     const result = this.getMaximaPair(edge)
     if (
       result === null ||
@@ -1697,7 +1716,7 @@ export class Clipper extends ClipperBase {
     }
     // 3. Process horizontals at the Top of the scanbeam ...
     this.processHorizontals()
-    this.maxima = null
+    this.maximaList = null
 
     // 4. Promote intermediate vertices ...
     edge = this.activeEdges
@@ -1798,8 +1817,8 @@ export class Clipper extends ClipperBase {
   public buildResult(pattern: PolygonTree | Paths) {
     if (pattern instanceof Paths) {
       ClipperLib.clear(pattern)
-      for (let i = 0, len = this.outerPolygons.length; i < len; i++) {
-        const outerRectangle = this.outerPolygons[i]
+      for (let i = 0, len = this.polygonOutList.length; i < len; i++) {
+        const outerRectangle = this.polygonOutList[i]
         if (outerRectangle.points === null) continue
         let p = outerRectangle.points.prev
         const cnt = this.pointCount(p)
@@ -1811,12 +1830,13 @@ export class Clipper extends ClipperBase {
         }
         pattern.push(pg)
       }
-    } else if (pattern) {
-      pattern.clear()
+    } else if (pattern instanceof PolygonTree) {
+      // debugger
+      // pattern.clear()
       // add each output polygon/contour to polygonTree ...
       // polygonTree.allPolys.set_Capacity(this.m_PolyOuts.length);
-      for (let i = 0, len = this.outerPolygons.length; i < len; i++) {
-        const outerRectangle = this.outerPolygons[i]
+      for (let i = 0, len = this.polygonOutList.length; i < len; i++) {
+        const outerRectangle = this.polygonOutList[i]
         const cnt = this.pointCount(outerRectangle.points)
         if ((outerRectangle.isOpen && cnt < 2) || (!outerRectangle.isOpen && cnt < 3)) continue
         this.fixHoleLinkage(outerRectangle)
@@ -1832,8 +1852,8 @@ export class Clipper extends ClipperBase {
       }
       // fixup PolyNode links etc ...
       // polygonTree.children.set_Capacity(this.m_PolyOuts.length);
-      for (let i = 0, len = this.outerPolygons.length; i < len; i++) {
-        const outerRectangle = this.outerPolygons[i]
+      for (let i = 0, len = this.polygonOutList.length; i < len; i++) {
+        const outerRectangle = this.polygonOutList[i]
         if (outerRectangle.polyNode === null) continue
         else if (outerRectangle.isOpen) {
           outerRectangle.polyNode.isOpen = true
@@ -1842,6 +1862,9 @@ export class Clipper extends ClipperBase {
           outerRectangle.firstLeft.polyNode.addChild(outerRectangle.polyNode)
         else pattern.addChild(outerRectangle.polyNode)
       }
+    } else {
+      console.warn('unknown type for pattern')
+      console.warn(pattern)
     }
   }
 
@@ -2318,8 +2341,8 @@ export class Clipper extends ClipperBase {
 
   public fixupFirstLefts1(OldOutRec: OuterRectangle, NewOutRec: OuterRectangle) {
     let outerRectangle, firstLeft
-    for (let i = 0, len = this.outerPolygons.length; i < len; i++) {
-      outerRectangle = this.outerPolygons[i]
+    for (let i = 0, len = this.polygonOutList.length; i < len; i++) {
+      outerRectangle = this.polygonOutList[i]
       firstLeft = Clipper.parseFirstLeft(outerRectangle.firstLeft)
       if (outerRectangle.points !== null && firstLeft === OldOutRec) {
         if (this.polygon2ContainsPoly1(outerRectangle.points, NewOutRec.points)) outerRectangle.firstLeft = NewOutRec
@@ -2334,8 +2357,8 @@ export class Clipper extends ClipperBase {
     // (including nil) to see if they've become inner to the new inner polygon ...
     const outerOutRecFirstLeft = outerOutRec.firstLeft
     let outerRectangle: OuterRectangle, firstLeft: OuterRectangle
-    for (let i = 0, len = this.outerPolygons.length; i < len; i++) {
-      outerRectangle = this.outerPolygons[i]
+    for (let i = 0, len = this.polygonOutList.length; i < len; i++) {
+      outerRectangle = this.polygonOutList[i]
       if (outerRectangle.points === null || outerRectangle === outerOutRec || outerRectangle === innerOutRec) continue
       firstLeft = Clipper.parseFirstLeft(outerRectangle.firstLeft)
       if (firstLeft !== outerOutRecFirstLeft && firstLeft !== innerOutRec && firstLeft !== outerOutRec) continue
@@ -2351,8 +2374,8 @@ export class Clipper extends ClipperBase {
   public fixupFirstLefts3(oldOutRec: OuterRectangle, newOutRec: OuterRectangle) {
     let outerRectangle: OuterRectangle
     let firstLeft: OuterRectangle
-    for (let i = 0, len = this.outerPolygons.length; i < len; i++) {
-      outerRectangle = this.outerPolygons[i]
+    for (let i = 0, len = this.polygonOutList.length; i < len; i++) {
+      outerRectangle = this.polygonOutList[i]
       firstLeft = Clipper.parseFirstLeft(outerRectangle.firstLeft)
       if (outerRectangle.points !== null && firstLeft === oldOutRec) outerRectangle.firstLeft = newOutRec
     }
@@ -2366,8 +2389,8 @@ export class Clipper extends ClipperBase {
   public joinCommonEdges() {
     for (let i = 0, len = this.joins.length; i < len; i++) {
       const join = this.joins[i]
-      const outerRectangle1 = this.getOutRec(join.outerPoint1.index)
-      let outerRectangle2 = this.getOutRec(join.outerPoint2.index)
+      const outerRectangle1 = this.getOuterRec(join.outerPoint1.index)
+      let outerRectangle2 = this.getOuterRec(join.outerPoint2.index)
       if (outerRectangle1.points === null || outerRectangle2.points === null) continue
 
       if (outerRectangle1.isOpen || outerRectangle2.isOpen) {
@@ -2440,8 +2463,8 @@ export class Clipper extends ClipperBase {
 
   public doSimplePolygons() {
     let i = 0
-    while (i < this.outerPolygons.length) {
-      const outerRectangle = this.outerPolygons[i++]
+    while (i < this.polygonOutList.length) {
+      const outerRectangle = this.polygonOutList[i++]
       let outerPoint1 = outerRectangle.points
       if (outerPoint1 === null || outerRectangle.isOpen) continue
       do // for each Pt in Polygon until duplicate found do ...
@@ -2590,8 +2613,7 @@ export class Clipper extends ClipperBase {
     return result
   }
 
-  public static cleanPolygon(path: Path, distance?: number) {
-    if (typeof distance === 'undefined') distance = 1.415
+  public static cleanPolygon(path: Path | IntPoint[], distance = 1.415) {
     // distance = proximity in units/pixels below which vertices will be stripped.
     // Default ~= sqrt(2) so when adjacent vertices or semi-adjacent vertices have
     // both x & y coords within 1 unit, then the second vertex will be stripped.
@@ -2626,7 +2648,7 @@ export class Clipper extends ClipperBase {
       }
     }
     if (count < 3) count = 0
-    const result: IntPoint[] = new Array(count)
+    const result = new Path(count)
     for (let i = 0; i < count; ++i) {
       result[i] = new IntPoint(outerPoint.point)
       outerPoint = outerPoint.next

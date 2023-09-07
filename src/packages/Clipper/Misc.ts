@@ -2,24 +2,24 @@ import type { Edge } from './Edge'
 import { IntPoint } from './IntPoint'
 import type { PolygonNode } from './PolygonNode'
 
-export class LocalMinima {
+export class LocalMinimum {
   public y = 0
   public leftBoundary: Edge | null = null
   public rightBoundary: Edge | null = null
-  public next: LocalMinima | null = null
-  public v: LocalMinima | null = null
 }
 
 export class Scanbeam {
-  public y = 0
-  public Next: Scanbeam | null = null
-  public v = 0
+  public y: number
+  constructor(y = 0) {
+    this.y = y
+  }
 }
 
 export class Maxima {
-  public x = 0
-  public next: Maxima | null = null
-  public prev: Maxima | null = null
+  public x: number
+  constructor(x = 0) {
+    this.x = x
+  }
 }
 
 // OutRec: contains a path in the clipping solution. Edges in the AEL will

@@ -1,15 +1,19 @@
+import Path from '../Path'
 import Point from '../Point'
-import { Edge } from '../types'
+import type { Edge } from '../types'
+import type { SimplifiedSvgPathSegment } from './pathToCanvasCommands'
+import { pathToCanvasCommands } from './pathToCanvasCommands'
 
 export const EPSILON = 0.000001
 
 // Convert start+end angle arc to start/end points.
-export const arcToPoints = (x: number, y: number, aStart: number, aEnd: number, radius: number) => {
+export const arcToPoints = (x: number, y: number, aStart: number, aEnd: number, radiusX: number, radiusY?: number) => {
+  if (radiusY === undefined) radiusY = radiusX
   aStart = aStart % (Math.PI * 2)
   aEnd = aEnd % (Math.PI * 2)
   return {
-    start: new Point(radius * Math.cos(aStart) + x, radius * Math.sin(aStart) + y),
-    end: new Point(radius * Math.cos(aEnd) + x, radius * Math.sin(aEnd) + y),
+    start: new Point(radiusX * Math.cos(aStart) + x, radiusX * Math.sin(aStart) + y),
+    end: new Point(radiusY * Math.cos(aEnd) + x, radiusY * Math.sin(aEnd) + y),
   }
 }
 
@@ -33,6 +37,81 @@ export const lineToPoints = (
   }
 
   return points
+}
+
+export const ellipseToPoints = (
+  ...args:
+    | [
+        center: Point,
+        radiusX: number,
+        radiusY: number,
+        startAngle: number,
+        endAngle: number,
+        antiClockwise: boolean,
+        divisions: number
+      ]
+    | [
+        centerX: number,
+        centerY: number,
+        radiusX: number,
+        radiusY: number,
+        startAngle: number,
+        endAngle: number,
+        antiClockwise: boolean,
+        divisions: number
+      ]
+) => {
+  const centerX = args.length === 7 ? args[0].x : args[0]
+  const centerY = args.length === 7 ? args[0].y : args[1]
+  const radiusX = args.length === 7 ? args[1] : args[2]
+  const radiusY = args.length === 7 ? args[2] : args[3]
+  const startAngle = args.length === 7 ? args[3] : args[4]
+  const endAngle = args.length === 7 ? args[4] : args[5]
+  const antiClockwise = args.length === 7 ? args[5] : args[6]
+  const divisions = args.length === 7 ? args[6] : args[7]
+
+  const points: Point[] = []
+
+  let j: number,
+    t: number,
+    angle: number,
+    deltaAngle = endAngle - startAngle
+
+  for (j = 0; j <= divisions; j++) {
+    t = j / divisions
+
+    if (deltaAngle === -Math.PI * 2) deltaAngle = Math.PI * 2
+    if (deltaAngle < 0) deltaAngle += Math.PI * 2
+    if (deltaAngle > Math.PI * 2) deltaAngle -= Math.PI * 2
+
+    if (antiClockwise) {
+      // sin(pi) and sin(0) are the same
+      // So we have to special case for full circles
+      if (deltaAngle === Math.PI * 2) deltaAngle = 0
+      angle = endAngle + (1 - t) * (Math.PI * 2 - deltaAngle)
+    } else {
+      angle = startAngle + t * deltaAngle
+    }
+
+    const tx = centerX + radiusX * Math.cos(angle)
+    const ty = centerY + radiusY * Math.sin(angle)
+
+    points.push(new Point(tx, ty))
+  }
+
+  return points
+}
+
+export const circleToPoints = (
+  ...args:
+    | [center: Point, radius: number, divisions: number]
+    | [centerX: number, centerY: number, radius: number, divisions: number]
+) => {
+  const centerX = args.length === 3 ? args[0].x : args[0]
+  const centerY = args.length === 3 ? args[0].y : args[1]
+  const radius = args.length === 3 ? args[1] : args[2]
+  const divisions = args.length === 3 ? args[2] : args[3]
+  return ellipseToPoints(centerX, centerY, radius, radius, 0, Math.PI * 2, false, divisions)
 }
 
 // Convert start/end/center point arc to start/end angle arc.
@@ -78,8 +157,8 @@ export const sameFloat = (a: number, b: number, epsilon = EPSILON): boolean => {
   return diff / (absA + absB) < epsilon
 }
 
-export const samePos = (a: Point, b: Point): boolean => {
-  return sameFloat(a.x, b.x) && sameFloat(a.y, b.y) // && sameFloat(a.z, b.z) && sameFloat(a.a, b.a)
+export const samePos = (a: Point, b: Point, epsilon = EPSILON): boolean => {
+  return sameFloat(a.x, b.x, epsilon) && sameFloat(a.y, b.y, epsilon) // && sameFloat(a.z, b.z) && sameFloat(a.a, b.a)
 }
 
 export const convertPointsToEdges = (pts: Point[]): Edge[] => {
@@ -91,4 +170,33 @@ export const convertPointsToEdges = (pts: Point[]): Edge[] => {
     edges.push([pts[i - 1], pts[i]])
   }
   return edges
+}
+
+export const svgPathToShape = (path: string | SimplifiedSvgPathSegment[]) => {
+  const commands = typeof path === 'string' ? pathToCanvasCommands(path, true) : path
+  if (!commands.length) throw new Error('No commands found for path')
+
+  const shape = new Path()
+  shape.moveTo(commands[0].values[0], commands[0].values[1])
+  for (let i = 1; i < commands.length; i++) {
+    const command = commands[i]
+    if (command.type === 'M') {
+      shape.moveTo(command.values[0], command.values[1])
+    } else if (command.type === 'L') {
+      shape.lineTo(command.values[0], command.values[1])
+    } else if (command.type === 'C') {
+      shape.bezierCurveTo(
+        command.values[0],
+        command.values[1],
+        command.values[2],
+        command.values[3],
+        command.values[4],
+        command.values[5]
+      )
+    } else if (command.type === 'Z') {
+      shape.lineTo(commands[0].values[0], commands[0].values[1])
+    }
+  }
+
+  return shape
 }

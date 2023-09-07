@@ -8,8 +8,8 @@ import sketches from './sketches'
 import { renderSketchSliders, updateSliderValues } from './sliders'
 import { loadValue, saveValue } from './utils/localStorageUtils'
 
-const CANVAS_WIDTH = 140
-const CANVAS_HEIGHT = 100
+const CANVAS_WIDTH = 140 * 1.2
+const CANVAS_HEIGHT = 100 * 1.2
 const CANVAS_BACKGROUND = '#fff'
 const VIRTUAL_SCALE = 8
 const DRAW_STEPS_PER_FRAME = 100
