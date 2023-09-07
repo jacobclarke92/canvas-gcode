@@ -1,5 +1,8 @@
+import Path from '../Path'
 import Point from '../Point'
 import type { Edge } from '../types'
+import type { SimplifiedSvgPathSegment } from './pathToCanvasCommands'
+import { pathToCanvasCommands } from './pathToCanvasCommands'
 
 export const EPSILON = 0.000001
 
@@ -167,4 +170,33 @@ export const convertPointsToEdges = (pts: Point[]): Edge[] => {
     edges.push([pts[i - 1], pts[i]])
   }
   return edges
+}
+
+export const svgPathToShape = (path: string | SimplifiedSvgPathSegment[]) => {
+  const commands = typeof path === 'string' ? pathToCanvasCommands(path, true) : path
+  if (!commands.length) throw new Error('No commands found for path')
+
+  const shape = new Path()
+  shape.moveTo(commands[0].values[0], commands[0].values[1])
+  for (let i = 1; i < commands.length; i++) {
+    const command = commands[i]
+    if (command.type === 'M') {
+      shape.moveTo(command.values[0], command.values[1])
+    } else if (command.type === 'L') {
+      shape.lineTo(command.values[0], command.values[1])
+    } else if (command.type === 'C') {
+      shape.bezierCurveTo(
+        command.values[0],
+        command.values[1],
+        command.values[2],
+        command.values[3],
+        command.values[4],
+        command.values[5]
+      )
+    } else if (command.type === 'Z') {
+      shape.lineTo(commands[0].values[0], commands[0].values[1])
+    }
+  }
+
+  return shape
 }

@@ -18,4 +18,5 @@ export default [
   require('./17_Perpendicularity').default,
   require('./18_Rays').default,
   require('./19_CutoutTest').default,
+  require('./20_Yes').default,
 ]

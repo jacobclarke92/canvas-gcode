@@ -15,6 +15,8 @@ import Point from './Point'
 import type SubPath from './SubPath'
 import { type ArcAction, type BezierCurveToAction, DEFAULT_DIVISIONS, type QuadraticCurveToAction } from './SubPath'
 import type { OverloadedFunctionWithOptionals } from './types'
+import type { SimplifiedSvgPathSegment } from './utils/pathToCanvasCommands'
+import { pathToCanvasCommands } from './utils/pathToCanvasCommands'
 import { arcToPoints, convertPointsToEdges, ellipseToPoints, pointsToArc } from './utils/pathUtils'
 
 export interface GCanvasConfig {
@@ -96,7 +98,7 @@ export default class GCanvas {
   private filters: any[] = [] // no idea hey
   private stack: CanvasStackItem[] = []
 
-  private pathHistory: SubPath[] = []
+  public pathHistory: SubPath[] = []
 
   // vars that get relayed to canvas
   private _strokeStyle = '#000000'
@@ -130,6 +132,7 @@ export default class GCanvas {
     this.filters = []
     this.stack = []
     this.matrix = new Matrix()
+    this.pathHistory = []
 
     if (this.ctx) {
       this.ctx.resetTransform()
@@ -202,7 +205,7 @@ export default class GCanvas {
       this[key] = prev[key]
     })
     this.setCtxTransform(prev.matrix)
-    this.ctx.lineWidth = 1 / this.virtualScale
+    // this.ctx.lineWidth = 1 / this.virtualScale
   }
 
   public beginPath() {
@@ -485,6 +488,38 @@ export default class GCanvas {
     this.closePath()
   }
 
+  public strokeSvgPath(path: string | SimplifiedSvgPathSegment[]) {
+    const commands = typeof path === 'string' ? pathToCanvasCommands(path, true) : path
+    if (!commands.length) return
+    if (commands[0].type !== 'M') throw new Error('First command must be a move command')
+    this.beginPath()
+    this.moveTo(commands[0].values[0], commands[0].values[1])
+    for (let i = 1; i < commands.length; i++) {
+      const command = commands[i]
+      if (command.type === 'M') {
+        this.stroke()
+        this.closePath()
+        this.beginPath()
+        this.moveTo(command.values[0], command.values[1])
+      } else if (command.type === 'L') {
+        this.lineTo(command.values[0], command.values[1])
+      } else if (command.type === 'C') {
+        this.bezierCurveTo(
+          command.values[0],
+          command.values[1],
+          command.values[2],
+          command.values[3],
+          command.values[4],
+          command.values[5]
+        )
+      } else if (command.type === 'Z') {
+        this.lineTo(commands[0].values[0], commands[0].values[1])
+      }
+    }
+    this.closePath()
+    this.stroke()
+  }
+
   public clone() {
     //
   }
@@ -558,7 +593,7 @@ export default class GCanvas {
       this.restore()
     }
 
-    this.ctx?.stroke()
+    this.ctx.stroke()
 
     if (debug) this.ctx.strokeStyle = origStrokeStyle
   }

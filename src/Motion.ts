@@ -336,7 +336,7 @@ export default class Motion {
         // }
       }
     } else {
-      console.log('[motion] path has not been tampered with so generating fresh points')
+      // console.log('[motion] path has not been tampered with so generating fresh points')
       for (let i = 0, l = path.actions.length; i < l; ++i) {
         const action = path.actions[i]
 
