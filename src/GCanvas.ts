@@ -101,10 +101,10 @@ export default class GCanvas {
   public pathHistory: SubPath[] = []
 
   // vars that get relayed to canvas
-  private _strokeStyle = '#000000'
-  private _fillStyle = '#000000'
-  private _font = '7pt Helvetica'
-  private _background = '#ffffff'
+  public _strokeStyle = '#000000'
+  public _fillStyle = '#000000'
+  public _font = '7pt Helvetica'
+  public _background = '#ffffff'
 
   constructor(config: GCanvasConfig) {
     this.driver = config.driver || new NullDriver()
