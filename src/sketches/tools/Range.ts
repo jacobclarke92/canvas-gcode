@@ -26,7 +26,6 @@ export default class Range {
   protected _sketch: Sketch
 
   constructor(options: RangeOptions, sketch?: Sketch) {
-    console.log(this)
     this.name = options.name || `Var-${counter++}`
     this.min = options.min
     this.max = options.max

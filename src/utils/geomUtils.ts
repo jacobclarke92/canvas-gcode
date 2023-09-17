@@ -2,6 +2,9 @@ import Point from '../Point'
 import type { Line, LooseLine } from '../types'
 import { sign } from './numberUtils'
 
+export type Circle = [point: Point, radius: number]
+export type Bounds = [top: number, right: number, bottom: number, left: number]
+
 export const linesIntersect = (line1: LooseLine, line2: LooseLine): boolean => {
   const [a1, a2] = line1
   const [b1, b2] = line2
@@ -131,6 +134,35 @@ export const circleOverlapsCircles = (
 ): boolean => {
   for (const [pos, rad] of circles) {
     if (circleOverlapsCircle([circlePos, circleRad], [pos, rad])) return true
+  }
+  return false
+}
+
+export const getBoundsFromCircles = (
+  ...circles: [pos: Point, rad: number][]
+): [top: number, right: number, bottom: number, left: number] => {
+  const xs: number[] = []
+  const ys: number[] = []
+  for (const [pos, rad] of circles) {
+    xs.push(pos.x - rad)
+    xs.push(pos.x + rad)
+    ys.push(pos.y - rad)
+    ys.push(pos.y + rad)
+  }
+  return [Math.min(...ys), Math.max(...xs), Math.max(...ys), Math.min(...xs)]
+}
+
+export const boundsOverlap = (bound1: Bounds, bound2: Bounds): boolean => {
+  const [top1, right1, bottom1, left1] = bound1
+  const [top2, right2, bottom2, left2] = bound2
+  if (top2 > bottom1 || top1 > bottom2) return false
+  if (left2 > right1 || left1 > right2) return false
+  return true
+}
+
+export const boundsOverlapAny = (bound: Bounds, ...bounds: Bounds[]): boolean => {
+  for (const boundCheck of bounds) {
+    if (boundsOverlap(bound, boundCheck)) return true
   }
   return false
 }
