@@ -20,14 +20,19 @@ export default class Perpendicularity extends Sketch {
       disableRandomize: true,
     })
 
-    this.vs.seed = new Range({ initialValue: 2222, min: 1000, max: 5000, step: 1 })
+    this.vs.seed = new Range({ initialValue: 2631, min: 1000, max: 5000, step: 1 })
 
-    this.vs.segments = new Range({ initialValue: 6, min: 3, max: 15, step: 1 })
-    this.vs.segmentAngleWonk = new Range({ initialValue: 0, min: 0, max: 1, step: 0.001 })
-    this.vs.radialSpawnPoints = new Range({ initialValue: 1, min: 0, max: 10, step: 1 })
+    this.vs.segments = new Range({ initialValue: 13, min: 3, max: 15, step: 1 })
+    this.vs.segmentAngleWonk = new Range({ initialValue: 0.9, min: 0, max: 1, step: 0.001 })
+    this.vs.radialSpawnPoints = new Range({ initialValue: 9, min: 0, max: 10, step: 1 })
 
-    this.vs.offsetPerpAngle = new Range({ initialValue: Math.PI / 2 - 0.1, min: 0, max: Math.PI, step: 0.001 })
-    this.vs.offsetPerpAngleWonk = new Range({ initialValue: 0, min: 0, max: 1, step: 0.001 })
+    this.vs.offsetPerpAngle = new Range({
+      initialValue: 1.07 /* Math.PI / 2 - 0.1*/,
+      min: 0,
+      max: Math.PI,
+      step: 0.001,
+    })
+    this.vs.offsetPerpAngleWonk = new Range({ initialValue: 0.67 /* 0 */, min: 0, max: 1, step: 0.001 })
   }
 
   cp = new Point(this.cx, this.cy)

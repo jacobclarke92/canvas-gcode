@@ -19,4 +19,6 @@ export default [
   require('./18_Rays').default,
   require('./19_CutoutTest').default,
   require('./20_Yes').default,
+  require('./21_Aeroplane').default,
+  require('./22_PaleAle').default,
 ]

@@ -117,9 +117,10 @@ export default class Yes extends Sketch {
       this.vs.maxLineJoinDist.setValue(this.vs.minLineJoinDist.value, true)
     if (this.vs.minLineJoinDist.value > this.vs.maxLineJoinDist.value)
       this.vs.minLineJoinDist.setValue(this.vs.maxLineJoinDist.value, true)
-    if (this.vs.innerCircleSize.value > this.vs.minPointSpacing.value)
+
+    if (this.vs.allowInnerCircles.value && this.vs.innerCircleSize.value > this.vs.minPointSpacing.value)
       this.vs.minPointSpacing.setValue(this.vs.innerCircleSize.value, true)
-    if (this.vs.outerCircleSize.value > this.vs.minPointSpacing.value)
+    if (this.vs.allowOuterCircles.value && this.vs.outerCircleSize.value > this.vs.minPointSpacing.value)
       this.vs.minPointSpacing.setValue(this.vs.outerCircleSize.value, true)
 
     this.increment = 0
