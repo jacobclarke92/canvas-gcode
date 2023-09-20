@@ -25,11 +25,11 @@ export default class KaleidoCurve extends Sketch {
     this.vs.perlinOffsetX = new Range({ initialValue: 0, min: -100, max: 100, step: 1 })
     this.vs.perlinOffsetY = new Range({ initialValue: 0, min: -100, max: 100, step: 1 })
 
-    this.vs.seed = new Range({ initialValue: 2222, min: 1000, max: 5000, step: 1 })
-    this.vs.segments = new Range({ initialValue: 8, min: 2, max: 24, step: 2 })
-    this.vs.maxHeightDiff = new Range({ initialValue: 120, min: 0, max: this.vs.maxRadius.value, step: 1 })
-    this.vs.curveRange = new Range({ initialValue: 0.5, min: 0, max: 5, step: 0.005 })
-    this.vs.maxCurveStrength = new Range({ initialValue: 50, min: 0, max: 90, step: 1 })
+    this.vs.seed = new Range({ initialValue: 3213, min: 1000, max: 5000, step: 1 })
+    this.vs.segments = new Range({ initialValue: 12, min: 2, max: 24, step: 2 })
+    this.vs.maxHeightDiff = new Range({ initialValue: 48, min: 0, max: this.vs.maxRadius.value, step: 1 })
+    this.vs.curveRange = new Range({ initialValue: 0, min: 0, max: 5, step: 0.005 })
+    this.vs.maxCurveStrength = new Range({ initialValue: 0, min: 0, max: 90, step: 1 })
   }
 
   increment = 0
