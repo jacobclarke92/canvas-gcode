@@ -423,9 +423,11 @@ export default class GCanvas {
     const w = args.length === 3 || (args.length === 4 && typeof args[3] !== 'number') ? args[1] : args[2]
     const h = args.length === 3 || (args.length === 4 && typeof args[3] !== 'number') ? args[2] : (args[3] as number)
     const options = args.length === 5 ? args[4] : args.length === 4 && typeof args[3] !== 'number' ? args[3] : undefined
+
+    if (options?.cutout) this.clearRect(x, y, w, h)
     this.beginPath()
     this.rect(x, y, w, h)
-    this.stroke(options)
+    this.stroke(options ? { ...options, cutout: false } : undefined)
     this.closePath()
   }
 
@@ -440,10 +442,6 @@ export default class GCanvas {
     this.closePath()
   }
 
-  public cutoutRect(x: number, y: number, w: number, h: number) {
-    // console.log(this.path.subPaths)
-  }
-
   public circle: OverloadedFunctionWithOptionals<
     [pt: Point, radius: number] | [x: number, y: number, radius: number],
     [ccw: true]
@@ -456,13 +454,20 @@ export default class GCanvas {
     // NOTE: not native so do not need to call canvas api
   }
 
-  public strokeCircle(...args: [pt: Point, radius: number] | [x: number, y: number, radius: number]): void {
-    const x = args.length === 2 ? args[0].x : args[0]
-    const y = args.length === 2 ? args[0].y : args[1]
-    const radius = args.length === 2 ? args[1] : args[2]
+  public strokeCircle: OverloadedFunctionWithOptionals<
+    [pt: Point, radius: number] | [x: number, y: number, radius: number],
+    [options: StrokeOptions]
+  > = (...args) => {
+    const x = typeof args[0] === 'number' ? args[0] : args[0].x
+    const y = typeof args[0] === 'number' ? args[1] : args[0].y
+    const radius = typeof args[0] === 'number' ? (args[2] as number) : args[1]
+    const options = args.length === 4 ? args[3] : args.length === 3 && typeof args[2] !== 'number' ? args[2] : undefined
+
+    if (options?.cutout) this.clearCircle(x, y, radius)
+
     this.beginPath()
     this.circle(x, y, radius)
-    this.stroke()
+    this.stroke(options ? { ...options, cutout: false } : undefined)
     this.closePath()
   }
 
@@ -555,6 +560,8 @@ export default class GCanvas {
 
       if (cutout) {
         if (this.pathHistory.length > 0) {
+          this.cutOutShape(path)
+          /*
           const currentLines = convertPointsToEdges(path.getPoints())
           console.log('lines making up current shape:', currentLines)
           console.log('previously stored shapes: ', this.pathHistory.length)
@@ -562,6 +569,7 @@ export default class GCanvas {
             const compareLines = convertPointsToEdges(this.pathHistory[i].getPoints())
             console.log(`history item ${i} lines:`, compareLines)
           }
+          */
         }
       }
 
@@ -593,6 +601,12 @@ export default class GCanvas {
       this.restore()
     }
 
+    if (cutout) {
+      const prevFillStyle = this.ctx.fillStyle
+      this.ctx.fillStyle = this._background
+      this.ctx.fill()
+      this.ctx.fillStyle = prevFillStyle
+    }
     this.ctx.stroke()
 
     if (debug) this.ctx.strokeStyle = origStrokeStyle
