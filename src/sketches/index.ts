@@ -21,4 +21,5 @@ export default [
   require('./20_Yes').default,
   require('./21_Aeroplane').default,
   require('./22_PaleAle').default,
+  require('./23_WormHoles').default,
 ]
