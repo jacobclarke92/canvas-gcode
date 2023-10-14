@@ -120,6 +120,10 @@ export default class SubPath {
     } else {
       let p = new Point(0, 0)
       const action = this.actions[0]
+      if (!action) {
+        console.warn('No actions in SubPath->firstPoint', this)
+        return p
+      }
 
       switch (action.type) {
         case 'ELLIPSE':
@@ -156,6 +160,10 @@ export default class SubPath {
     } else {
       let p = new Point(0, 0)
       const action = this.actions[this.actions.length - 1]
+      if (!action) {
+        console.warn('No actions in SubPath->lastPoint', this)
+        return p
+      }
 
       switch (action.type) {
         case 'ELLIPSE': {

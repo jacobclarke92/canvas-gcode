@@ -13,14 +13,14 @@ export default class ConcentricCircles extends Sketch {
   osc1: Osc
 
   init() {
-    this.vs.speedUp = new Range({ initialValue: 1, min: 1, max: 100, step: 1, disableRandomize: true })
-    this.vs.stopAfter = new Range({ initialValue: 100, min: 1, max: 1000, step: 1, disableRandomize: true })
-    this.vs.shrinkAmount = new Range({ initialValue: 15, min: 1, max: 12, step: 0.1 })
-    this.vs.shrinkDiv = new Range({ initialValue: 1, min: 0, max: 1.8, step: 0.01 })
+    this.vs.speedUp = new Range({ initialValue: 4, min: 1, max: 100, step: 1, disableRandomize: true })
+    this.vs.stopAfter = new Range({ initialValue: 228, min: 1, max: 1000, step: 1, disableRandomize: true })
+    this.vs.shrinkAmount = new Range({ initialValue: 0.26, min: 0.1, max: 12, step: 0.02 })
+    this.vs.shrinkDiv = new Range({ initialValue: 0.29, min: 0, max: 1.8, step: 0.01 })
     this.vs.shrinkFalloff = new Range({ initialValue: 1, min: 0.9, max: 1.1, step: 0.005 })
-    this.vs.shrinkVariance = new Range({ initialValue: 0, min: 0, max: 50, step: 0.01 })
-    this.vs.shrinkVarOsc = new Range({ initialValue: Math.PI / 32, min: 0, max: Math.PI / 4, step: 0.001 })
-    this.vs.rotateSpeed = new Range({ initialValue: Math.PI / 32, min: -Math.PI / 4, max: Math.PI / 4, step: 0.001 })
+    this.vs.shrinkVariance = new Range({ initialValue: 0.03, min: 0, max: 50, step: 0.01 })
+    this.vs.shrinkVarOsc = new Range({ initialValue: 0.56, min: 0, max: Math.PI / 4, step: 0.001 })
+    this.vs.rotateSpeed = new Range({ initialValue: 0.05, min: -Math.PI / 4, max: Math.PI / 4, step: 0.001 })
     this.osc1 = new Osc({
       radius: (i) => this.vs.shrinkVariance.value,
       speed: (i) => this.vs.shrinkVarOsc.value,

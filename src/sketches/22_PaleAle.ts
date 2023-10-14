@@ -1,6 +1,7 @@
 import { Sketch } from '../Sketch'
+import { shuffle } from '../utils/arrayUtils'
 import { randIntRange } from '../utils/numberUtils'
-import { seedRandom } from '../utils/random'
+import { random, seedRandom } from '../utils/random'
 import { BooleanRange } from './tools/Range'
 
 type Pos = [number, number]
@@ -78,17 +79,20 @@ export default class PaleAle extends Sketch {
     this.ctx.closePath()
   }
 
-  getNextCardinalPos(fromPos: Pos, counter = 0): Pos | false {
-    if (counter > 16) {
-      console.log('panic', counter)
-      return false
+  getNextCardinalPos(fromPos: Pos, options: null | Pos[] = null): Pos | false {
+    if (options && !options.length) return false
+
+    if (!options) {
+      options = shuffle([
+        [fromPos[0] + 1, fromPos[1]],
+        [fromPos[0] - 1, fromPos[1]],
+        [fromPos[0], fromPos[1] + 1],
+        [fromPos[0], fromPos[1] - 1],
+      ])
     }
-    const { gridSize } = this.vars
-    const dir = randIntRange(3, 0) * (Math.PI * 2)
-    const nextX = fromPos[0] + Math.round(Math.cos(dir))
-    const nextY = fromPos[1] + Math.round(Math.sin(dir))
-    if (nextX < 0 || nextY < 0 || nextX > this.cols * gridSize || nextY > this.rows * gridSize) {
-      return this.getNextCardinalPos(fromPos, counter + 1)
+    const [nextX, nextY] = options.pop()
+    if (nextX < 0 || nextY < 0 || nextX > this.cols || nextY > this.rows) {
+      return this.getNextCardinalPos(fromPos, options)
     }
     return [nextX, nextY]
   }
@@ -103,56 +107,57 @@ export default class PaleAle extends Sketch {
     return !!this.usedPositions[pos[0]][pos[1]]
   }
 
-  getNextPos(prevPos: Pos, pos: Pos, counter = 0): [null | Pos, Pos] | false {
-    if (counter > 12) {
-      console.log('panic pls', counter)
-      return false
+  getNextPos(prevPos: Pos, pos: Pos, options: null | (-1 | 0 | 1)[] = null): [null | Pos, Pos] | false {
+    if (options && !options.length) return false
+    if (!options) {
+      options = shuffle([-1, 0, 1])
     }
+
+    const turn = options.pop()
     const dir = Math.atan2(pos[1] - prevPos[1], pos[0] - prevPos[0])
-    const turn = randIntRange(1, -1)
 
-    // if turning left or right
-    if (!!turn) {
-      const nextIntermediatePos: Pos = [
-        this.pos[0] + Math.round(Math.cos(dir)),
-        this.pos[1] + Math.round(Math.sin(dir)),
-      ]
-      if (this.isUsed(nextIntermediatePos)) return this.getNextPos(prevPos, pos, counter + 1)
-      const nextDir = dir + turn * (Math.PI / 2)
+    const nextIntermediatePos: Pos = [this.pos[0] + Math.round(Math.cos(dir)), this.pos[1] + Math.round(Math.sin(dir))]
 
-      const nextPos: Pos = [
-        nextIntermediatePos[0] + Math.round(Math.cos(nextDir)),
-        nextIntermediatePos[1] + Math.round(Math.sin(nextDir)),
-      ]
-      if (this.isOutOfBounds(nextPos) || this.isUsed(nextPos)) return this.getNextPos(prevPos, pos, counter + 1)
-      return [nextIntermediatePos, nextPos]
-    } else {
-      // going straight ahead
-      const nextPos: Pos = [pos[0] + Math.round(Math.cos(dir)), pos[1] + Math.round(Math.sin(dir))]
-      if (this.isOutOfBounds(nextPos) || this.isUsed(nextPos)) return this.getNextPos(prevPos, pos, counter + 1)
+    // go straight
+    if (turn === 0) {
+      const nextPos = nextIntermediatePos
+      if (this.isOutOfBounds(nextPos) || this.isUsed(nextPos)) return this.getNextPos(prevPos, pos, options)
       return [null, nextPos]
     }
+
+    // if turning left or right
+    if (this.isUsed(nextIntermediatePos)) return this.getNextPos(prevPos, pos, options)
+    const nextDir = dir + turn * (Math.PI / 2)
+    const nextPos: Pos = [
+      nextIntermediatePos[0] + Math.round(Math.cos(nextDir)),
+      nextIntermediatePos[1] + Math.round(Math.sin(nextDir)),
+    ]
+    if (this.isOutOfBounds(nextPos) || this.isUsed(nextPos)) return this.getNextPos(prevPos, pos, options)
+    return [nextIntermediatePos, nextPos]
   }
 
   draw(increment: number): void {
     if (this.stopDrawing) return
-    this.increment++
 
+    // if (increment % 1000 !== 0) return
+
+    this.increment++
     if (this.increment > this.vars.stopAfter) return
 
     const { gridSize } = this.vars
 
     const nextPositions = this.getNextPos(this.prevPos, this.pos)
 
-    // got nowhere to go, pick a new random starting point that isn't used and go from there
     if (nextPositions === false) {
+      console.log("got nowhere to go, picking a new random starting point that isn't used and going from there")
+
       const nextPrevPos: Pos = [randIntRange(this.cols), randIntRange(this.rows)]
       if (this.isUsed(nextPrevPos)) return
 
       const nextPos = this.getNextCardinalPos(nextPrevPos)
       if (nextPos === false) return
 
-      this.usedPositions[nextPos[0]] = this.usedPositions[nextPos[0]] || []
+      if (!this.usedPositions[nextPos[0]]) this.usedPositions[nextPos[0]] = []
       this.usedPositions[nextPos[0]][nextPos[1]] = true
 
       this.prevPos = nextPrevPos
@@ -163,9 +168,11 @@ export default class PaleAle extends Sketch {
 
     const [intermediatePos, nextPos] = nextPositions
 
+    // console.log(nextPos)
+
     const nextNextPositions = this.getNextPos(intermediatePos || this.pos, nextPos)
     if (nextNextPositions === false) {
-      // gonna hit a dead end so forgettaboutit
+      console.log('gonna hit a dead end so forgettaboutit')
       return
     }
 
@@ -177,18 +184,18 @@ export default class PaleAle extends Sketch {
         nextPos[0] * gridSize,
         nextPos[1] * gridSize
       )
-      this.usedPositions[intermediatePos[0]] = this.usedPositions[intermediatePos[0]] || []
-      this.usedPositions[intermediatePos[0]][intermediatePos[1]] = true
-      this.usedPositions[nextPos[0]] = this.usedPositions[nextPos[0]] || []
+      // if (!this.usedPositions[intermediatePos[0]]) this.usedPositions[intermediatePos[0]] = []
+      // this.usedPositions[intermediatePos[0]][intermediatePos[1]] = true
+      if (!this.usedPositions[nextPos[0]]) this.usedPositions[nextPos[0]] = []
       this.usedPositions[nextPos[0]][nextPos[1]] = true
     } else {
       this.ctx.lineTo(nextPos[0] * gridSize, nextPos[1] * gridSize)
-      this.usedPositions[nextPos[0]] = this.usedPositions[nextPos[0]] || []
+      if (!this.usedPositions[nextPos[0]]) this.usedPositions[nextPos[0]] = []
       this.usedPositions[nextPos[0]][nextPos[1]] = true
     }
     this.ctx.stroke()
 
-    debugger
+    // debugger
 
     this.prevPos = intermediatePos || this.pos
     this.pos = nextPos
