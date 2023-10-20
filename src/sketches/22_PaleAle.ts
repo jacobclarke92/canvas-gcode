@@ -9,13 +9,14 @@ type Pos = [number, number]
 type TurnDir = -1 | 0 | 1
 
 export default class PaleAle extends Sketch {
-  static generateGCode = false
+  // static generateGCode = false
 
   init() {
     this.addVar('speedUp', { initialValue: 1, min: 1, max: 100, step: 1, disableRandomize: true })
     this.addVar('randSeed', { initialValue: 3190, min: 1000, max: 10000, step: 1, disableRandomize: true })
-    this.addVar('stopAfter', { initialValue: 128, min: 5, max: 2000, step: 1, disableRandomize: true })
+    this.addVar('stopAfter', { initialValue: 1000, min: 5, max: 2000, step: 1, disableRandomize: true })
     this.vs.drawGrid = new BooleanRange({ disableRandomize: true, initialValue: false })
+    this.vs.displayUsed = new BooleanRange({ disableRandomize: true, initialValue: false })
 
     this.addVar('gridSize', { initialValue: 4, min: 1, max: 20, step: 1 })
     this.addVar('numStartPts', { initialValue: 4, min: 1, max: 20, step: 1 })
@@ -120,7 +121,8 @@ export default class PaleAle extends Sketch {
   }
 
   isUsedAsPivot(pos: Pos) {
-    if (!this.usedPivotPositions[pos[0]]) return !!this.usedPivotPositions[pos[0]][pos[1]]
+    if (!this.usedPivotPositions[pos[0]]) return false
+    return !!this.usedPivotPositions[pos[0]][pos[1]]
   }
 
   markUsed(pos: Pos, isPivot = false) {
@@ -129,12 +131,15 @@ export default class PaleAle extends Sketch {
     usedArr[pos[0]][pos[1]] = true
 
     const { gridSize } = this.vars
-    this.ctx.beginPath()
-    this.ctx.strokeStyle = '#ff0000'
-    this.ctx.rect(pos[0] * gridSize - 0.25, pos[1] * gridSize - 0.25, 0.5, 0.5)
-    this.ctx.stroke()
-    this.ctx.closePath()
-    this.ctx.strokeStyle = '#ffffff'
+
+    if (this.vs.displayUsed.value) {
+      this.ctx.beginPath()
+      this.ctx.strokeStyle = '#ff0000'
+      this.ctx.rect(pos[0] * gridSize - 0.25, pos[1] * gridSize - 0.25, 0.5, 0.5)
+      this.ctx.stroke()
+      this.ctx.closePath()
+      this.ctx.strokeStyle = '#ffffff'
+    }
   }
 
   getNextPos(
@@ -170,22 +175,47 @@ export default class PaleAle extends Sketch {
     return [nextIntermediatePos, nextPos, options]
   }
 
-  capOffLine(prevPos: Pos, pos: Pos, debugColor?: string) {
+  capOffLine(prevPos: Pos, pos: Pos, isExiting = false, debugColor?: string) {
     // this.capOffLine(prevPos, pos)
     const { gridSize } = this.vars
     const dir = Math.atan2(pos[1] - prevPos[1], pos[0] - prevPos[0])
 
     this.ctx.beginPath()
+    /*
     this.ctx.moveTo(
-      pos[0] * gridSize + (Math.cos(dir - Math.PI / 2) * gridSize) / 2,
-      pos[1] * gridSize + (Math.sin(dir - Math.PI / 2) * gridSize) / 2
+      pos[0] * gridSize +
+        Math.cos(dir - Math.PI / 2) * (gridSize / 2) +
+        Math.cos(dir + (isExiting ? 0 : Math.PI)) * (gridSize / 4),
+      pos[1] * gridSize +
+        Math.sin(dir - Math.PI / 2) * (gridSize / 2) +
+        Math.sin(dir + (isExiting ? 0 : Math.PI)) * (gridSize / 4)
     )
     this.ctx.quadraticCurveTo(
-      pos[0] * gridSize,
-      pos[1] * gridSize,
-      pos[0] * gridSize + (Math.cos(dir + Math.PI / 2) * gridSize) / 2,
-      pos[1] * gridSize + (Math.sin(dir + Math.PI / 2) * gridSize) / 2
+      pos[0] * gridSize + Math.cos(dir + (isExiting ? Math.PI : 0)) * (gridSize / 2),
+      pos[1] * gridSize + Math.sin(dir + (isExiting ? Math.PI : 0)) * (gridSize / 2),
+      pos[0] * gridSize +
+        Math.cos(dir + Math.PI / 2) * (gridSize / 2) +
+        Math.cos(dir + (isExiting ? 0 : Math.PI)) * (gridSize / 4),
+      pos[1] * gridSize +
+        Math.sin(dir + Math.PI / 2) * (gridSize / 2) +
+        Math.sin(dir + (isExiting ? 0 : Math.PI)) * (gridSize / 4)
     )
+    */
+
+    // this.ctx.moveTo(
+    //   pos[0] * gridSize + Math.cos(dir - Math.PI) * (gridSize / 2),
+    //   pos[1] * gridSize + Math.sin(dir - Math.PI) * (gridSize / 2)
+    // )
+
+    this.ctx.arc(
+      pos[0] * gridSize, // + Math.cos(dir - Math.PI) * (gridSize / 2),
+      pos[1] * gridSize, // + Math.sin(dir - Math.PI) * (gridSize / 2),
+      gridSize / 5,
+      dir + (isExiting ? 0 : Math.PI) + 0.4,
+      dir + (isExiting ? 0 : Math.PI) - 0.4,
+      false
+    )
+
     if (debugColor) this.ctx.strokeStyle = debugColor
     this.ctx.stroke()
     this.ctx.closePath()
@@ -211,10 +241,29 @@ export default class PaleAle extends Sketch {
     if (debugColor) this.ctx.strokeStyle = '#ffffff'
   }
 
+  makeTunnel(from: Pos, to: Pos): [prevPos: Pos, pos: Pos] | false {
+    const dir = Math.atan2(to[1] - from[1], to[0] - from[0])
+    const pos: Pos = [...to]
+    let found = false
+    while (!found) {
+      pos[0] += Math.round(Math.cos(dir))
+      pos[1] += Math.round(Math.sin(dir))
+      if (this.isOutOfBounds(pos)) return false
+      if (
+        !this.isUsed(pos, true) &&
+        !this.isUsed([pos[0] + Math.round(Math.cos(dir)), pos[1] + Math.round(Math.sin(dir))], true)
+      )
+        found = true
+    }
+    if (!found) return false
+    this.markUsed(pos)
+    return [[pos[0] - Math.round(Math.cos(dir)), pos[1] - Math.round(Math.sin(dir))], pos]
+  }
+
   draw(increment: number): void {
     if (this.stopDrawing) return
 
-    if (increment % 1000 !== 0) return
+    // if (increment % 100 !== 0) return
 
     this.increment++
     if (this.increment > this.vars.stopAfter) return
@@ -254,15 +303,25 @@ export default class PaleAle extends Sketch {
       if (nextNextPositions === false) {
         if (!remainingTurnOptions.length) {
           console.log('there are definitely no other options -- draw last segment')
-          this.drawSegment(pos, intermediatePos, nextPos, '#ff0000')
+          this.drawSegment(pos, intermediatePos, nextPos /*, '#ff0000'*/)
           this.capOffLine(intermediatePos || pos, nextPos)
+          const tunneledPos = this.makeTunnel(intermediatePos || pos, nextPos)
+          if (tunneledPos) {
+            newStartPts.push([...tunneledPos])
+            this.capOffLine(tunneledPos[0], tunneledPos[1], true)
+          }
           continue
         }
         console.log('there miiight be other options')
         nextPositions = this.getNextPos(prevPos, pos, remainingTurnOptions)
         if (nextPositions === false) {
           console.log('nope, got nowhere to go. cap it.')
-          this.capOffLine(prevPos, pos, '#ff0000')
+          this.capOffLine(prevPos, pos, false /*, '#ff0000'*/)
+          const tunneledPos = this.makeTunnel(intermediatePos || pos, nextPos)
+          if (tunneledPos) {
+            newStartPts.push([...tunneledPos])
+            this.capOffLine(tunneledPos[0], tunneledPos[1], true)
+          }
           continue
         }
 
@@ -271,8 +330,13 @@ export default class PaleAle extends Sketch {
         nextNextPositions = this.getNextPos(intermediatePos || pos, nextPos)
         if (nextNextPositions === false) {
           console.log('gonna hit a dead end so forgettaboutit')
-          this.drawSegment(pos, intermediatePos, nextPos, '#ff00ff')
-          this.capOffLine(intermediatePos || pos, nextPos, '#ffff00')
+          this.drawSegment(pos, intermediatePos, nextPos /*, '#ff00ff'*/)
+          this.capOffLine(intermediatePos || pos, nextPos, false /*, '#ffff00'*/)
+          const tunneledPos = this.makeTunnel(intermediatePos || pos, nextPos)
+          if (tunneledPos) {
+            newStartPts.push([...tunneledPos])
+            this.capOffLine(tunneledPos[0], tunneledPos[1], true)
+          }
           continue
         }
       }
