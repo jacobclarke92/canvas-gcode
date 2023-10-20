@@ -493,6 +493,37 @@ export default class GCanvas {
     this.closePath()
   }
 
+  public strokeTriangle(
+    ...args:
+      | [Point, Point, Point]
+      | [pt: Point, dir: number, length: number]
+      | [x: number, y: number, dir: number, length: number]
+  ) {
+    const x1 = typeof args[0] === 'number' ? args[0] : args[0].x
+    const y1 = typeof args[0] === 'number' ? (args[1] as number) : args[0].y
+    let x2: number, y2: number, x3: number, y3: number
+    if (typeof args[1] !== 'number') {
+      x2 = args[1].x
+      y2 = args[1].y
+      x3 = (args[2] as Point).x
+      y3 = (args[2] as Point).y
+    } else {
+      const dir = typeof args[0] === 'number' ? (args[2] as number) : args[1]
+      const length = typeof args[0] === 'number' ? (args[3] as number) : (args[2] as number)
+      x2 = x1 + Math.cos(dir + 0.25) * length
+      y2 = y1 + Math.sin(dir + 0.25) * length
+      x3 = x1 + Math.cos(dir - 0.25) * length
+      y3 = y1 + Math.sin(dir - 0.25) * length
+    }
+    this.beginPath()
+    this.moveTo(x1, y1)
+    this.lineTo(x2, y2)
+    this.lineTo(x3, y3)
+    this.lineTo(x1, y1)
+    this.stroke()
+    this.closePath()
+  }
+
   public strokeSvgPath(path: string | SimplifiedSvgPathSegment[]) {
     const commands = typeof path === 'string' ? pathToCanvasCommands(path, true) : path
     if (!commands.length) return

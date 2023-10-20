@@ -12,14 +12,17 @@ export default class PaleAle extends Sketch {
   // static generateGCode = false
 
   init() {
-    this.addVar('speedUp', { initialValue: 1, min: 1, max: 100, step: 1, disableRandomize: true })
+    this.addVar('slowDown', { initialValue: 1, min: 1, max: 1000, step: 1, disableRandomize: true })
     this.addVar('randSeed', { initialValue: 3190, min: 1000, max: 10000, step: 1, disableRandomize: true })
     this.addVar('stopAfter', { initialValue: 1000, min: 5, max: 2000, step: 1, disableRandomize: true })
-    this.vs.drawGrid = new BooleanRange({ disableRandomize: true, initialValue: false })
-    this.vs.displayUsed = new BooleanRange({ disableRandomize: true, initialValue: false })
 
     this.addVar('gridSize', { initialValue: 4, min: 1, max: 20, step: 1 })
-    this.addVar('numStartPts', { initialValue: 4, min: 1, max: 20, step: 1 })
+    this.addVar('numStartPts', { initialValue: 1, min: 1, max: 20, step: 1 })
+    this.addVar('newLineAttempts', { initialValue: 20, min: 1, max: 100, step: 1, disableRandomize: true })
+    this.vs.displayGrid = new BooleanRange({ disableRandomize: true, initialValue: false })
+    this.vs.displayUsed = new BooleanRange({ disableRandomize: true, initialValue: false })
+    this.vs.displayArrows = new BooleanRange({ disableRandomize: true, initialValue: false })
+    this.vs.curvedPaths = new BooleanRange({ disableRandomize: true, initialValue: true })
   }
 
   stopDrawing = false
@@ -51,7 +54,7 @@ export default class PaleAle extends Sketch {
     this.ctx.ctx.fillStyle = '#111111'
     this.ctx.ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight)
 
-    if (this.vs.drawGrid.value) {
+    if (this.vs.displayGrid.value) {
       // Start drawing debug grid
       this.ctx.strokeStyle = '#222222'
       this.ctx.beginPath()
@@ -72,22 +75,8 @@ export default class PaleAle extends Sketch {
     }
 
     for (let i = 0; i < this.vars.numStartPts; i++) {
-      const prevPos: Pos = [randIntRange(this.cols), randIntRange(this.rows)]
-      const pos = this.getNextCardinalPos(prevPos)
-      if (!pos) continue
-
-      this.startingPoints.push([prevPos, pos])
-      this.startingPoints.push([pos, prevPos])
-
-      this.markUsed(prevPos)
-      this.markUsed(pos)
-
-      this.ctx.beginPath()
-      this.ctx.strokeStyle = '#ffffff'
-      this.ctx.moveTo(prevPos[0] * gridSize, prevPos[1] * gridSize)
-      this.ctx.lineTo(pos[0] * gridSize, pos[1] * gridSize)
-      this.ctx.stroke()
-      this.ctx.closePath()
+      const newLinePts = this.spawnNewLine()
+      if (newLinePts) this.startingPoints.push(...newLinePts)
     }
   }
 
@@ -202,11 +191,6 @@ export default class PaleAle extends Sketch {
     )
     */
 
-    // this.ctx.moveTo(
-    //   pos[0] * gridSize + Math.cos(dir - Math.PI) * (gridSize / 2),
-    //   pos[1] * gridSize + Math.sin(dir - Math.PI) * (gridSize / 2)
-    // )
-
     this.ctx.arc(
       pos[0] * gridSize, // + Math.cos(dir - Math.PI) * (gridSize / 2),
       pos[1] * gridSize, // + Math.sin(dir - Math.PI) * (gridSize / 2),
@@ -224,10 +208,15 @@ export default class PaleAle extends Sketch {
 
   drawSegment(from: Pos, corner: Pos | null, to: Pos, debugColor?: string) {
     const { gridSize } = this.vars
+
     this.ctx.beginPath()
     this.ctx.moveTo(from[0] * gridSize, from[1] * gridSize)
     if (corner) {
-      this.ctx.quadraticCurveTo(corner[0] * gridSize, corner[1] * gridSize, to[0] * gridSize, to[1] * gridSize)
+      if (this.vs.curvedPaths.value) {
+        this.ctx.quadraticCurveTo(corner[0] * gridSize, corner[1] * gridSize, to[0] * gridSize, to[1] * gridSize)
+      } else {
+        this.ctx.lineTo(to[0] * gridSize, to[1] * gridSize)
+      }
     } else {
       this.ctx.lineTo(to[0] * gridSize, to[1] * gridSize)
     }
@@ -235,7 +224,12 @@ export default class PaleAle extends Sketch {
     this.ctx.stroke()
     this.ctx.closePath()
 
-    if (corner) this.markUsed(corner, true)
+    if (this.vs.displayArrows.value) {
+      const dir = Math.atan2((corner || from)[1] - to[1], (corner || from)[0] - to[0])
+      this.ctx.strokeTriangle(to[0] * gridSize, to[1] * gridSize, dir, 0.5 * gridSize)
+    }
+
+    if (corner) this.markUsed(corner)
     this.markUsed(to)
 
     if (debugColor) this.ctx.strokeStyle = '#ffffff'
@@ -260,10 +254,31 @@ export default class PaleAle extends Sketch {
     return [[pos[0] - Math.round(Math.cos(dir)), pos[1] - Math.round(Math.sin(dir))], pos]
   }
 
+  spawnNewLine(attempt = 0): typeof this.startingPoints | false {
+    if (attempt > this.vars.newLineAttempts) return false
+
+    const nextPrevPos: Pos = [randIntRange(this.cols), randIntRange(this.rows)]
+    if (this.isUsed(nextPrevPos)) return this.spawnNewLine(attempt + 1)
+
+    const nextPos = this.getNextCardinalPos(nextPrevPos)
+    if (nextPos === false) return this.spawnNewLine(attempt + 1)
+
+    const dir = Math.atan2(nextPos[1] - nextPrevPos[1], nextPos[0] - nextPrevPos[0])
+    const nextNextPos: Pos = [nextPos[0] + Math.round(Math.cos(dir)), nextPos[1] + Math.round(Math.sin(dir))]
+    if (this.isUsed(nextNextPos)) return this.spawnNewLine(attempt + 1)
+
+    this.markUsed(nextPos)
+
+    return [
+      [nextPrevPos, nextPos],
+      [nextNextPos, nextPos],
+    ]
+  }
+
   draw(increment: number): void {
     if (this.stopDrawing) return
 
-    // if (increment % 100 !== 0) return
+    if (increment % this.vs.slowDown.value !== 0) return
 
     this.increment++
     if (this.increment > this.vars.stopAfter) return
@@ -279,36 +294,25 @@ export default class PaleAle extends Sketch {
       let nextPositions = this.getNextPos(prevPos, pos)
 
       if (nextPositions === false) {
-        console.log("got nowhere to go, picking a new random starting point that isn't used and going from there")
-        /*
-        const nextPrevPos: Pos = [randIntRange(this.cols), randIntRange(this.rows)]
-        if (this.isUsed(nextPrevPos)) return
-
-        const nextPos = this.getNextCardinalPos(nextPrevPos)
-        if (nextPos === false) return console.log('need to cap off last line')
-
-        this.markUsed(nextPos)
-        newStartPts.push([nextPrevPos, nextPos])
-
-        return
-        */
+        console.log('got nowhere to go, game over man')
         continue
       }
 
       let [intermediatePos, nextPos, remainingTurnOptions] = nextPositions
-
-      // console.log(nextPos)
 
       let nextNextPositions = this.getNextPos(intermediatePos || pos, nextPos)
       if (nextNextPositions === false) {
         if (!remainingTurnOptions.length) {
           console.log('there are definitely no other options -- draw last segment')
           this.drawSegment(pos, intermediatePos, nextPos /*, '#ff0000'*/)
-          this.capOffLine(intermediatePos || pos, nextPos)
+          this.capOffLine(!this.vs.curvedPaths.value ? pos : intermediatePos || pos, nextPos)
           const tunneledPos = this.makeTunnel(intermediatePos || pos, nextPos)
           if (tunneledPos) {
             newStartPts.push([...tunneledPos])
             this.capOffLine(tunneledPos[0], tunneledPos[1], true)
+          } else {
+            const newLinePts = this.spawnNewLine()
+            if (newLinePts) newStartPts.push(...newLinePts)
           }
           continue
         }
@@ -321,6 +325,9 @@ export default class PaleAle extends Sketch {
           if (tunneledPos) {
             newStartPts.push([...tunneledPos])
             this.capOffLine(tunneledPos[0], tunneledPos[1], true)
+          } else {
+            const newLinePts = this.spawnNewLine()
+            if (newLinePts) newStartPts.push(...newLinePts)
           }
           continue
         }
@@ -331,19 +338,20 @@ export default class PaleAle extends Sketch {
         if (nextNextPositions === false) {
           console.log('gonna hit a dead end so forgettaboutit')
           this.drawSegment(pos, intermediatePos, nextPos /*, '#ff00ff'*/)
-          this.capOffLine(intermediatePos || pos, nextPos, false /*, '#ffff00'*/)
+          this.capOffLine(!this.vs.curvedPaths.value ? pos : intermediatePos || pos, nextPos, false /*, '#ffff00'*/)
           const tunneledPos = this.makeTunnel(intermediatePos || pos, nextPos)
           if (tunneledPos) {
             newStartPts.push([...tunneledPos])
             this.capOffLine(tunneledPos[0], tunneledPos[1], true)
+          } else {
+            const newLinePts = this.spawnNewLine()
+            if (newLinePts) newStartPts.push(...newLinePts)
           }
           continue
         }
       }
 
       this.drawSegment(pos, intermediatePos, nextPos)
-
-      // debugger
 
       newStartPts.push([intermediatePos || pos, nextPos])
     }
