@@ -6,6 +6,8 @@ import { BooleanRange } from './tools/Range'
 
 type Pos = [number, number]
 
+type TurnDir = -1 | 0 | 1
+
 export default class PaleAle extends Sketch {
   static generateGCode = false
 
@@ -13,19 +15,20 @@ export default class PaleAle extends Sketch {
     this.addVar('speedUp', { initialValue: 1, min: 1, max: 100, step: 1, disableRandomize: true })
     this.addVar('randSeed', { initialValue: 3190, min: 1000, max: 10000, step: 1, disableRandomize: true })
     this.addVar('stopAfter', { initialValue: 128, min: 5, max: 2000, step: 1, disableRandomize: true })
-    this.vs.drawGrid = new BooleanRange({ disableRandomize: true, initialValue: true })
+    this.vs.drawGrid = new BooleanRange({ disableRandomize: true, initialValue: false })
 
     this.addVar('gridSize', { initialValue: 4, min: 1, max: 20, step: 1 })
+    this.addVar('numStartPts', { initialValue: 4, min: 1, max: 20, step: 1 })
   }
 
   stopDrawing = false
   increment = 0
   rows = 0
   cols = 0
-  prevPos: Pos = [0, 0]
-  pos: Pos = [0, 0]
+  startingPoints: [prevPos: Pos, pos: Pos][] = []
 
   usedPositions: boolean[][] = []
+  usedPivotPositions: boolean[][] = []
 
   initDraw(): void {
     seedRandom(this.vars.randSeed)
@@ -33,6 +36,8 @@ export default class PaleAle extends Sketch {
     this.stopDrawing = false
     this.increment = 0
     this.usedPositions = []
+    this.usedPivotPositions = []
+    this.startingPoints = []
 
     const { gridSize } = this.vars
     this.cols = Math.floor(this.cw / gridSize)
@@ -65,18 +70,24 @@ export default class PaleAle extends Sketch {
       // Finish drawing debug grid
     }
 
-    this.prevPos[0] = randIntRange(this.cols)
-    this.prevPos[1] = randIntRange(this.rows)
-    this.pos = this.getNextCardinalPos(this.prevPos) as Pos
+    for (let i = 0; i < this.vars.numStartPts; i++) {
+      const prevPos: Pos = [randIntRange(this.cols), randIntRange(this.rows)]
+      const pos = this.getNextCardinalPos(prevPos)
+      if (!pos) continue
 
-    // this.ctx.path = new Path()
+      this.startingPoints.push([prevPos, pos])
+      this.startingPoints.push([pos, prevPos])
 
-    this.ctx.beginPath()
-    this.ctx.strokeStyle = '#ffffff'
-    this.ctx.moveTo(this.prevPos[0] * gridSize, this.prevPos[1] * gridSize)
-    this.ctx.lineTo(this.pos[0] * gridSize, this.pos[1] * gridSize)
-    this.ctx.stroke()
-    this.ctx.closePath()
+      this.markUsed(prevPos)
+      this.markUsed(pos)
+
+      this.ctx.beginPath()
+      this.ctx.strokeStyle = '#ffffff'
+      this.ctx.moveTo(prevPos[0] * gridSize, prevPos[1] * gridSize)
+      this.ctx.lineTo(pos[0] * gridSize, pos[1] * gridSize)
+      this.ctx.stroke()
+      this.ctx.closePath()
+    }
   }
 
   getNextCardinalPos(fromPos: Pos, options: null | Pos[] = null): Pos | false {
@@ -102,27 +113,50 @@ export default class PaleAle extends Sketch {
     return pos[0] < 0 || pos[1] < 0 || pos[0] > this.cols * gridSize || pos[1] > this.rows * gridSize
   }
 
-  isUsed(pos: Pos): boolean {
-    if (!this.usedPositions[pos[0]]) return false
-    return !!this.usedPositions[pos[0]][pos[1]]
+  isUsed(pos: Pos, includePivots = false): boolean {
+    const usedAsPivot = includePivots ? this.isUsedAsPivot(pos) : false
+    if (!this.usedPositions[pos[0]]) return false || usedAsPivot
+    return !!this.usedPositions[pos[0]][pos[1]] || usedAsPivot
   }
 
-  getNextPos(prevPos: Pos, pos: Pos, options: null | (-1 | 0 | 1)[] = null): [null | Pos, Pos] | false {
+  isUsedAsPivot(pos: Pos) {
+    if (!this.usedPivotPositions[pos[0]]) return !!this.usedPivotPositions[pos[0]][pos[1]]
+  }
+
+  markUsed(pos: Pos, isPivot = false) {
+    const usedArr = isPivot ? this.usedPivotPositions : this.usedPositions
+    if (!usedArr[pos[0]]) usedArr[pos[0]] = []
+    usedArr[pos[0]][pos[1]] = true
+
+    const { gridSize } = this.vars
+    this.ctx.beginPath()
+    this.ctx.strokeStyle = '#ff0000'
+    this.ctx.rect(pos[0] * gridSize - 0.25, pos[1] * gridSize - 0.25, 0.5, 0.5)
+    this.ctx.stroke()
+    this.ctx.closePath()
+    this.ctx.strokeStyle = '#ffffff'
+  }
+
+  getNextPos(
+    prevPos: Pos,
+    pos: Pos,
+    options: null | TurnDir[] = null
+  ): [intermediatePos: null | Pos, nextPos: Pos, remainingOptions: TurnDir[]] | false {
     if (options && !options.length) return false
     if (!options) {
-      options = shuffle([-1, 0, 1])
+      options = shuffle([-1, 0, 1] satisfies TurnDir[])
     }
 
     const turn = options.pop()
     const dir = Math.atan2(pos[1] - prevPos[1], pos[0] - prevPos[0])
 
-    const nextIntermediatePos: Pos = [this.pos[0] + Math.round(Math.cos(dir)), this.pos[1] + Math.round(Math.sin(dir))]
+    const nextIntermediatePos: Pos = [pos[0] + Math.round(Math.cos(dir)), pos[1] + Math.round(Math.sin(dir))]
 
     // go straight
     if (turn === 0) {
       const nextPos = nextIntermediatePos
       if (this.isOutOfBounds(nextPos) || this.isUsed(nextPos)) return this.getNextPos(prevPos, pos, options)
-      return [null, nextPos]
+      return [null, nextPos, options]
     }
 
     // if turning left or right
@@ -133,71 +167,122 @@ export default class PaleAle extends Sketch {
       nextIntermediatePos[1] + Math.round(Math.sin(nextDir)),
     ]
     if (this.isOutOfBounds(nextPos) || this.isUsed(nextPos)) return this.getNextPos(prevPos, pos, options)
-    return [nextIntermediatePos, nextPos]
+    return [nextIntermediatePos, nextPos, options]
+  }
+
+  capOffLine(prevPos: Pos, pos: Pos, debugColor?: string) {
+    // this.capOffLine(prevPos, pos)
+    const { gridSize } = this.vars
+    const dir = Math.atan2(pos[1] - prevPos[1], pos[0] - prevPos[0])
+
+    this.ctx.beginPath()
+    this.ctx.moveTo(
+      pos[0] * gridSize + (Math.cos(dir - Math.PI / 2) * gridSize) / 2,
+      pos[1] * gridSize + (Math.sin(dir - Math.PI / 2) * gridSize) / 2
+    )
+    this.ctx.quadraticCurveTo(
+      pos[0] * gridSize,
+      pos[1] * gridSize,
+      pos[0] * gridSize + (Math.cos(dir + Math.PI / 2) * gridSize) / 2,
+      pos[1] * gridSize + (Math.sin(dir + Math.PI / 2) * gridSize) / 2
+    )
+    if (debugColor) this.ctx.strokeStyle = debugColor
+    this.ctx.stroke()
+    this.ctx.closePath()
+    if (debugColor) this.ctx.strokeStyle = '#ffffff'
+  }
+
+  drawSegment(from: Pos, corner: Pos | null, to: Pos, debugColor?: string) {
+    const { gridSize } = this.vars
+    this.ctx.beginPath()
+    this.ctx.moveTo(from[0] * gridSize, from[1] * gridSize)
+    if (corner) {
+      this.ctx.quadraticCurveTo(corner[0] * gridSize, corner[1] * gridSize, to[0] * gridSize, to[1] * gridSize)
+    } else {
+      this.ctx.lineTo(to[0] * gridSize, to[1] * gridSize)
+    }
+    if (debugColor) this.ctx.strokeStyle = debugColor
+    this.ctx.stroke()
+    this.ctx.closePath()
+
+    if (corner) this.markUsed(corner, true)
+    this.markUsed(to)
+
+    if (debugColor) this.ctx.strokeStyle = '#ffffff'
   }
 
   draw(increment: number): void {
     if (this.stopDrawing) return
 
-    // if (increment % 1000 !== 0) return
+    if (increment % 1000 !== 0) return
 
     this.increment++
     if (this.increment > this.vars.stopAfter) return
-
-    const { gridSize } = this.vars
-
-    const nextPositions = this.getNextPos(this.prevPos, this.pos)
-
-    if (nextPositions === false) {
-      console.log("got nowhere to go, picking a new random starting point that isn't used and going from there")
-
-      const nextPrevPos: Pos = [randIntRange(this.cols), randIntRange(this.rows)]
-      if (this.isUsed(nextPrevPos)) return
-
-      const nextPos = this.getNextCardinalPos(nextPrevPos)
-      if (nextPos === false) return
-
-      if (!this.usedPositions[nextPos[0]]) this.usedPositions[nextPos[0]] = []
-      this.usedPositions[nextPos[0]][nextPos[1]] = true
-
-      this.prevPos = nextPrevPos
-      this.pos = nextPos
-
+    if (!this.startingPoints.length) {
+      this.stopDrawing = true
       return
     }
 
-    const [intermediatePos, nextPos] = nextPositions
+    const newStartPts: typeof this.startingPoints = []
+    for (let i = 0; i < this.startingPoints.length; i++) {
+      const [prevPos, pos] = this.startingPoints[i]
 
-    // console.log(nextPos)
+      let nextPositions = this.getNextPos(prevPos, pos)
 
-    const nextNextPositions = this.getNextPos(intermediatePos || this.pos, nextPos)
-    if (nextNextPositions === false) {
-      console.log('gonna hit a dead end so forgettaboutit')
-      return
+      if (nextPositions === false) {
+        console.log("got nowhere to go, picking a new random starting point that isn't used and going from there")
+        /*
+        const nextPrevPos: Pos = [randIntRange(this.cols), randIntRange(this.rows)]
+        if (this.isUsed(nextPrevPos)) return
+
+        const nextPos = this.getNextCardinalPos(nextPrevPos)
+        if (nextPos === false) return console.log('need to cap off last line')
+
+        this.markUsed(nextPos)
+        newStartPts.push([nextPrevPos, nextPos])
+
+        return
+        */
+        continue
+      }
+
+      let [intermediatePos, nextPos, remainingTurnOptions] = nextPositions
+
+      // console.log(nextPos)
+
+      let nextNextPositions = this.getNextPos(intermediatePos || pos, nextPos)
+      if (nextNextPositions === false) {
+        if (!remainingTurnOptions.length) {
+          console.log('there are definitely no other options -- draw last segment')
+          this.drawSegment(pos, intermediatePos, nextPos, '#ff0000')
+          this.capOffLine(intermediatePos || pos, nextPos)
+          continue
+        }
+        console.log('there miiight be other options')
+        nextPositions = this.getNextPos(prevPos, pos, remainingTurnOptions)
+        if (nextPositions === false) {
+          console.log('nope, got nowhere to go. cap it.')
+          this.capOffLine(prevPos, pos, '#ff0000')
+          continue
+        }
+
+        // take 2
+        ;[intermediatePos, nextPos, remainingTurnOptions] = nextPositions
+        nextNextPositions = this.getNextPos(intermediatePos || pos, nextPos)
+        if (nextNextPositions === false) {
+          console.log('gonna hit a dead end so forgettaboutit')
+          this.drawSegment(pos, intermediatePos, nextPos, '#ff00ff')
+          this.capOffLine(intermediatePos || pos, nextPos, '#ffff00')
+          continue
+        }
+      }
+
+      this.drawSegment(pos, intermediatePos, nextPos)
+
+      // debugger
+
+      newStartPts.push([intermediatePos || pos, nextPos])
     }
-
-    this.ctx.moveTo(this.pos[0] * gridSize, this.pos[1] * gridSize)
-    if (intermediatePos) {
-      this.ctx.quadraticCurveTo(
-        intermediatePos[0] * gridSize,
-        intermediatePos[1] * gridSize,
-        nextPos[0] * gridSize,
-        nextPos[1] * gridSize
-      )
-      // if (!this.usedPositions[intermediatePos[0]]) this.usedPositions[intermediatePos[0]] = []
-      // this.usedPositions[intermediatePos[0]][intermediatePos[1]] = true
-      if (!this.usedPositions[nextPos[0]]) this.usedPositions[nextPos[0]] = []
-      this.usedPositions[nextPos[0]][nextPos[1]] = true
-    } else {
-      this.ctx.lineTo(nextPos[0] * gridSize, nextPos[1] * gridSize)
-      if (!this.usedPositions[nextPos[0]]) this.usedPositions[nextPos[0]] = []
-      this.usedPositions[nextPos[0]][nextPos[1]] = true
-    }
-    this.ctx.stroke()
-
-    // debugger
-
-    this.prevPos = intermediatePos || this.pos
-    this.pos = nextPos
+    this.startingPoints = newStartPts
   }
 }
