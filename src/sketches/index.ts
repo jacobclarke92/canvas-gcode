@@ -24,4 +24,5 @@ export default [
   require('./23_WormHoles').default,
   require('./24_Valleys').default,
   require('./25_Pendulums').default,
+  require('./26_VanishingPoint').default,
 ]
