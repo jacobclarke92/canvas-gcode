@@ -11,7 +11,13 @@ export default class Perpendicularity extends Sketch {
   // static generateGCode = false
 
   init() {
-    this.vs.stopAfter = new Range({ initialValue: 36, min: 1, max: 420, step: 1, disableRandomize: true })
+    this.vs.stopAfter = new Range({
+      initialValue: 36,
+      min: 1,
+      max: 420,
+      step: 1,
+      disableRandomize: true,
+    })
     this.vs.maxRadius = new Range({
       initialValue: this.ch * 0.45,
       min: 1,
@@ -20,11 +26,26 @@ export default class Perpendicularity extends Sketch {
       disableRandomize: true,
     })
 
-    this.vs.seed = new Range({ initialValue: 2631, min: 1000, max: 5000, step: 1 })
+    this.vs.seed = new Range({
+      initialValue: 2631,
+      min: 1000,
+      max: 5000,
+      step: 1,
+    })
 
     this.vs.segments = new Range({ initialValue: 13, min: 3, max: 15, step: 1 })
-    this.vs.segmentAngleWonk = new Range({ initialValue: 0.9, min: 0, max: 1, step: 0.001 })
-    this.vs.radialSpawnPoints = new Range({ initialValue: 9, min: 0, max: 10, step: 1 })
+    this.vs.segmentAngleWonk = new Range({
+      initialValue: 0.9,
+      min: 0,
+      max: 1,
+      step: 0.001,
+    })
+    this.vs.radialSpawnPoints = new Range({
+      initialValue: 9,
+      min: 0,
+      max: 10,
+      step: 1,
+    })
 
     this.vs.offsetPerpAngle = new Range({
       initialValue: 1.07 /* Math.PI / 2 - 0.1*/,
@@ -32,7 +53,12 @@ export default class Perpendicularity extends Sketch {
       max: Math.PI,
       step: 0.001,
     })
-    this.vs.offsetPerpAngleWonk = new Range({ initialValue: 0.67 /* 0 */, min: 0, max: 1, step: 0.001 })
+    this.vs.offsetPerpAngleWonk = new Range({
+      initialValue: 0.67 /* 0 */,
+      min: 0,
+      max: 1,
+      step: 0.001,
+    })
   }
 
   cp = new Point(this.cx, this.cy)
@@ -44,7 +70,11 @@ export default class Perpendicularity extends Sketch {
   drawnLines: Line[] = []
   nextSpawnPoints: [Point, Line][] = []
 
-  drawLineFromPointAtAngle(startPoint: Point, originalLine: Line, offsetAngle: number = Math.PI / 2) {
+  drawLineFromPointAtAngle(
+    startPoint: Point,
+    originalLine: Line,
+    offsetAngle: number = Math.PI / 2
+  ) {
     const lineAngle = originalLine[0].angleTo(originalLine[1])
 
     const startPtAngleFromCenter = this.cp.angleTo(startPoint)
@@ -56,25 +86,44 @@ export default class Perpendicularity extends Sketch {
       angle += Math.PI
     }
 
-    const testLine: Line = [startPoint, startPoint.clone().moveAlongAngle(angle, 1000)]
+    const testLine: Line = [
+      startPoint,
+      startPoint.clone().moveAlongAngle(angle, 1000),
+    ]
 
-    let intersectionPointAndLines = getLineIntersectionPoints(testLine, ...this.drawnLines)
-      .map(([pt, line]) => [pt, line, startPoint.distanceTo(pt)] as [Point, Line, number])
+    let intersectionPointAndLines = getLineIntersectionPoints(
+      testLine,
+      ...this.drawnLines
+    )
+      .map(
+        ([pt, line]) =>
+          [pt, line, startPoint.distanceTo(pt)] as [Point, Line, number]
+      )
       .filter(([, , dist]) => dist > 0.001)
       .sort(([, , dist1], [, , dist2]) => dist1 - dist2)
 
     if (!intersectionPointAndLines.length) {
       testLine[1] = testLine[0].clone().moveAlongAngle(angle + Math.PI, 1000)
-      intersectionPointAndLines = getLineIntersectionPoints(testLine, ...this.drawnLines)
-        .map(([pt, line]) => [pt, line, startPoint.distanceTo(pt)] as [Point, Line, number])
+      intersectionPointAndLines = getLineIntersectionPoints(
+        testLine,
+        ...this.drawnLines
+      )
+        .map(
+          ([pt, line]) =>
+            [pt, line, startPoint.distanceTo(pt)] as [Point, Line, number]
+        )
         .filter(([, , dist]) => dist > 0.001)
         .sort(([, , dist1], [, , dist2]) => dist1 - dist2)
     }
 
     if (intersectionPointAndLines.length > 0) {
-      const [closestIntersectionPoint, closestIntersectionLine] = intersectionPointAndLines[0]
+      const [closestIntersectionPoint, closestIntersectionLine] =
+        intersectionPointAndLines[0]
       testLine[1] = closestIntersectionPoint
-      this.nextSpawnPoints.push([closestIntersectionPoint, closestIntersectionLine])
+      this.nextSpawnPoints.push([
+        closestIntersectionPoint,
+        closestIntersectionLine,
+      ])
     }
 
     this.drawnLines.push(testLine)
@@ -96,7 +145,9 @@ export default class Perpendicularity extends Sketch {
     let angle = 0
     for (let a = 0; a < this.vs.segments.value; a++) {
       const angleWonkAmount = randFloatRange(this.vs.segmentAngleWonk.value)
-      angle += segAngle + randFloatRange(-segAngle * angleWonkAmount, segAngle * angleWonkAmount)
+      angle +=
+        segAngle +
+        randFloatRange(-segAngle * angleWonkAmount, segAngle * angleWonkAmount)
       this.segmentAngles.push(angle)
       const segEndPt = new Point(
         this.cx + Math.cos(angle) * this.vs.maxRadius.value,
@@ -123,7 +174,11 @@ export default class Perpendicularity extends Sketch {
       const line = this.segmentsLines[s]
       const startPoints = lineToPoints(...line, this.vs.radialSpawnPoints.value)
       for (let r = 0; r < this.vs.radialSpawnPoints.value; r++) {
-        this.drawLineFromPointAtAngle(startPoints[r], line, this.vs.offsetPerpAngle.value)
+        this.drawLineFromPointAtAngle(
+          startPoints[r],
+          line,
+          this.vs.offsetPerpAngle.value
+        )
       }
     }
   }
@@ -133,7 +188,9 @@ export default class Perpendicularity extends Sketch {
     const spawnPoints = [...this.nextSpawnPoints]
     this.nextSpawnPoints = []
     for (const [pt, line] of spawnPoints) {
-      const angle = this.vs.offsetPerpAngle.value + randFloat(this.vs.offsetPerpAngleWonk.value)
+      const angle =
+        this.vs.offsetPerpAngle.value +
+        randFloat(this.vs.offsetPerpAngleWonk.value)
       this.drawLineFromPointAtAngle(pt, line, angle)
     }
     this.increment++

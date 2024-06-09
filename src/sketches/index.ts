@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 export default [
   require('./01_InitialSketch').default, // maybe work?
   require('./02_GCodeTest').default,
@@ -24,4 +25,8 @@ export default [
   require('./23_WormHoles').default,
   require('./24_Valleys').default,
   require('./25_Pendulums').default,
+  require('./26_VanishingPoint').default,
+  require('./27_RadialDownsampling').default,
+  require('./28_Sunflower').default,
+  require('./29_AgeRings').default,
 ]
