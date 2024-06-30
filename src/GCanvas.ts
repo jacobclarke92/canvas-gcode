@@ -13,11 +13,21 @@ import type { Bounds, WindingRule } from './Path'
 import Path from './Path'
 import Point from './Point'
 import type SubPath from './SubPath'
-import { type ArcAction, type BezierCurveToAction, DEFAULT_DIVISIONS, type QuadraticCurveToAction } from './SubPath'
+import {
+  type ArcAction,
+  type BezierCurveToAction,
+  DEFAULT_DIVISIONS,
+  type QuadraticCurveToAction,
+} from './SubPath'
 import type { OverloadedFunctionWithOptionals } from './types'
 import type { SimplifiedSvgPathSegment } from './utils/pathToCanvasCommands'
 import { pathToCanvasCommands } from './utils/pathToCanvasCommands'
-import { arcToPoints, convertPointsToEdges, ellipseToPoints, pointsToArc } from './utils/pathUtils'
+import {
+  arcToPoints,
+  convertPointsToEdges,
+  ellipseToPoints,
+  pointsToArc,
+} from './utils/pathUtils'
 
 export interface GCanvasConfig {
   width: number
@@ -48,11 +58,11 @@ type CanvasStackItemKey = keyof CanvasStackItem
 export type StrokeOptions = {
   align?: StrokeAlign
   depth?: number
-  cutout?: boolean
+  cutout?: boolean | clipperLib.ClipType
   debug?: boolean
 }
 
-let clipper: clipperLib.ClipperLibWrapper
+export let clipper: clipperLib.ClipperLibWrapper
 let inited = false
 async function loadClipper() {
   clipper = await clipperLib.loadNativeClipperLibInstanceAsync(
@@ -172,7 +182,14 @@ export default class GCanvas {
 
   private setCtxTransform(matrix: Matrix) {
     // console.log('before', this.ctx.getTransform())
-    this.ctx.setTransform(matrix.a, matrix.b, matrix.c, matrix.d, matrix.tx, matrix.ty)
+    this.ctx.setTransform(
+      matrix.a,
+      matrix.b,
+      matrix.c,
+      matrix.d,
+      matrix.tx,
+      matrix.ty
+    )
     // scale drawable area to match device pixel ratio
     this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio)
     // scale drawable area to match virtual zoom
@@ -213,12 +230,26 @@ export default class GCanvas {
     this.ctx?.beginPath()
   }
 
-  public transform(a?: number, b?: number, c?: number, d?: number, e?: number, f?: number) {
+  public transform(
+    a?: number,
+    b?: number,
+    c?: number,
+    d?: number,
+    e?: number,
+    f?: number
+  ) {
     this.matrix = this.matrix.concat(new Matrix(a, b, c, d, e, f))
     this.ctx?.transform(a, b, c, d, e, f)
   }
 
-  public setTransform(a?: number, b?: number, c?: number, d?: number, e?: number, f?: number) {
+  public setTransform(
+    a?: number,
+    b?: number,
+    c?: number,
+    d?: number,
+    e?: number,
+    f?: number
+  ) {
     this.matrix = new Matrix(a, b, c, d, e, f)
     this.ctx?.setTransform(a, b, c, d, e, f)
   }
@@ -276,7 +307,20 @@ export default class GCanvas {
     this.ctx?.lineTo(x, y)
   }
 
-  public arcTo(_x1: number, _y1: number, _x2: number, _y2: number, radius: number) {
+  public lineToRelative(_x: number, _y: number) {
+    const { x, y } = this.transformPoint([_x, _y])
+    const lastPoint = this.path.lastPoint()
+    if (!lastPoint) return
+    this.lineTo(lastPoint.x + x, lastPoint.y + y)
+  }
+
+  public arcTo(
+    _x1: number,
+    _y1: number,
+    _x2: number,
+    _y2: number,
+    radius: number
+  ) {
     // console.log(this.constructor.name, 'arcTo')
     // TODO: this doesn't mutate the arguments array yet
     const pt1 = this.transformPoint([_x1, _y1])
@@ -309,7 +353,10 @@ export default class GCanvas {
 
     const endPoint = new Point(pt1.x + v21.x * rate, pt1.y + v21.y * rate)
 
-    const midPoint = new Point((startPoint.x + endPoint.x) / 2, (startPoint.y + endPoint.y) / 2)
+    const midPoint = new Point(
+      (startPoint.x + endPoint.x) / 2,
+      (startPoint.y + endPoint.y) / 2
+    )
 
     const vm1 = midPoint.subtract(pt1)
     const dm1 = vm1.magnitude()
@@ -323,9 +370,34 @@ export default class GCanvas {
     const arc = pointsToArc(centerPoint, startPoint, endPoint)
 
     this.path.lineTo(startPoint.x, startPoint.y)
-    this.path.arc(centerPoint.x, centerPoint.y, arc.radius, arc.start, arc.end, cross > 0)
+    this.path.arc(
+      centerPoint.x,
+      centerPoint.y,
+      arc.radius,
+      arc.start,
+      arc.end,
+      cross > 0
+    )
 
     this.ctx?.arcTo(pt1.x, pt1.y, pt2.x, pt2.y, radius)
+  }
+
+  public arcToRelative(
+    _x1: number,
+    _y1: number,
+    _x2: number,
+    _y2: number,
+    radius: number
+  ) {
+    const lastPoint = this.path.lastPoint()
+    if (!lastPoint) return
+    this.arcTo(
+      lastPoint.x + _x1,
+      lastPoint.y + _y1,
+      lastPoint.x + _x2,
+      lastPoint.y + _y2,
+      radius
+    )
   }
 
   public arc(...args: ArcAction['args']) {
@@ -351,7 +423,14 @@ export default class GCanvas {
     // this.ensurePath(points.start.x, points.start.y)
 
     if (!this.path) throw 'beginPath not called yet'
-    this.path.arc(center.x, center.y, res.radius, res.start, res.end, antiClockwise)
+    this.path.arc(
+      center.x,
+      center.y,
+      res.radius,
+      res.start,
+      res.end,
+      antiClockwise
+    )
 
     // var tmp = new Path();
     // tmp.moveTo(points.start.x, points.start.y);
@@ -374,6 +453,21 @@ export default class GCanvas {
     this.ctx?.bezierCurveTo(aCP1x, aCP1y, aCP2x, aCP2y, aX, aY)
   }
 
+  public bezierCurveToRelative(...args: BezierCurveToAction['args']) {
+    const lastPoint = this.path.lastPoint()
+    if (!lastPoint) return
+    this.bezierCurveTo(
+      ...[
+        lastPoint.x + args[0],
+        lastPoint.y + args[1],
+        lastPoint.x + args[2],
+        lastPoint.y + args[3],
+        lastPoint.x + args[4],
+        lastPoint.y + args[5],
+      ]
+    )
+  }
+
   public quadraticCurveTo(...args: QuadraticCurveToAction['args']) {
     // const [aCPx, aCPy, aX, aY] = args
     const { x: aCPx, y: aCPy } = this.transformPoint([args[0], args[1]])
@@ -383,20 +477,47 @@ export default class GCanvas {
     this.ctx?.quadraticCurveTo(aCPx, aCPy, aX, aY)
   }
 
+  public quadraticCurveToRelative(...args: QuadraticCurveToAction['args']) {
+    const lastPoint = this.path.lastPoint()
+    if (!lastPoint) return
+    this.quadraticCurveTo(
+      ...[
+        lastPoint.x + args[0],
+        lastPoint.y + args[1],
+        lastPoint.x + args[2],
+        lastPoint.y + args[3],
+      ]
+    )
+  }
+
   public clip() {
     this.clipRegion = this.path
     this.ctx?.clip()
   }
 
   public rect: OverloadedFunctionWithOptionals<
-    [pt: Point, w: number, h: number] | [x: number, y: number, w: number, h: number],
+    | [pt: Point, w: number, h: number]
+    | [x: number, y: number, w: number, h: number],
     [cutout: true]
   > = (...args) => {
-    const cutout = (args.length === 4 && args[3] === true) || args.length === 5 || false
-    const x = args.length === 3 || (args.length === 4 && args[3] === true) ? args[0].x : args[0]
-    const y = args.length === 3 || (args.length === 4 && args[3] === true) ? args[0].y : args[1]
-    const w = args.length === 3 || (args.length === 4 && args[3] === true) ? args[1] : args[2]
-    const h = args.length === 3 || (args.length === 4 && args[3] === true) ? args[2] : args[3]
+    const cutout =
+      (args.length === 4 && args[3] === true) || args.length === 5 || false
+    const x =
+      args.length === 3 || (args.length === 4 && args[3] === true)
+        ? args[0].x
+        : args[0]
+    const y =
+      args.length === 3 || (args.length === 4 && args[3] === true)
+        ? args[0].y
+        : args[1]
+    const w =
+      args.length === 3 || (args.length === 4 && args[3] === true)
+        ? args[1]
+        : args[2]
+    const h =
+      args.length === 3 || (args.length === 4 && args[3] === true)
+        ? args[2]
+        : args[3]
     if (cutout) {
       this.clearRect(x, y, w, h)
     } else {
@@ -409,7 +530,8 @@ export default class GCanvas {
   }
 
   public strokeRect: OverloadedFunctionWithOptionals<
-    [pt: Point, w: number, h: number] | [x: number, y: number, w: number, h: number],
+    | [pt: Point, w: number, h: number]
+    | [x: number, y: number, w: number, h: number],
     [options: StrokeOptions]
   > = (...args) => {
     const x =
@@ -420,18 +542,36 @@ export default class GCanvas {
       args.length === 3 || (args.length === 4 && typeof args[3] !== 'number')
         ? (args[0] as Point).y
         : (args[1] as number)
-    const w = args.length === 3 || (args.length === 4 && typeof args[3] !== 'number') ? args[1] : args[2]
-    const h = args.length === 3 || (args.length === 4 && typeof args[3] !== 'number') ? args[2] : (args[3] as number)
-    const options = args.length === 5 ? args[4] : args.length === 4 && typeof args[3] !== 'number' ? args[3] : undefined
+    const w =
+      args.length === 3 || (args.length === 4 && typeof args[3] !== 'number')
+        ? args[1]
+        : args[2]
+    const h =
+      args.length === 3 || (args.length === 4 && typeof args[3] !== 'number')
+        ? args[2]
+        : (args[3] as number)
+    const options =
+      args.length === 5
+        ? args[4]
+        : args.length === 4 && typeof args[3] !== 'number'
+        ? args[3]
+        : undefined
 
-    if (options?.cutout) this.clearRect(x, y, w, h)
+    if (options?.cutout && options.cutout !== clipperLib.ClipType.Union)
+      this.clearRect(x, y, w, h)
     this.beginPath()
     this.rect(x, y, w, h)
     this.stroke(options ? { ...options, cutout: false } : undefined)
     this.closePath()
+    if (options?.cutout === clipperLib.ClipType.Union)
+      this.clearRect(x, y, w, h)
   }
 
-  public fillRect(...args: [pt: Point, w: number, h: number] | [x: number, y: number, w: number, h: number]) {
+  public fillRect(
+    ...args:
+      | [pt: Point, w: number, h: number]
+      | [x: number, y: number, w: number, h: number]
+  ) {
     const x = args.length === 3 ? args[0].x : args[0]
     const y = args.length === 3 ? args[0].y : args[1]
     const w = args.length === 3 ? args[1] : args[2]
@@ -446,10 +586,20 @@ export default class GCanvas {
     [pt: Point, radius: number] | [x: number, y: number, radius: number],
     [ccw: true]
   > = (...args) => {
-    const x = args.length === 2 || (args.length === 3 && args[2] === true) ? args[0].x : args[0]
-    const y = args.length === 2 || (args.length === 3 && args[2] === true) ? args[0].y : args[1]
-    const radius = args.length === 2 || (args.length === 3 && args[2] === true) ? args[1] : args[2]
-    const ccw = (args.length === 3 && args[2] === true) || args.length === 4 || false
+    const x =
+      args.length === 2 || (args.length === 3 && args[2] === true)
+        ? args[0].x
+        : args[0]
+    const y =
+      args.length === 2 || (args.length === 3 && args[2] === true)
+        ? args[0].y
+        : args[1]
+    const radius =
+      args.length === 2 || (args.length === 3 && args[2] === true)
+        ? args[1]
+        : args[2]
+    const ccw =
+      (args.length === 3 && args[2] === true) || args.length === 4 || false
     this.arc(x, y, radius, 0, Math.PI * 2, ccw)
     // NOTE: not native so do not need to call canvas api
   }
@@ -461,7 +611,12 @@ export default class GCanvas {
     const x = typeof args[0] === 'number' ? args[0] : args[0].x
     const y = typeof args[0] === 'number' ? args[1] : args[0].y
     const radius = typeof args[0] === 'number' ? (args[2] as number) : args[1]
-    const options = args.length === 4 ? args[3] : args.length === 3 && typeof args[2] !== 'number' ? args[2] : undefined
+    const options =
+      args.length === 4
+        ? args[3]
+        : args.length === 3 && typeof args[2] !== 'number'
+        ? args[2]
+        : undefined
 
     if (options?.cutout) this.clearCircle(x, y, radius)
 
@@ -471,7 +626,11 @@ export default class GCanvas {
     this.closePath()
   }
 
-  public fillCircle(...args: [pt: Point, radius: number] | [x: number, y: number, radius: number]) {
+  public fillCircle(
+    ...args:
+      | [pt: Point, radius: number]
+      | [x: number, y: number, radius: number]
+  ) {
     const x = args.length === 2 ? args[0].x : args[0]
     const y = args.length === 2 ? args[0].y : args[1]
     const radius = args.length === 2 ? args[1] : args[2]
@@ -481,7 +640,9 @@ export default class GCanvas {
     this.closePath()
   }
 
-  public strokeLine(...args: [Point, Point] | [x1: number, y1: number, x2: number, y2: number]) {
+  public strokeLine(
+    ...args: [Point, Point] | [x1: number, y1: number, x2: number, y2: number]
+  ) {
     const x1 = args.length === 2 ? args[0].x : args[0]
     const y1 = args.length === 2 ? args[0].y : args[1]
     const x2 = args.length === 2 ? args[1].x : args[2]
@@ -509,7 +670,8 @@ export default class GCanvas {
       y3 = (args[2] as Point).y
     } else {
       const dir = typeof args[0] === 'number' ? (args[2] as number) : args[1]
-      const length = typeof args[0] === 'number' ? (args[3] as number) : (args[2] as number)
+      const length =
+        typeof args[0] === 'number' ? (args[3] as number) : (args[2] as number)
       x2 = x1 + Math.cos(dir + 0.25) * length
       y2 = y1 + Math.sin(dir + 0.25) * length
       x3 = x1 + Math.cos(dir - 0.25) * length
@@ -525,9 +687,11 @@ export default class GCanvas {
   }
 
   public strokeSvgPath(path: string | SimplifiedSvgPathSegment[]) {
-    const commands = typeof path === 'string' ? pathToCanvasCommands(path, true) : path
+    const commands =
+      typeof path === 'string' ? pathToCanvasCommands(path, true) : path
     if (!commands.length) return
-    if (commands[0].type !== 'M') throw new Error('First command must be a move command')
+    if (commands[0].type !== 'M')
+      throw new Error('First command must be a move command')
     this.beginPath()
     this.moveTo(commands[0].values[0], commands[0].values[1])
     for (let i = 1; i < commands.length; i++) {
@@ -580,7 +744,12 @@ export default class GCanvas {
     return true
   }
 
-  public stroke({ align = this.align, depth = this.depth, cutout, debug }: StrokeOptions = {}) {
+  public stroke({
+    align = this.align,
+    depth = this.depth,
+    cutout,
+    debug,
+  }: StrokeOptions = {}) {
     if (!this.isOpaque(this.strokeStyle)) return
 
     const origStrokeStyle = this.ctx.strokeStyle
@@ -648,7 +817,8 @@ export default class GCanvas {
 
     this.save()
 
-    if (!this.toolDiameter) throw 'You must set context.toolDiameter to use fill()'
+    if (!this.toolDiameter)
+      throw 'You must set context.toolDiameter to use fill()'
 
     let path = this.path
     path = path.simplify(windingRule, this.precision)
@@ -669,12 +839,13 @@ export default class GCanvas {
     this.ctx?.fill()
   }
 
-  public cutOutShape(shape: Path) {
+  public cutOutShape(shape: Path, clipType = clipperLib.ClipType.Difference) {
     const SCALE = 1000
 
-    const cutoutRectPtsTransformed = shape
-      .getPoints()
-      .map((pt) => ({ x: Math.round(pt.x * SCALE), y: Math.round(pt.y * SCALE) }))
+    const cutoutRectPtsTransformed = shape.getPoints().map((pt) => ({
+      x: Math.round(pt.x * SCALE),
+      y: Math.round(pt.y * SCALE),
+    }))
 
     console.log('------------------------------------')
     console.log('CLEARING all GCode and starting again')
@@ -687,7 +858,10 @@ export default class GCanvas {
       const subPath = this.pathHistory[i]
 
       const oldPts = subPath.getPoints()
-      const oldPtsTransformed = oldPts.map((pt) => ({ x: Math.round(pt.x * SCALE), y: Math.round(pt.y * SCALE) }))
+      const oldPtsTransformed = oldPts.map((pt) => ({
+        x: Math.round(pt.x * SCALE),
+        y: Math.round(pt.y * SCALE),
+      }))
       // console.log(oldPtsTransformed)
 
       if (clipper) {
@@ -697,7 +871,7 @@ export default class GCanvas {
 
         try {
           const diffPath = clipper.clipToPolyTree({
-            clipType: clipperLib.ClipType.Difference,
+            clipType,
             subjectInputs: [{ data: subject, closed: false }],
             clipInputs: [{ data: cutoutRectPtsTransformed }],
             subjectFillType: clipperLib.PolyFillType.NonZero,
@@ -712,7 +886,9 @@ export default class GCanvas {
             subPath.actions = []
             let node = diffPath.getFirst()
             while (node) {
-              const pts = node.contour.map((pt) => new Point(pt.x / SCALE, pt.y / SCALE))
+              const pts = node.contour.map(
+                (pt) => new Point(pt.x / SCALE, pt.y / SCALE)
+              )
               subPath.addAction({
                 type: 'MOVE_TO',
                 args: [pts[0].x, pts[0].y],
@@ -742,7 +918,9 @@ export default class GCanvas {
   }
 
   public clearRect(
-    ...args: [pt: Point, width: number, height: number] | [x: number, y: number, width: number, height: number]
+    ...args:
+      | [pt: Point, width: number, height: number]
+      | [x: number, y: number, width: number, height: number]
   ) {
     const x = args.length === 3 ? args[0].x : args[0]
     const y = args.length === 3 ? args[0].y : args[1]
@@ -770,7 +948,11 @@ export default class GCanvas {
     this.cutOutShape(cutOutRect)
   }
 
-  public clearCircle(...args: [pt: Point, radius: number] | [x: number, y: number, radius: number]): void {
+  public clearCircle(
+    ...args:
+      | [pt: Point, radius: number]
+      | [x: number, y: number, radius: number]
+  ): void {
     const x = args.length === 2 ? args[0].x : args[0]
     const y = args.length === 2 ? args[0].y : args[1]
     const radius = args.length === 2 ? args[1] : args[2]
@@ -785,16 +967,90 @@ export default class GCanvas {
     this.ctx.closePath()
     this.ctx.fillStyle = prevFillStyle
 
-    const pts = ellipseToPoints(x, y, radius, radius, 0, Math.PI * 2, false, DEFAULT_DIVISIONS)
-    const cutoutCircle = new Path(pts.map((pt) => this.transformPoint([pt.x, pt.y])))
+    const pts = ellipseToPoints(
+      x,
+      y,
+      radius,
+      radius,
+      0,
+      Math.PI * 2,
+      false,
+      DEFAULT_DIVISIONS
+    )
+    const cutoutCircle = new Path(
+      pts.map((pt) => this.transformPoint([pt.x, pt.y]))
+    )
 
     this.cutOutShape(cutoutCircle)
   }
 
   public closePath() {
     this.path.close()
-    if (this.enableCutouts) this.pathHistory.push(this.path.current.clone())
+    if (this.enableCutouts && this.path.current)
+      this.pathHistory.push(this.path.current.clone())
     this.ctx?.closePath()
+  }
+
+  /**
+   * Note: this closes current path and begins a new one.
+   * You have to call stroke or fill afterwards
+   */
+  public clipCurrentPath({
+    clipType,
+    pathsAreOpen = false,
+    detailScale = 1000,
+  }: {
+    pathsAreOpen?: boolean
+    clipType: clipperLib.ClipType
+    detailScale?: number
+  }) {
+    /**
+     * TODO: Abstract this into GCanvas
+     */
+    if (!this.path) {
+      console.warn('no paths drawn!')
+      return
+    }
+
+    const paths = this.path.subPaths
+
+    const diffPath = clipper.clipToPolyTree({
+      clipType,
+      subjectInputs: paths.map((path) => ({
+        data: path.getPoints().map((pt) => pt.scale(detailScale)),
+        closed: !pathsAreOpen,
+      })),
+      subjectFillType: clipperLib.PolyFillType.NonZero,
+    })
+
+    console.log('diffPath', diffPath)
+    const intersected = diffPath.total < paths.length
+
+    let node = diffPath.getFirst()
+    const ptPts: Point[][] = []
+    while (node) {
+      // console.log('contour', node.contour)
+      const pts = node.contour.map(
+        (pt) => new Point(pt.x / detailScale, pt.y / detailScale)
+      )
+      ptPts.push(pts)
+      node = node.getNext()
+    }
+
+    this.ctx.closePath()
+
+    this.ctx.beginPath()
+    for (const pts of ptPts) {
+      this.ctx.moveTo(pts[0].x, pts[0].y)
+      for (const pt of pts) {
+        this.ctx.lineTo(pt.x, pt.y)
+      }
+      this.ctx.lineTo(pts[0].x, pts[0].y)
+    }
+    // this.ctx.stroke()
+    // this.ctx.closePath()
+
+    return { intersected }
   }
 
   // public fillText(text: string, x: number, y: number, params: any) {
