@@ -64,3 +64,28 @@ I also noticed, after first proper test run, the ICs on the cnc shield got prett
 I found the gcode this app generates is physically too large (might be in inch mode instead of mm?).  
 Either way I figured it would safer to start with physically smaller gcode drawings, seeing as getting end-stops working has been a pain in the butt. \
 To shrink these drawings down I've been using an app called GCode Ripper (see below).
+
+# 2024-07-06 Fresh start
+
+Got a new pen plotter - cheap-ish one found on ebay:  
+Vigotec VG-X4  
+http://www.vigotec.cn/X4/  
+http://vigotec.cn/software/VigoWriter_v2.1_for_writer_control.zip
+
+Notes from another tinkerer:  
+https://www.extremeelectronics.co.uk/vigo-tec-vg-a4-writer-engraver/
+
+```
+So after a lot of trying things I found the PenUP/Pen Down commands which are M03 and M05 respectively. You will need a delay for the pen server to do its thing, Im currently using G4 P1000 to give a 1 second delay.
+
+Be careful using G0 the plotter appears to lose position even with the lightest of pens. To cure this and especially if you are using anything heavier, use a G1 X Y Z FXXXX to set the feed rate. ( When using G-Code the speed slider is ignored)
+```
+
+Consistent usage of software:
+
+- disconnect device
+- connect device
+- ensure pen up is 60% and pen down is 17%
+- trigger pen down
+- trigger up
+- open gcode

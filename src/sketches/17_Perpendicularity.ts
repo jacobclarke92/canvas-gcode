@@ -4,6 +4,7 @@ import type { Line } from '../types'
 import { getLineIntersectionPoints } from '../utils/geomUtils'
 import { degToRad, randFloat, randFloatRange } from '../utils/numberUtils'
 import { lineToPoints, sameFloat } from '../utils/pathUtils'
+import { initPen, penUp, plotBounds } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
 import Range from './tools/Range'
 
@@ -132,6 +133,9 @@ export default class Perpendicularity extends Sketch {
 
   initDraw(): void {
     console.log('init draw called')
+    initPen(this)
+    plotBounds(this)
+
     this.increment = 0
     this.segmentAngles = []
     this.segmentsLines = []
@@ -184,7 +188,10 @@ export default class Perpendicularity extends Sketch {
   }
 
   draw(increment: number): void {
-    if (this.increment > this.vs.stopAfter.value) return
+    if (this.increment > this.vs.stopAfter.value) {
+      penUp(this)
+      return
+    }
     const spawnPoints = [...this.nextSpawnPoints]
     this.nextSpawnPoints = []
     for (const [pt, line] of spawnPoints) {

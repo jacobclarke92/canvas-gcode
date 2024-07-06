@@ -14,7 +14,7 @@ export default [
   require('./12_Tree').default,
   require('./13_MondayMaze').default,
   require('./14_Chaser').default,
-  require('./15_Kaleido').default,
+  require('./15_Snowflake').default,
   require('./16_KaleidoCurve').default,
   require('./17_Perpendicularity').default,
   require('./18_Rays').default,

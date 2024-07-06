@@ -11,7 +11,13 @@ import type {
 import type GCanvas from './GCanvas'
 import type Path from './Path'
 import Point from './Point'
-import type { BezierCurveToAction, EllipseAction, LineToAction, MoveToAction, QuadraticCurveToAction } from './SubPath'
+import type {
+  BezierCurveToAction,
+  EllipseAction,
+  LineToAction,
+  MoveToAction,
+  QuadraticCurveToAction,
+} from './SubPath'
 import SubPath, { DEFAULT_DIVISIONS } from './SubPath'
 import { arcToPoints, pointsToArc, sameFloat, samePos } from './utils/pathUtils'
 
@@ -23,6 +29,7 @@ export default class Motion {
   public currentAtc: number
   public position: Point = new Point()
   public ctx: GCanvas
+  private penState: 'up' | 'down' | 'unknown' = 'unknown'
 
   constructor(ctx: GCanvas) {
     this.ctx = ctx
@@ -37,11 +44,19 @@ export default class Motion {
     this.position = new Point()
   }
 
-  public retract() {
-    this.ctx.driver.send(`M03 S090 (pen up)`)
+  public retract(timeMs = 250) {
+    // this.ctx.driver.send(`M03 S090 (pen up)`)
+    if (this.penState === 'up') return
+    this.ctx.driver.send('M05 (pen up)')
+    this.ctx.driver.send(`G4 P${timeMs} (wait ${timeMs}ms)`)
+    this.penState = 'up'
   }
-  public plunge() {
-    this.ctx.driver.send(`M03 S070 (pen down)`)
+  public plunge(timeMs = 500) {
+    // this.ctx.driver.send(`M03 S070 (pen down)`)
+    if (this.penState === 'down') return
+    this.ctx.driver.send('M03 (pen down)')
+    this.ctx.driver.send(`G4 P${timeMs} (wait ${timeMs}ms)`)
+    this.penState = 'down'
   }
   public zero(params: ZeroParams) {
     this.ctx.driver.zero(params)
@@ -75,7 +90,11 @@ export default class Motion {
     // Note: Can be cyclic so we don't ignore it if the position is the same
     const cx = this.position.x + (params.i || 0)
     const cy = this.position.y + (params.j || 0)
-    const arc = pointsToArc(new Point(cx, cy), this.position, new Point(params.x, params.y))
+    const arc = pointsToArc(
+      new Point(cx, cy),
+      this.position,
+      new Point(params.x, params.y)
+    )
 
     const length = arc.radius * (arc.end - arc.start)
     let f = length / (1 / this.ctx.feed)
@@ -87,7 +106,11 @@ export default class Motion {
     } else if (ccw && this.ctx.driver.arcCCW) {
       this.ctx.driver.arcCCW(params, 'arc counter-clockwise')
     } else {
-      this.interpolate('arc', [cx, cy, arc.radius, arc.start, arc.end, ccw], params.z || 0)
+      this.interpolate(
+        'arc',
+        [cx, cy, arc.radius, arc.start, arc.end, ccw],
+        params.z || 0
+      )
     }
 
     if (newPosition) this.position = newPosition
@@ -111,13 +134,16 @@ export default class Motion {
 
   public postProcess(params: Partial<AllCommandParams>) {
     // Sync meta
-    if (this.ctx.driver.unit && this.ctx.unit != this.currentUnit) {
-      this.ctx.driver.unit(this.ctx.unit)
-      this.currentUnit = this.ctx.unit
-    }
+    // if (this.ctx.driver.unit && this.ctx.unit != this.currentUnit) {
+    //   this.ctx.driver.unit(this.ctx.unit)
+    //   this.currentUnit = this.ctx.unit
+    // }
 
     // Sync meta
-    if (this.ctx.driver.meta && this.ctx.toolDiameter != this.currentToolDiameter) {
+    if (
+      this.ctx.driver.meta &&
+      this.ctx.toolDiameter != this.currentToolDiameter
+    ) {
       this.ctx.driver.meta({
         toolDiameter: this.ctx.toolDiameter,
       })
@@ -132,7 +158,8 @@ export default class Motion {
 
     // Set new spindle speed changed
     if (this.ctx.driver.speed && this.ctx.speed != this.currentSpeed) {
-      this.ctx.driver.speed(this.ctx.speed)
+      // we ignore speed command because is messes up the vigo drawer software
+      // this.ctx.driver.speed(this.ctx.speed)
       this.currentSpeed = this.ctx.speed
     }
 
@@ -160,7 +187,10 @@ export default class Motion {
     )
 
     const v2 = this.position
-    const dist = Math.sqrt(Math.pow(v2.x - v1.x, 2) + Math.pow(v2.y - v1.y, 2) /* + Math.pow(v2.z - v1.z, 2)*/)
+    const dist = Math.sqrt(
+      Math.pow(v2.x - v1.x, 2) +
+        Math.pow(v2.y - v1.y, 2) /* + Math.pow(v2.z - v1.z, 2)*/
+    )
 
     if (!params.f) {
       let f = dist / (1 / this.ctx.feed)
@@ -209,7 +239,11 @@ export default class Motion {
       const yo = p.y - this.position.y
       curLen += Math.sqrt(xo * xo + yo * yo)
 
-      this.linear({ x: p.x, y: p.y, z: zStart + (curLen / totalLen) * fullDelta })
+      this.linear({
+        x: p.x,
+        y: p.y,
+        z: zStart + (curLen / totalLen) * fullDelta,
+      })
     }
   }
 
@@ -263,7 +297,8 @@ export default class Motion {
         // console.log('[motion] move to', args)
         const [x, y] = args
         // Optimize out 0 distances moves
-        const sameXY = sameFloat(x, this.position.x) && sameFloat(y, this.position.y)
+        const sameXY =
+          sameFloat(x, this.position.x) && sameFloat(y, this.position.y)
         if (ramping && sameXY) return
 
         if (!sameXY) this.retract()
@@ -278,7 +313,9 @@ export default class Motion {
         const [x, y] = args
         this.linear({ x, y, z: helix() })
       },
-      ['ELLIPSE' as EllipseAction['type']]: (...args: EllipseAction['args']) => {
+      ['ELLIPSE' as EllipseAction['type']]: (
+        ...args: EllipseAction['args']
+      ) => {
         // console.log('[motion] ellipse', args)
         const [x, y, rx, ry, aStart, aEnd, ccw] = args
         // Detect plain arc
@@ -296,7 +333,9 @@ export default class Motion {
           interpolate(this, 'ellipse', args)
         }
       },
-      ['BEZIER_CURVE_TO' as BezierCurveToAction['type']]: (...args: BezierCurveToAction['args']) => {
+      ['BEZIER_CURVE_TO' as BezierCurveToAction['type']]: (
+        ...args: BezierCurveToAction['args']
+      ) => {
         // console.log('[motion] bezierCurveTo', args)
         /*if (this.ctx.driver.bezierCurve) {
           // args: [aCP1x: number, aCP1y: number, aCP2x: number, aCP2y: number, aX: number, aY: number]
@@ -311,14 +350,18 @@ export default class Motion {
         } else */
         interpolate(this, 'bezierCurveTo', args)
       },
-      ['QUADRATIC_CURVE_TO' as QuadraticCurveToAction['type']]: (...args: QuadraticCurveToAction['args']) => {
+      ['QUADRATIC_CURVE_TO' as QuadraticCurveToAction['type']]: (
+        ...args: QuadraticCurveToAction['args']
+      ) => {
         // console.log('[motion] quadraticCurveTo', args)
         interpolate(this, 'quadraticCurveTo', args)
       },
     }
 
     if (path.hasBeenCutInto && path.pointsCache[DEFAULT_DIVISIONS]) {
-      console.log('[motion] path has been cut into (using point cache for path)')
+      console.log(
+        '[motion] path has been cut into (using point cache for path)'
+      )
       const points = path.pointsCache[DEFAULT_DIVISIONS]
       for (let p = 0; p < points.length; p++) {
         const pt = points[p]

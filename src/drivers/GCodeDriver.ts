@@ -33,12 +33,17 @@ export default class GCode extends Driver {
     this.init()
   }
 
-  public send(code: string, params?: Partial<AllCommandParams>, comment?: string) {
+  public send(
+    code: string,
+    params?: Partial<AllCommandParams>,
+    comment?: string
+  ) {
     let command = `${code}`
     if (params) {
       const keys = 'zabcijkfpqstxy'.split('') as (keyof AllCommandParams)[]
       keys.forEach((k) => {
-        if (params[k] === undefined || params[k] === null || isNaN(params[k])) return
+        if (params[k] === undefined || params[k] === null || isNaN(params[k]))
+          return
         command += ` ${k.toUpperCase()}${params[k]}`
       })
     }
@@ -52,7 +57,7 @@ export default class GCode extends Driver {
     // this.send('G80 (cancel any previously used canned cycles)')
     this.send('G17 (select the xy plane)')
     // this.send('G28 (rapid to home position)')
-    this.send('M3 S0 (activate servo)')
+    // this.send('M3 S0 (activate servo)')
   }
 
   public unit(name: Unit) {

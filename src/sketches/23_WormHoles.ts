@@ -1,6 +1,7 @@
 import { Sketch } from '../Sketch'
 import { shuffle } from '../utils/arrayUtils'
 import { randFloat, randFloatRange, randIntRange } from '../utils/numberUtils'
+import { initPen, penUp } from '../utils/penUtils'
 import { random, seedRandom } from '../utils/random'
 import { BooleanRange } from './tools/Range'
 
@@ -10,10 +11,31 @@ export default class WormHoles extends Sketch {
   // static generateGCode = false
 
   init() {
-    this.addVar('speedUp', { initialValue: 1, min: 1, max: 100, step: 1, disableRandomize: true })
-    this.addVar('randSeed', { initialValue: 5321, min: 1000, max: 10000, step: 1, disableRandomize: true })
-    this.addVar('stopAfter', { initialValue: 128, min: 5, max: 2000, step: 1, disableRandomize: true })
-    this.vs.cutout = new BooleanRange({ disableRandomize: true, initialValue: false })
+    this.addVar('speedUp', {
+      initialValue: 1,
+      min: 1,
+      max: 100,
+      step: 1,
+      disableRandomize: true,
+    })
+    this.addVar('randSeed', {
+      initialValue: 5321,
+      min: 1000,
+      max: 10000,
+      step: 1,
+      disableRandomize: true,
+    })
+    this.addVar('stopAfter', {
+      initialValue: 128,
+      min: 5,
+      max: 2000,
+      step: 1,
+      disableRandomize: true,
+    })
+    this.vs.cutout = new BooleanRange({
+      disableRandomize: true,
+      initialValue: false,
+    })
 
     this.addVar('xDivs', { initialValue: 60, min: 1, max: 200, step: 1 })
     this.addVar('yDivs', { initialValue: 25, min: 1, max: 200, step: 1 })
@@ -21,8 +43,18 @@ export default class WormHoles extends Sketch {
     this.addVar('endY', { initialValue: 0.9, min: 0, max: 1, step: 0.01 })
     this.addVar('startX', { initialValue: 0.22, min: 0, max: 1, step: 0.01 })
     this.addVar('endX', { initialValue: 0.45, min: 0, max: 1, step: 0.01 })
-    this.addVar('perspective', { initialValue: 1.2, min: 0.9, max: 1.5, step: 0.01 })
-    this.addVar('thickness', { initialValue: 3.5, min: 0.01, max: 5, step: 0.01 })
+    this.addVar('perspective', {
+      initialValue: 1.2,
+      min: 0.9,
+      max: 1.5,
+      step: 0.01,
+    })
+    this.addVar('thickness', {
+      initialValue: 3.5,
+      min: 0.01,
+      max: 5,
+      step: 0.01,
+    })
     this.addVar('randOffsetX', { initialValue: 8, min: 0, max: 10, step: 0.01 })
     this.addVar('gap', { initialValue: 5, min: 1, max: 15, step: 0.1 })
     this.addVar('randGap', { initialValue: 6, min: 0, max: 10, step: 0.01 })
@@ -37,6 +69,7 @@ export default class WormHoles extends Sketch {
 
   initDraw(): void {
     seedRandom(this.vars.randSeed)
+    initPen(this)
 
     this.stopDrawing = false
     this.increment = 0
@@ -51,7 +84,10 @@ export default class WormHoles extends Sketch {
 
     while (ySeg < this.vars.yDivs * endY) {
       const yPos = ySeg * segH
-      const offsetX = randFloatRange(this.vars.randOffsetX, -this.vars.randOffsetX)
+      const offsetX = randFloatRange(
+        this.vars.randOffsetX,
+        -this.vars.randOffsetX
+      )
       while ((xSeg + offsetX) * scale < this.vars.xDivs * endX) {
         const width = randIntRange(this.vars.minWidth, this.vars.maxWidth)
         const segGap = gap + randFloatRange(this.vars.randGap, 0)
@@ -139,6 +175,9 @@ export default class WormHoles extends Sketch {
   draw(increment: number): void {
     if (this.stopDrawing) return
     this.increment++
-    if (this.increment > this.vars.stopAfter) return
+    if (this.increment > this.vars.stopAfter) {
+      penUp(this)
+      return
+    }
   }
 }

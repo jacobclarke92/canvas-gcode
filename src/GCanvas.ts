@@ -94,7 +94,7 @@ export default class GCanvas {
   public depth = 0
   public depthOfCut = 0
   public retract = 0
-  public speed = 500
+  public speed = 50
   public feed = 1000
   public act = 0
   public unit: Unit = 'mm'
