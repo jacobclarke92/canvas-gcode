@@ -30,4 +30,5 @@ export default [
   require('./28_Sunflower').default,
   require('./29_AgeRings').default,
   require('./30_Housies').default,
+  require('./31_Crescents').default,
 ]
