@@ -8,10 +8,10 @@ import sketches from './sketches'
 import { renderSketchSliders, updateSliderValues } from './sliders'
 import { loadValue, saveValue } from './utils/localStorageUtils'
 
-const CANVAS_WIDTH = 140 * 1.2
-const CANVAS_HEIGHT = 100 * 1.2
+const CANVAS_WIDTH = 297 - 16
+const CANVAS_HEIGHT = 210 - 16
 const CANVAS_BACKGROUND = '#fff'
-const VIRTUAL_SCALE = 8
+const VIRTUAL_SCALE = 4
 const DRAW_STEPS_PER_FRAME = 100
 
 const canvas = document.createElement('canvas')
@@ -60,7 +60,8 @@ const init = () => {
     if (currentSketchIndex === index) button.classList.add('active')
     button.addEventListener('click', () => {
       const allButtons = sketchButtonsArea.getElementsByTagName('button')
-      for (let i = 0; i < allButtons.length; i++) allButtons.item(i).classList.remove('active')
+      for (let i = 0; i < allButtons.length; i++)
+        allButtons.item(i).classList.remove('active')
       button.classList.add('active')
       currentSketchIndex = saveValue('sketchIndex', index)
       initSketch(sketch)
@@ -141,7 +142,11 @@ const initSketch = (SketchClass: typeof Sketch) => {
     virtualScale: VIRTUAL_SCALE,
     background: CANVAS_BACKGROUND,
   })
-  CurrentSketch = new SketchClass({ ctx: gCanvas, width: CANVAS_WIDTH, height: CANVAS_HEIGHT })
+  CurrentSketch = new SketchClass({
+    ctx: gCanvas,
+    width: CANVAS_WIDTH,
+    height: CANVAS_HEIGHT,
+  })
   CurrentSketch.init()
   CurrentSketch.initDraw()
 

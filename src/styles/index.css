@@ -20,7 +20,7 @@ button {
 }
 
 #app {
-  width: 100vw;
+  width: calc(100vw - 20px);
   display: flex;
   & > .left-area {
     flex: none;

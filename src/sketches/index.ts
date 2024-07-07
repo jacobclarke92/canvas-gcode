@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 export default [
-  require('./01_InitialSketch').default, // maybe work?
+  require('./01_Calibration').default, // maybe work?
   require('./02_GCodeTest').default,
   require('./03_Arcs').default,
   require('./04_BezierScribbles').default,

@@ -1,0 +1,40 @@
+G17 (select the xy plane)
+M05 (pen up)
+G4 P2000 (wait 2000ms)
+M03 (pen down)
+G4 P8000 (wait 8000ms)
+M05 (pen up)
+G4 P2000 (wait 2000ms)
+(toolDiameter=0.15)
+G93 (inverse time mode)
+G1 F2000 X2 Y0
+G1 F2000 X2 Y2
+G1 F2000 X0 Y2
+G1 F2000 X0 Y0
+G0 F287000 X287 Y0
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 F2000 X289 Y0
+G1 F2000 X289 Y2
+G1 F2000 X287 Y2
+G1 F2000 X287 Y0
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F200000 X287 Y200
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 F2000 X289 Y200
+G1 F2000 X289 Y202
+G1 F2000 X287 Y202
+G1 F2000 X287 Y200
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F287000 X0 Y200
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 F2000 X2 Y200
+G1 F2000 X2 Y202
+G1 F2000 X0 Y202
+G1 F2000 X0 Y200
+M05 (pen up)
+G4 P250 (wait 250ms)
