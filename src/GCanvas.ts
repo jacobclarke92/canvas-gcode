@@ -12,7 +12,7 @@ import { ClipType } from './packages/Clipper/enums'
 import type { Bounds, WindingRule } from './Path'
 import Path from './Path'
 import Point from './Point'
-import type SubPath from './SubPath'
+import SubPath from './SubPath'
 import {
   type ArcAction,
   type BezierCurveToAction,
@@ -487,6 +487,10 @@ export default class GCanvas {
     if (options?.cutout === clipperLib.ClipType.Union) this.clearRect(x, y, w, h)
   }
 
+  public strokeBounds(bounds: Bounds) {
+    this.strokeRect(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top)
+  }
+
   public fillRect(
     ...args: [pt: Point, w: number, h: number] | [x: number, y: number, w: number, h: number]
   ) {
@@ -874,12 +878,20 @@ export default class GCanvas {
    */
   public clipCurrentPath({
     clipType,
+    subjectFillType = clipperLib.PolyFillType.NonZero,
+    clipFillType = clipperLib.PolyFillType.NonZero,
     pathsAreOpen = false,
+    reverseSolution = false,
     detailScale = 1000,
+    pathDivisions = DEFAULT_DIVISIONS,
   }: {
-    pathsAreOpen?: boolean
     clipType: clipperLib.ClipType
+    subjectFillType?: clipperLib.PolyFillType
+    clipFillType?: clipperLib.PolyFillType
+    pathsAreOpen?: boolean
+    reverseSolution?: boolean
     detailScale?: number
+    pathDivisions?: number
   }) {
     /**
      * TODO: Abstract this into GCanvas
@@ -893,24 +905,38 @@ export default class GCanvas {
 
     const diffPath = clipper.clipToPolyTree({
       clipType,
-      subjectInputs: paths.map((path) => ({
-        data: path.getPoints().map((pt) => pt.scale(detailScale)),
+      subjectInputs: (clipType === clipperLib.ClipType.Union ? paths : [paths[0]]).map((path) => ({
+        data: path.getPoints(pathDivisions).map((pt) => pt.scale(detailScale)),
         closed: !pathsAreOpen,
       })),
-      subjectFillType: clipperLib.PolyFillType.NonZero,
+      clipInputs:
+        clipType === clipperLib.ClipType.Union
+          ? undefined
+          : paths.slice(1).map((path) => ({
+              data: path.getPoints(pathDivisions).map((pt) => pt.scale(detailScale)),
+              closed: !pathsAreOpen,
+            })),
+      reverseSolution,
+      subjectFillType,
+      clipFillType,
     })
 
-    console.log('diffPath', diffPath)
+    // console.log('diffPath', diffPath)
     const intersected = diffPath.total < paths.length
 
     let node = diffPath.getFirst()
+
+    this.path.subPaths = []
+
     const ptPts: Point[][] = []
     while (node) {
       // console.log('contour', node.contour)
       const pts = node.contour.map((pt) => new Point(pt.x / detailScale, pt.y / detailScale))
+      this.path.subPaths.push(new SubPath(pts))
       ptPts.push(pts)
       node = node.getNext()
     }
+    this.path.current = this.path.subPaths[this.path.subPaths.length - 1]
 
     this.ctx.closePath()
 

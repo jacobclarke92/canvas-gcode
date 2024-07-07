@@ -63,6 +63,9 @@ export default class Point extends IntPoint {
   public dot(point: Point): number {
     return this.x * point.x + this.y * point.y
   }
+  public cross(point: Point): number {
+    return this.x * point.y - this.y * point.x
+  }
   public translate(x: number, y: number) {
     return new Point(this.x + x, this.y + y)
   }
