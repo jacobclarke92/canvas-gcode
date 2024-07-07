@@ -11,16 +11,16 @@ export default class Housies extends Sketch {
   static enableCutouts = false
 
   init() {
-    this.vs.speedUp = new Range({ name: 'speedUp', initialValue: 10, min: 1, max: 100, step: 1, disableRandomize: true }, this) // prettier-ignore
-    this.vs.seed = new Range({ name: 'seed', initialValue: 1010, min: 1000, max: 5000, step: 1 }, this) // prettier-ignore
+    this.addVar('speedUp', { name: 'speedUp', initialValue: 10, min: 1, max: 100, step: 1, disableRandomize: true }) // prettier-ignore
+    this.addVar('seed', { name: 'seed', initialValue: 1010, min: 1000, max: 5000, step: 1 }) // prettier-ignore
 
-    this.vs.outerGap = new Range({ initialValue: 12, min: -25, max: 25, step: 1, disableRandomize: true }, this) // prettier-ignore
-    this.vs.houseGap = new Range({ initialValue: 2, min: 0, max: 25, step: 1, disableRandomize: true }, this) // prettier-ignore
-    this.vs.housesOnBlock = new Range({ initialValue: 4, min: 1, max: 25, step: 1, disableRandomize: true }, this) // prettier-ignore
-    this.vs.blocks = new Range({ initialValue: 1, min: 1, max: 25, step: 1, disableRandomize: true }, this) // prettier-ignore
-    this.vs.blockGap = new Range({ initialValue: 8, min: 0, max: 25, step: 1, disableRandomize: true }, this) // prettier-ignore
-    this.vs.perspective = new Range({ initialValue: 2, min: 0, max: 10, step: 1, disableRandomize: true }, this) // prettier-ignore
-    this.vs.maxHouseHeightRatio = new Range({ initialValue: 1.5, min: 0.2, max: 5, step: 0.01, disableRandomize: true }, this) // prettier-ignore
+    this.addVar('outerGap', { initialValue: 12, min: -25, max: 25, step: 1, disableRandomize: true }) // prettier-ignore
+    this.addVar('houseGap', { initialValue: 2, min: 0, max: 25, step: 1, disableRandomize: true }) // prettier-ignore
+    this.addVar('housesOnBlock', { initialValue: 4, min: 1, max: 25, step: 1, disableRandomize: true }) // prettier-ignore
+    this.addVar('blocks', { initialValue: 1, min: 1, max: 25, step: 1, disableRandomize: true }) // prettier-ignore
+    this.addVar('blockGap', { initialValue: 8, min: 0, max: 25, step: 1, disableRandomize: true }) // prettier-ignore
+    this.addVar('perspective', { initialValue: 2, min: 0, max: 10, step: 1, disableRandomize: true }) // prettier-ignore
+    this.addVar('maxHouseHeightRatio', { initialValue: 1.5, min: 0.2, max: 5, step: 0.01, disableRandomize: true }) // prettier-ignore
   }
 
   private stopDraw = false
@@ -127,7 +127,7 @@ export default class Housies extends Sketch {
     row: number
   }): void {
     console.log('------')
-    const { maxHouseHeightRatio = 1.5 } = this.vars
+    const { maxHouseHeightRatio } = this.vars
 
     const houseBlockHeight = houseBlockWidth * maxHouseHeightRatio
 
@@ -219,7 +219,7 @@ export default class Housies extends Sketch {
     const effectiveWidth = this.cw - outerGap * 2
     const effectiveHeight = this.ch - outerGap * 2
 
-    const { houseGap = 2, housesOnBlock = 4, blocks = 1, blockGap = 8, perspective = 2 } = this.vars
+    const { houseGap, housesOnBlock, blocks, blockGap, perspective } = this.vars
 
     for (let block = 0; block < blocks; block++) {
       const currentHousesOnBlock = housesOnBlock + (blocks - 1 - block) * perspective

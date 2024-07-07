@@ -1,5 +1,6 @@
 import Point from '../Point'
 import { Sketch } from '../Sketch'
+import { initPen, penUp, plotBounds } from '../utils/penUtils'
 import { random, seedRandom } from '../utils/random'
 import Range from './tools/Range'
 
@@ -9,7 +10,7 @@ interface Circle {
 }
 
 export default class BubblesInCircle extends Sketch {
-  static generateGCode = false
+  // static generateGCode = false
   static enableCutouts = false
 
   redrawnCount: number
@@ -30,7 +31,7 @@ export default class BubblesInCircle extends Sketch {
     this.vs.maxRadius = new Range({
       initialValue: 300,
       min: 0.5,
-      max: 45,
+      max: 100,
       step: 0.5,
       disableRandomize: true,
     })
@@ -45,6 +46,8 @@ export default class BubblesInCircle extends Sketch {
 
   initDraw(): void {
     seedRandom(this.vs.seed.value)
+    initPen(this)
+    plotBounds(this)
     this.reordered = false
     this.redrawnCount = 0
     this.circles = []
@@ -58,10 +61,16 @@ export default class BubblesInCircle extends Sketch {
   draw(increment: number): void {
     if (this.circles.length > this.vs.atLeast.value) {
       if (!this.reordered) {
-        const center = new Point(this.cx, this.cy)
-        this.circles.sort(
-          (a, b) => Point.distance(center, b.position) - Point.distance(center, a.position)
-        )
+        const largestCirclePos = this.circles.reduce((a, b) =>
+          a.radius > b.radius ? a : b
+        ).position
+        this.circles = this.circles.sort((a, b) => {
+          // https://stackoverflow.com/a/6989383
+          return (
+            (a.position.x - largestCirclePos.x) * (b.position.y - largestCirclePos.y) -
+            (b.position.x - largestCirclePos.x) * (a.position.y - largestCirclePos.y)
+          )
+        })
         this.ctx.reset()
         this.ctx.beginPath()
         this.ctx.circle(this.cx, this.cy, this.radius)
@@ -76,6 +85,8 @@ export default class BubblesInCircle extends Sketch {
           this.ctx.stroke()
           this.ctx.closePath()
           this.redrawnCount++
+        } else {
+          penUp(this)
         }
       }
       return
