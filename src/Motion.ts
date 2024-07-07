@@ -45,17 +45,15 @@ export default class Motion {
   }
 
   public retract(timeMs = 250) {
-    // this.ctx.driver.send(`M03 S090 (pen up)`)
     if (this.penState === 'up') return
     this.ctx.driver.send('M05 (pen up)')
-    this.ctx.driver.send(`G4 P${timeMs} (wait ${timeMs}ms)`)
+    this.ctx.driver.wait(timeMs)
     this.penState = 'up'
   }
   public plunge(timeMs = 500) {
-    // this.ctx.driver.send(`M03 S070 (pen down)`)
     if (this.penState === 'down') return
     this.ctx.driver.send('M03 (pen down)')
-    this.ctx.driver.send(`G4 P${timeMs} (wait ${timeMs}ms)`)
+    this.ctx.driver.wait(timeMs)
     this.penState = 'down'
   }
   public zero(params: ZeroParams) {

@@ -2,7 +2,7 @@ import type { Sketch } from '../Sketch'
 
 export const initPen = (sketch: Sketch) => {
   sketch.ctx.motion.retract(2000)
-  sketch.ctx.motion.plunge(8000)
+  sketch.ctx.motion.plunge(5000)
   sketch.ctx.motion.retract(2000)
 }
 

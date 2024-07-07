@@ -47,6 +47,7 @@ export default class Driver {
 
   public send(...args: any[]) {}
   public init() {}
+  public wait(ms: number) {}
   public unit(name: Unit) {}
   public speed(n: number) {}
   public feed(n: number) {}

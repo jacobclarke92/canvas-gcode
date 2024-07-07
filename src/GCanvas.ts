@@ -90,12 +90,12 @@ export default class GCanvas {
   // cnc-specific stuff
   public precision = 20
   public align: StrokeAlign = 'center'
-  public ramping = true
+  public ramping = false // this is set to false because Vigo loses position when using G0 commands
   public depth = 0
   public depthOfCut = 0
   public retract = 0
-  public speed = 50
-  public feed = 1000
+  public speed = 50 // not used i don't think
+  public feed = 1000 // defs used
   public act = 0
   public unit: Unit = 'mm'
   public top = 0

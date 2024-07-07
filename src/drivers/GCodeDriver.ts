@@ -60,6 +60,10 @@ export default class GCode extends Driver {
     // this.send('M3 S0 (activate servo)')
   }
 
+  public wait(ms: number) {
+    this.send(`G4 P${ms} (wait ${ms}ms)`)
+  }
+
   public unit(name: Unit) {
     this.send({ inch: 'G20', mm: 'G21' }[name] + ` (select ${name} unit)`)
   }
@@ -83,6 +87,7 @@ export default class GCode extends Driver {
   }
   public rapid(params: RapidParams, comment?: string) {
     this.send('G0', params, comment)
+    if (params.f) this.wait(Math.ceil(params.f / 1000)) // this is to compensate for Vigo dogness
   }
   public linear(params: LinearParams, comment?: string) {
     this.send('G1', params, comment)
