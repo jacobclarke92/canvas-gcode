@@ -84,10 +84,7 @@ export default class WormHoles extends Sketch {
 
     while (ySeg < this.vars.yDivs * endY) {
       const yPos = ySeg * segH
-      const offsetX = randFloatRange(
-        this.vars.randOffsetX,
-        -this.vars.randOffsetX
-      )
+      const offsetX = randFloatRange(this.vars.randOffsetX, -this.vars.randOffsetX)
       while ((xSeg + offsetX) * scale < this.vars.xDivs * endX) {
         const width = randIntRange(this.vars.minWidth, this.vars.maxWidth)
         const segGap = gap + randFloatRange(this.vars.randGap, 0)

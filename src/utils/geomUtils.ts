@@ -32,8 +32,10 @@ export const getLineIntersectionPoint = (line1: LooseLine, line2: LooseLine): Po
   const denominator = (l2p2.y - l2p1.y) * (l1p2.x - l1p1.x) - (l2p2.x - l2p1.x) * (l1p2.y - l1p1.y)
   if (denominator === 0) return null
 
-  const ua = ((l2p2.x - l2p1.x) * (l1p1.y - l2p1.y) - (l2p2.y - l2p1.y) * (l1p1.x - l2p1.x)) / denominator
-  const ub = ((l1p2.x - l1p1.x) * (l1p1.y - l2p1.y) - (l1p2.y - l1p1.y) * (l1p1.x - l2p1.x)) / denominator
+  const ua =
+    ((l2p2.x - l2p1.x) * (l1p1.y - l2p1.y) - (l2p2.y - l2p1.y) * (l1p1.x - l2p1.x)) / denominator
+  const ub =
+    ((l1p2.x - l1p1.x) * (l1p1.y - l2p1.y) - (l1p2.y - l1p1.y) * (l1p1.x - l2p1.x)) / denominator
 
   if (ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1) {
     const x = l1p1.x + ua * (l1p2.x - l1p1.x)
@@ -44,7 +46,10 @@ export const getLineIntersectionPoint = (line1: LooseLine, line2: LooseLine): Po
   return null
 }
 
-export const getLineIntersectionPoints = (line: LooseLine, ...lines: LooseLine[]): [Point, LooseLine][] => {
+export const getLineIntersectionPoints = (
+  line: LooseLine,
+  ...lines: LooseLine[]
+): [Point, LooseLine][] => {
   const pointsAndLines: [Point, LooseLine][] = []
   for (const l of lines) {
     const pt = getLineIntersectionPoint(line, l)
@@ -81,14 +86,21 @@ export const lineIntersectsCircle = ([p1, p2]: Line, pt: Point, radius: number):
   return true
 }
 
-export const lineIntersectsCircles = ([p1, p2]: Line, ...circles: [pos: Point, rad: number][]): boolean => {
+export const lineIntersectsCircles = (
+  [p1, p2]: Line,
+  ...circles: [pos: Point, rad: number][]
+): boolean => {
   for (const [pos, rad] of circles) {
     if (lineIntersectsCircle([p1, p2], pos, rad)) return true
   }
   return false
 }
 
-export const getPointsWhereLineIntersectsCircle = ([p1, p2]: Line, pt: Point, radius: number): Point[] | [] => {
+export const getPointsWhereLineIntersectsCircle = (
+  [p1, p2]: Line,
+  pt: Point,
+  radius: number
+): Point[] | [] => {
   const x1 = p1.clone().subtract(pt)
   const x2 = p2.clone().subtract(pt)
 
@@ -104,17 +116,22 @@ export const getPointsWhereLineIntersectsCircle = ([p1, p2]: Line, pt: Point, ra
 
   const intersectionPoints: Point[] = []
   intersectionPoints.push(
-    new Point(D * dv.y + sign(dv.y) * dv.x * t, -D * dv.x + Math.abs(dv.y) * t).divide(dr * dr).add(pt)
+    new Point(D * dv.y + sign(dv.y) * dv.x * t, -D * dv.x + Math.abs(dv.y) * t)
+      .divide(dr * dr)
+      .add(pt)
   )
   if (di > 0.0) {
     intersectionPoints.push(
-      new Point(D * dv.y - sign(dv.y) * dv.x * t, -D * dv.x - Math.abs(dv.y) * t).divide(dr * dr).add(pt)
+      new Point(D * dv.y - sign(dv.y) * dv.x * t, -D * dv.x - Math.abs(dv.y) * t)
+        .divide(dr * dr)
+        .add(pt)
     )
   }
   return intersectionPoints
 }
 
-export const pointInCircle = (pt: Point, circlePos: Point, radius: number): boolean => pt.distanceTo(circlePos) < radius
+export const pointInCircle = (pt: Point, circlePos: Point, radius: number): boolean =>
+  pt.distanceTo(circlePos) < radius
 
 export const pointInCircles = (pt: Point, ...circles: [pos: Point, rad: number][]): boolean => {
   for (const [pos, rad] of circles) {

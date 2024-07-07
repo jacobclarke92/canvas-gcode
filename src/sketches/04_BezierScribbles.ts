@@ -30,10 +30,12 @@ export default class BezierScribbles extends Sketch {
     const endPoint = new Point(
       this.lastPoint.x +
         Math.cos(Math.random() * Math.PI * 2) *
-          (this.vs.driftMin.value + Math.random() * (this.vs.driftMax.value - this.vs.driftMin.value)),
+          (this.vs.driftMin.value +
+            Math.random() * (this.vs.driftMax.value - this.vs.driftMin.value)),
       this.lastPoint.y +
         Math.sin(Math.random() * Math.PI * 2) *
-          (this.vs.driftMin.value + Math.random() * (this.vs.driftMax.value - this.vs.driftMin.value))
+          (this.vs.driftMin.value +
+            Math.random() * (this.vs.driftMax.value - this.vs.driftMin.value))
     )
 
     endPoint.x += (this.cx - endPoint.x) / 15

@@ -25,7 +25,9 @@ export type AllCommandParams = {
 }
 
 export type ArcParams = Partial<Pick<AllCommandParams, 'x' | 'y' | 'z' | 'i' | 'j' | 'f'>>
-export type BezierCurveParams = Partial<Pick<AllCommandParams, 'x' | 'y' | 'z' | 'i' | 'j' | 'p' | 'q' | 'f' | 's'>>
+export type BezierCurveParams = Partial<
+  Pick<AllCommandParams, 'x' | 'y' | 'z' | 'i' | 'j' | 'p' | 'q' | 'f' | 's'>
+>
 export type EllipseParams = ArcParams
 export type RapidParams = Partial<Pick<AllCommandParams, 'x' | 'y' | 'z' | 'f'>>
 export type LinearParams = Partial<Pick<AllCommandParams, 'x' | 'y' | 'z' | 'f' | 'a'>>

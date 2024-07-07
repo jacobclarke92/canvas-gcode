@@ -92,16 +92,12 @@ export default class AgeRings extends Sketch {
       )
 
       const angleMod =
-        perlin2(
-          (basePt.x + offsetX) / perlinDiv,
-          (basePt.y + offsetY) / perlinDiv
-        ) * noiseAngleInfluence
+        perlin2((basePt.x + offsetX) / perlinDiv, (basePt.y + offsetY) / perlinDiv) *
+        noiseAngleInfluence
 
       const radiusMod =
-        perlin2(
-          (basePt.x + offsetX) / perlinDiv,
-          (basePt.y + offsetY) / perlinDiv
-        ) * noiseRadiusInfluence
+        perlin2((basePt.x + offsetX) / perlinDiv, (basePt.y + offsetY) / perlinDiv) *
+        noiseRadiusInfluence
 
       const radius = Math.max(0, baseRadius + radiusMod)
 

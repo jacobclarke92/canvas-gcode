@@ -118,11 +118,7 @@ export default class Tree extends Sketch {
 
     const length = initBranchLength / branchLengthFalloff
     const angle = -Math.PI / 2
-    const position = this.drawBranch(
-      new Point(this.cx, this.ch - 10),
-      angle,
-      length
-    )
+    const position = this.drawBranch(new Point(this.cx, this.ch - 10), angle, length)
     this.currentStems.push({ position, angle, length })
   }
 
@@ -142,11 +138,9 @@ export default class Tree extends Sketch {
       const stem = this.currentStems[this.drawnCurrentStems]
 
       const branchLengthFalloff = this.vs.branchLengthFalloff.value
-      const splitProbability =
-        this.branchLevel < 3 ? 1 : this.vs.splitProbability.value
+      const splitProbability = this.branchLevel < 3 ? 1 : this.vs.splitProbability.value
       const splitAngleRange = this.vs.splitAngleRange.value
-      const splitAngleBranchLevelMulti =
-        this.vs.splitAngleBranchLevelMulti.value
+      const splitAngleBranchLevelMulti = this.vs.splitAngleBranchLevelMulti.value
       const splitAngleMinPercent = this.vs.splitAngleMinPercent.value
       const pruneProbability = this.vs.pruneProbability.value
       const bloomProbability = this.vs.bloomProbability.value
@@ -157,13 +151,9 @@ export default class Tree extends Sketch {
       if (!doSplit) {
         // draw branch
         const angle = stem.angle + randFloat((Math.PI * chaosFactor) / 10)
-        const length =
-          stem.length * branchLengthFalloff * (1 + randFloat(chaosFactor / 8))
+        const length = stem.length * branchLengthFalloff * (1 + randFloat(chaosFactor / 8))
         const endPoint = this.drawBranch(stem.position, angle, length)
-        if (
-          this.branchLevel !== this.vs.maxBranchLevels.value &&
-          random() > pruneProbability
-        ) {
+        if (this.branchLevel !== this.vs.maxBranchLevels.value && random() > pruneProbability) {
           this.nextStems.push({
             position: endPoint,
             angle,
@@ -175,8 +165,7 @@ export default class Tree extends Sketch {
       } else {
         const splitInto = this.vs.splitCount.value
         const adjustedSplitAngleRange =
-          splitAngleRange *
-          (1 + (splitAngleBranchLevelMulti * this.branchLevel) / 4)
+          splitAngleRange * (1 + (splitAngleBranchLevelMulti * this.branchLevel) / 4)
         const splitAngleSpan =
           adjustedSplitAngleRange * splitAngleMinPercent +
           randFloatRange(adjustedSplitAngleRange * (1 - splitAngleMinPercent)) +
@@ -185,8 +174,7 @@ export default class Tree extends Sketch {
         const splitSlice = (splitAngleSpan * 2) / splitInto
 
         for (let s = 0; s < splitInto; s++) {
-          const length =
-            stem.length * branchLengthFalloff * (1 + randFloat(chaosFactor / 8))
+          const length = stem.length * branchLengthFalloff * (1 + randFloat(chaosFactor / 8))
           const angle =
             stem.angle -
             splitAngleSpan / 2 +

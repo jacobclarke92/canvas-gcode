@@ -16,8 +16,20 @@ export default class VanishingPoint extends Sketch {
 
   init() {
     this.addVar('speedUp', { initialValue: 1, min: 1, max: 100, step: 1, disableRandomize: true })
-    this.addVar('randSeed', { initialValue: 7035, min: 1000, max: 10000, step: 1, disableRandomize: true })
-    this.addVar('stopAfter', { initialValue: 50000, min: 5, max: 100000, step: 1, disableRandomize: true })
+    this.addVar('randSeed', {
+      initialValue: 7035,
+      min: 1000,
+      max: 10000,
+      step: 1,
+      disableRandomize: true,
+    })
+    this.addVar('stopAfter', {
+      initialValue: 50000,
+      min: 5,
+      max: 100000,
+      step: 1,
+      disableRandomize: true,
+    })
 
     this.vs.cutout = new BooleanRange({ disableRandomize: true, initialValue: true })
     this.addVar('padding', { initialValue: 20, min: 0, max: 150, step: 1 })
@@ -50,7 +62,8 @@ export default class VanishingPoint extends Sketch {
       while (
         ++panic < 1000 &&
         this.planeCenterPoints.some(
-          ([pt, rad2]) => pt.distanceTo(centerPoint) < (radius + rad2) * this.vars.planeSpacingThreshold
+          ([pt, rad2]) =>
+            pt.distanceTo(centerPoint) < (radius + rad2) * this.vars.planeSpacingThreshold
         )
       ) {
         centerPoint = new Point(
@@ -77,7 +90,14 @@ export default class VanishingPoint extends Sketch {
 
       this.vanishingPoints.forEach((vp) => {
         const distances = plane
-          .map((pt) => [pt, vp.distanceTo(pt), vp.angleBetween(pt)] as [pt: Point, dist: number, angle: number])
+          .map(
+            (pt) =>
+              [pt, vp.distanceTo(pt), vp.angleBetween(pt)] as [
+                pt: Point,
+                dist: number,
+                angle: number
+              ]
+          )
           .sort((a, b) => a[1] - b[1])
         // console.log(JSON.stringify(distances, null, 2))
         // console.log(distances[2][2], distances[0][2])

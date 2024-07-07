@@ -13,9 +13,26 @@ export default class Spiraling extends Sketch {
 
   init() {
     const scaleDown = 15
-    this.vs.speedUp = new Range({ initialValue: 10, min: 1, max: 100, step: 1, disableRandomize: true })
-    this.vs.stopAfter = new Range({ initialValue: 50000, min: 1, max: 120000, step: 1, disableRandomize: true })
-    this.vs.osc1speed = new Range({ initialValue: 0.1, min: -Math.PI / 8, max: Math.PI / 8, step: Math.PI / 666 }) // 666 is actually important
+    this.vs.speedUp = new Range({
+      initialValue: 10,
+      min: 1,
+      max: 100,
+      step: 1,
+      disableRandomize: true,
+    })
+    this.vs.stopAfter = new Range({
+      initialValue: 50000,
+      min: 1,
+      max: 120000,
+      step: 1,
+      disableRandomize: true,
+    })
+    this.vs.osc1speed = new Range({
+      initialValue: 0.1,
+      min: -Math.PI / 8,
+      max: Math.PI / 8,
+      step: Math.PI / 666,
+    }) // 666 is actually important
     this.vs.osc1dist = new Range({
       initialValue: Math.PI / 4 / scaleDown,
       min: Math.PI / 8 / scaleDown,
@@ -23,7 +40,12 @@ export default class Spiraling extends Sketch {
       step: Math.PI / 32 / scaleDown,
     })
     this.vs.osc1phase = new Range({ initialValue: 0, min: 0, max: Math.PI * 2, step: Math.PI / 16 })
-    this.vs.osc2speed = new Range({ initialValue: 0.1, min: -Math.PI / 8, max: Math.PI / 8, step: Math.PI / 666 }) // 666 is actually important
+    this.vs.osc2speed = new Range({
+      initialValue: 0.1,
+      min: -Math.PI / 8,
+      max: Math.PI / 8,
+      step: Math.PI / 666,
+    }) // 666 is actually important
     this.vs.osc2dist = new Range({
       initialValue: Math.PI / 4 / scaleDown,
       min: Math.PI / 8 / scaleDown,
@@ -31,7 +53,12 @@ export default class Spiraling extends Sketch {
       step: Math.PI / 32 / scaleDown,
     })
     this.vs.osc2phase = new Range({ initialValue: 0, min: 0, max: Math.PI * 2, step: Math.PI / 16 })
-    this.vs.osc3speed = new Range({ initialValue: 0.1, min: -Math.PI / 8, max: Math.PI / 8, step: Math.PI / 666 }) // 666 is actually important
+    this.vs.osc3speed = new Range({
+      initialValue: 0.1,
+      min: -Math.PI / 8,
+      max: Math.PI / 8,
+      step: Math.PI / 666,
+    }) // 666 is actually important
     this.vs.osc3dist = new Range({
       initialValue: Math.PI / 4 / scaleDown,
       min: Math.PI / 8 / scaleDown,
@@ -39,9 +66,21 @@ export default class Spiraling extends Sketch {
       step: Math.PI / 32 / scaleDown,
     })
     this.vs.osc3phase = new Range({ initialValue: 0, min: 0, max: Math.PI * 2, step: Math.PI / 16 })
-    this.osc1 = new Osc({ speed: (i) => this.vs.osc1speed.value, radius: (i) => this.vs.osc1dist.value, phase: 0 })
-    this.osc2 = new Osc({ speed: (i) => this.vs.osc2speed.value, radius: (i) => this.vs.osc2dist.value, phase: 0 })
-    this.osc3 = new Osc({ speed: (i) => this.vs.osc3speed.value, radius: (i) => this.vs.osc3dist.value, phase: 0 })
+    this.osc1 = new Osc({
+      speed: (i) => this.vs.osc1speed.value,
+      radius: (i) => this.vs.osc1dist.value,
+      phase: 0,
+    })
+    this.osc2 = new Osc({
+      speed: (i) => this.vs.osc2speed.value,
+      radius: (i) => this.vs.osc2dist.value,
+      phase: 0,
+    })
+    this.osc3 = new Osc({
+      speed: (i) => this.vs.osc3speed.value,
+      radius: (i) => this.vs.osc3dist.value,
+      phase: 0,
+    })
   }
 
   initDraw(): void {
@@ -63,7 +102,9 @@ export default class Spiraling extends Sketch {
       this.osc2.step(increment)
       this.osc3.step(increment)
       // const point = this.lastPoint.clone().add(this.osc1.value).add(this.osc2.value).add(this.osc3.value)
-      const point = this.lastPoint.clone().add(this.osc1.value.add(this.osc2.value).add(this.osc3.value))
+      const point = this.lastPoint
+        .clone()
+        .add(this.osc1.value.add(this.osc2.value).add(this.osc3.value))
 
       this.ctx.beginPath()
       this.ctx.moveTo(this.lastPoint.x, this.lastPoint.y)

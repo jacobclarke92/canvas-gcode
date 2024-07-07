@@ -12,13 +12,40 @@ export default class SpiralingProportional extends Sketch {
   lastPoint: Point
 
   init() {
-    this.vs.speedUp = new Range({ initialValue: 15, min: 1, max: 100, step: 1, disableRandomize: true })
-    this.vs.stopAfter = new Range({ initialValue: 1000, min: 1, max: 20000, step: 1, disableRandomize: true })
-    this.vs.oscSpeed = new Range({ initialValue: 0.1825, min: -Math.PI / 8, max: Math.PI / 8, step: Math.PI / 666 })
+    this.vs.speedUp = new Range({
+      initialValue: 15,
+      min: 1,
+      max: 100,
+      step: 1,
+      disableRandomize: true,
+    })
+    this.vs.stopAfter = new Range({
+      initialValue: 1000,
+      min: 1,
+      max: 20000,
+      step: 1,
+      disableRandomize: true,
+    })
+    this.vs.oscSpeed = new Range({
+      initialValue: 0.1825,
+      min: -Math.PI / 8,
+      max: Math.PI / 8,
+      step: Math.PI / 666,
+    })
     this.vs.oscSpeedMulti = new Range({ initialValue: 2.994, min: 0.5, max: 5, step: 0.00001 })
     this.vs.oscDist = new Range({ initialValue: 50, min: 1, max: 20, step: 0.25 })
-    this.vs.osc1phase = new Range({ initialValue: 5.9, min: 0, max: Math.PI * 2, step: Math.PI / 32 })
-    this.vs.osc2phase = new Range({ initialValue: 1.8, min: 0, max: Math.PI * 2, step: Math.PI / 32 })
+    this.vs.osc1phase = new Range({
+      initialValue: 5.9,
+      min: 0,
+      max: Math.PI * 2,
+      step: Math.PI / 32,
+    })
+    this.vs.osc2phase = new Range({
+      initialValue: 1.8,
+      min: 0,
+      max: Math.PI * 2,
+      step: Math.PI / 32,
+    })
     this.vs.osc3phase = new Range({ initialValue: 2, min: 0, max: Math.PI * 2, step: Math.PI / 32 })
     this.osc1 = new Osc({
       speed: (i) => (this.vs.oscSpeed.value * this.vs.oscSpeedMulti.value) / 2,
@@ -56,7 +83,9 @@ export default class SpiralingProportional extends Sketch {
       this.osc2.step(increment)
       this.osc3.step(increment)
       // const point = this.lastPoint.clone().add(this.osc1.value).add(this.osc2.value).add(this.osc3.value)
-      const point = this.lastPoint.clone().add(this.osc1.value.add(this.osc2.value).add(this.osc3.value))
+      const point = this.lastPoint
+        .clone()
+        .add(this.osc1.value.add(this.osc2.value).add(this.osc3.value))
 
       this.ctx.beginPath()
       this.ctx.moveTo(this.lastPoint.x, this.lastPoint.y)

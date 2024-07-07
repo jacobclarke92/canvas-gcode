@@ -87,7 +87,9 @@ export const areaOfPolygon = (polygon: Path, scale?: number) =>
   typeof scale !== 'number' ? 1 : Clipper.area(polygon) / (scale * scale)
 
 export const areaOfPolygons = (polygons: Paths, scale?: number) =>
-  typeof scale !== 'number' ? 0 : polygons.reduce((area, polygon) => area + areaOfPolygon(polygon, scale), 0)
+  typeof scale !== 'number'
+    ? 0
+    : polygons.reduce((area, polygon) => area + areaOfPolygon(polygon, scale), 0)
 
 export const boundsOfPath = (path: Path, scale?: number) => boundsOfPaths([path], scale)
 
@@ -109,7 +111,9 @@ export function clean(polygonOrPolygons: Path | Paths, delta?: number) {
   if (typeof delta !== 'number') throw new Error('Delta is not a number in Clean().')
   if (!(polygonOrPolygons instanceof Array)) throw new Error('Polygon is not a Path in Clean().')
   const isPolygons = polygonOrPolygons[0] instanceof Array
-  const polygons = isPolygons ? clone(polygonOrPolygons as Paths) : new Paths([clone(polygonOrPolygons as Path)])
+  const polygons = isPolygons
+    ? clone(polygonOrPolygons as Paths)
+    : new Paths([clone(polygonOrPolygons as Path)])
   if (polygons.length === 0 || (polygons.length === 1 && polygons[0].length === 0) || delta < 0)
     return polygonOrPolygons
 
@@ -130,7 +134,8 @@ export function clean(polygonOrPolygons: Path | Paths, delta?: number) {
     p = poly[0]
     j = 1
     for (i = 1; i < len; i++) {
-      if ((poly[i].x - p.x) * (poly[i].x - p.x) + (poly[i].y - p.y) * (poly[i].y - p.y) <= d) continue
+      if ((poly[i].x - p.x) * (poly[i].x - p.x) + (poly[i].y - p.y) * (poly[i].y - p.y) <= d)
+        continue
       result[j] = poly[i]
       p = poly[i]
       j++
@@ -151,10 +156,13 @@ export function clean(polygonOrPolygons: Path | Paths, delta?: number) {
 export function clone(polygonOrPolygons: Path): Path
 export function clone(polygonOrPolygons: Paths): Paths
 export function clone(polygonOrPolygons: Paths | Path) {
-  if (!(polygonOrPolygons instanceof Array)) throw new Error('clone() only works with Path or Paths.')
+  if (!(polygonOrPolygons instanceof Array))
+    throw new Error('clone() only works with Path or Paths.')
   if (polygonOrPolygons.length === 0) return new Path()
   const isPolygons = polygonOrPolygons[0] instanceof Array
-  const polygons = isPolygons ? (polygonOrPolygons as Paths) : new Paths([polygonOrPolygons as Path])
+  const polygons = isPolygons
+    ? (polygonOrPolygons as Paths)
+    : new Paths([polygonOrPolygons as Path])
   if (polygons.length === 1 && polygons[0].length === 0) return new Paths()
   let polygonPathLength: number, result: Path
 
@@ -177,11 +185,14 @@ export function clone(polygonOrPolygons: Paths | Path) {
 export function lighten(polygon: Path, tolerance: number): Path
 export function lighten(polygons: Paths, tolerance: number): Paths
 export function lighten(polygonOrPolygons: Path | Paths, tolerance: number) {
-  if (!(polygonOrPolygons instanceof Array)) throw new Error('lighten provided neither Path or Paths')
+  if (!(polygonOrPolygons instanceof Array))
+    throw new Error('lighten provided neither Path or Paths')
   if (typeof tolerance !== 'number') throw new Error('Tolerance is not a number in Lighten().')
   if (polygonOrPolygons.length === 0) return new Path()
   const isPolygons = polygonOrPolygons[0] instanceof Array
-  const polygons = isPolygons ? (polygonOrPolygons as Paths) : new Paths([polygonOrPolygons as Path])
+  const polygons = isPolygons
+    ? (polygonOrPolygons as Paths)
+    : new Paths([polygonOrPolygons as Path])
   if (polygons.length === 1 && polygons[0].length === 0) return new Paths()
 
   let i: number,
@@ -251,7 +262,8 @@ export function lighten(polygonOrPolygons: Path | Paths, tolerance: number) {
       }
       // add all unremoved points to poly2
       polygon2.push(new IntPoint(polygon[0].x, polygon[0].y))
-      for (j = 1; j < pLen - 1; j++) if (!rem[j]) polygon2.push(new IntPoint(polygon[j].x, polygon[j].y))
+      for (j = 1; j < pLen - 1; j++)
+        if (!rem[j]) polygon2.push(new IntPoint(polygon[j].x, polygon[j].y))
       polygon2.push(new IntPoint(polygon[pLen - 1].x, polygon[pLen - 1].y))
       // if the first point was added to the end, remove it
       if (addLast) polygon.pop()

@@ -6,7 +6,13 @@ export class IntPoint {
   public x: number
   public y: number
   public z: number
-  constructor(...args: [] | [dp: DoublePoint | IntPoint] | [x: number, y: number] | [x: number, y: number, z: number]) {
+  constructor(
+    ...args:
+      | []
+      | [dp: DoublePoint | IntPoint]
+      | [x: number, y: number]
+      | [x: number, y: number, z: number]
+  ) {
     this.x = 0
     this.y = 0
 

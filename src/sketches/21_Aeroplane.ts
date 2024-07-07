@@ -1,11 +1,7 @@
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import type { Bounds, Circle } from '../utils/geomUtils'
-import {
-  boundsOverlap,
-  circleOverlapsCircles,
-  getBoundsFromCircles,
-} from '../utils/geomUtils'
+import { boundsOverlap, circleOverlapsCircles, getBoundsFromCircles } from '../utils/geomUtils'
 import { perlin2, seedNoise } from '../utils/noise'
 import { randFloat, randIntRange } from '../utils/numberUtils'
 import { initPen, plotBounds } from '../utils/penUtils'
@@ -166,9 +162,7 @@ export default class Aeroplane extends Sketch {
             (!nextPos ||
               circleOverlapsCircles(
                 [nextPos, nextRadius],
-                ...this.getCirclesNearBounds(
-                  getBoundsFromCircles([nextPos, nextRadius])
-                )
+                ...this.getCirclesNearBounds(getBoundsFromCircles([nextPos, nextRadius]))
               ))
           ) {
             panic2++
@@ -187,14 +181,11 @@ export default class Aeroplane extends Sketch {
             ) *
             Math.PI *
             2
-          nextRadius =
-            this.lastRadius / (radiusReductionDiv * (1 + randFloat(radiusVary)))
+          nextRadius = this.lastRadius / (radiusReductionDiv * (1 + randFloat(radiusVary)))
           if (nextRadius > 0) {
             nextPos = new Point(
-              this.currentPos.x +
-                Math.cos(theta) * (this.lastRadius + nextRadius),
-              this.currentPos.y +
-                Math.sin(theta) * (this.lastRadius + nextRadius)
+              this.currentPos.x + Math.cos(theta) * (this.lastRadius + nextRadius),
+              this.currentPos.y + Math.sin(theta) * (this.lastRadius + nextRadius)
             )
             let panic = 0
             while (
@@ -203,22 +194,15 @@ export default class Aeroplane extends Sketch {
               circleOverlapsCircles(
                 [nextPos, nextRadius],
                 ...this.getCirclesNearBounds(
-                  getBoundsFromCircles(...this.currentChain, [
-                    nextPos,
-                    nextRadius,
-                  ])
+                  getBoundsFromCircles(...this.currentChain, [nextPos, nextRadius])
                 ),
                 ...this.currentChain
               )
             ) {
               panic++
               nextRadius /= this.vars.radiusFitDiv
-              nextPos.x =
-                this.currentPos.x +
-                Math.cos(theta) * (this.lastRadius + nextRadius)
-              nextPos.y =
-                this.currentPos.y +
-                Math.sin(theta) * (this.lastRadius + nextRadius)
+              nextPos.x = this.currentPos.x + Math.cos(theta) * (this.lastRadius + nextRadius)
+              nextPos.y = this.currentPos.y + Math.sin(theta) * (this.lastRadius + nextRadius)
             }
 
             if (
@@ -236,14 +220,10 @@ export default class Aeroplane extends Sketch {
                   bounds: getBoundsFromCircles(...this.currentChain),
                 })
                 this.circleCount += this.currentChain.length
-                for (const [pt, radius] of this.currentChain)
-                  this.ctx.strokeCircle(pt, radius)
+                for (const [pt, radius] of this.currentChain) this.ctx.strokeCircle(pt, radius)
               }
               this.currentChain = []
-            } else if (
-              this.lastRadius / nextRadius >
-              this.vars.radiusDiffChainCutoff
-            ) {
+            } else if (this.lastRadius / nextRadius > this.vars.radiusDiffChainCutoff) {
               // radius change is too big - discard chain
               nextRadius = 0
               this.currentChain = []

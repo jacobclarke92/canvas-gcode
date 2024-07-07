@@ -105,10 +105,7 @@ export default class ConcentricCircles extends Sketch {
           Math.pow(this.vs.shrinkFalloff.value, realIncrement)
       const radDiff = this.radius - nextRadius
 
-      this.lastPoint = this.lastPoint.moveAlongAngle(
-        this.theta,
-        radDiff * this.vs.shrinkDiv.value
-      )
+      this.lastPoint = this.lastPoint.moveAlongAngle(this.theta, radDiff * this.vs.shrinkDiv.value)
       this.radius = nextRadius
     }
   }

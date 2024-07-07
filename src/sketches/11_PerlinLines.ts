@@ -115,8 +115,7 @@ export default class PerlinLines extends Sketch {
     const spaceX = this.effectiveWidth / cols
     const spaceY = this.effectiveHeight / rows
 
-    const adjustedSize =
-      size / (1 + (this.vs.size.max - (cols + rows) / 2) / 500)
+    const adjustedSize = size / (1 + (this.vs.size.max - (cols + rows) / 2) / 500)
 
     for (let i = 0; i < this.vs.speedUp.value; i++) {
       const realCount = this.drawCount + i
@@ -129,12 +128,7 @@ export default class PerlinLines extends Sketch {
       const yPos = outerGap + y * spaceY
 
       const theta =
-        perlin2(
-          (x + perlinOffsetX) / perlinDivX,
-          (y + perlinOffsetY) / perlinDivY
-        ) *
-        Math.PI *
-        2
+        perlin2((x + perlinOffsetX) / perlinDivX, (y + perlinOffsetY) / perlinDivY) * Math.PI * 2
       const pt1 = {
         x: xPos + Math.cos(theta) * (adjustedSize + drawOffsetStart),
         y: yPos + Math.sin(theta) * (adjustedSize + drawOffsetStart),

@@ -9,8 +9,20 @@ export default class KaleidoCurve extends Sketch {
   static enableCutouts = false
 
   init() {
-    this.vs.speedUp = new Range({ initialValue: 1, min: 1, max: 100, step: 1, disableRandomize: true })
-    this.vs.stopAfter = new Range({ initialValue: 20, min: 1, max: 420, step: 1, disableRandomize: true })
+    this.vs.speedUp = new Range({
+      initialValue: 1,
+      min: 1,
+      max: 100,
+      step: 1,
+      disableRandomize: true,
+    })
+    this.vs.stopAfter = new Range({
+      initialValue: 20,
+      min: 1,
+      max: 420,
+      step: 1,
+      disableRandomize: true,
+    })
     this.vs.maxRadius = new Range({
       initialValue: this.ch * 0.45,
       min: 1,
@@ -18,7 +30,13 @@ export default class KaleidoCurve extends Sketch {
       step: 0.1,
       disableRandomize: true,
     })
-    this.vs.angleOffset = new Range({ initialValue: 0, min: 0, max: 90, step: 1, disableRandomize: true })
+    this.vs.angleOffset = new Range({
+      initialValue: 0,
+      min: 0,
+      max: 90,
+      step: 1,
+      disableRandomize: true,
+    })
 
     this.vs.perlinDivX = new Range({ initialValue: 75, min: 1, max: 100, step: 1 })
     this.vs.perlinDivY = new Range({ initialValue: 75, min: 1, max: 100, step: 1 })
@@ -27,7 +45,12 @@ export default class KaleidoCurve extends Sketch {
 
     this.vs.seed = new Range({ initialValue: 3213, min: 1000, max: 5000, step: 1 })
     this.vs.segments = new Range({ initialValue: 12, min: 2, max: 24, step: 2 })
-    this.vs.maxHeightDiff = new Range({ initialValue: 48, min: 0, max: this.vs.maxRadius.value, step: 1 })
+    this.vs.maxHeightDiff = new Range({
+      initialValue: 48,
+      min: 0,
+      max: this.vs.maxRadius.value,
+      step: 1,
+    })
     this.vs.curveRange = new Range({ initialValue: 0, min: 0, max: 5, step: 0.005 })
     this.vs.maxCurveStrength = new Range({ initialValue: 0, min: 0, max: 90, step: 1 })
   }
@@ -51,7 +74,11 @@ export default class KaleidoCurve extends Sketch {
       if (this.increment > this.vs.stopAfter.value) break
 
       const length1 = randFloatRange(this.vs.maxRadius.value)
-      const length2 = wrap(length1 + randFloat(this.vs.maxHeightDiff.value / 2), this.vs.maxRadius.value, 0)
+      const length2 = wrap(
+        length1 + randFloat(this.vs.maxHeightDiff.value / 2),
+        this.vs.maxRadius.value,
+        0
+      )
 
       const lengthPerlin = perlin2(
         (length1 + this.vs.perlinOffsetX.value) / this.vs.perlinDivX.value,

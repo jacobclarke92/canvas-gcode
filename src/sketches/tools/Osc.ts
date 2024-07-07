@@ -31,7 +31,9 @@ export default class Osc {
       this.radius = typeof radius === 'number' ? new Point(radius, radius) : radius
     } else
       this.radius =
-        typeof options.radius === 'number' ? new Point(options.radius, options.radius) : options.radius.clone()
+        typeof options.radius === 'number'
+          ? new Point(options.radius, options.radius)
+          : options.radius.clone()
 
     this.offset = options.offset ? options.offset.clone() : new Point(0, 0)
     this.offsetPhase = options.offsetPhase || 0

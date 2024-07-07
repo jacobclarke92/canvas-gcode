@@ -106,14 +106,10 @@ export default class Rays extends Sketch {
       }
     }
 
-    const startingInsideCircle = pointInCircles(
-      this.cp,
-      ...this.reflectiveCircles
-    )
+    const startingInsideCircle = pointInCircles(this.cp, ...this.reflectiveCircles)
     const segAngle = (Math.PI * 2) / this.vs.lines.value
     for (let i = 0; i < this.vs.lines.value; i++) {
-      const lineAngle =
-        segAngle * i + randFloat(this.vs.lineAngleWonk.value) * segAngle
+      const lineAngle = segAngle * i + randFloat(this.vs.lineAngleWonk.value) * segAngle
       this.drawingPoints.push([this.cp, lineAngle, startingInsideCircle])
     }
   }
@@ -121,24 +117,13 @@ export default class Rays extends Sketch {
   drawLines(drawingPoints: typeof this.drawingPoints) {
     for (const [pt, angle, insideShape] of drawingPoints) {
       const line: Line = [pt, pt.moveAlongAngle(angle, 1000)]
-      const intersectionPoints: [
-        intersection: Point,
-        circle: Point,
-        radius: number
-      ][] = []
+      const intersectionPoints: [intersection: Point, circle: Point, radius: number][] = []
       for (const [pos, rad] of this.reflectiveCircles) {
         const lineAngleCirclePosDiff = angleDiff(angle, line[0].angleTo(pos))
         // console.log('angle to circle:', radToDeg(lineAngleCirclePosDiff, true))
-        if (
-          lineAngleCirclePosDiff > degToRad(90) ||
-          lineAngleCirclePosDiff < degToRad(-90)
-        )
+        if (lineAngleCirclePosDiff > degToRad(90) || lineAngleCirclePosDiff < degToRad(-90))
           continue
-        for (const intersectionPoint of getPointsWhereLineIntersectsCircle(
-          line,
-          pos,
-          rad
-        )) {
+        for (const intersectionPoint of getPointsWhereLineIntersectsCircle(line, pos, rad)) {
           intersectionPoints.push([intersectionPoint, pos, rad])
         }
       }
@@ -150,28 +135,18 @@ export default class Rays extends Sketch {
         //   })
         // }
 
-        const closestPt = getClosestButNotSamePoint(
-          pt,
-          ...intersectionPoints.map(([pt]) => pt)
-        )
-        const [, circlePos, radius] = intersectionPoints.find(
-          ([pt]) => pt === closestPt
-        )!
+        const closestPt = getClosestButNotSamePoint(pt, ...intersectionPoints.map(([pt]) => pt))
+        const [, circlePos, radius] = intersectionPoints.find(([pt]) => pt === closestPt)!
         line[1] = closestPt
 
         // normal
         const intersectionAngle = circlePos.angleTo(closestPt)
         // this.ctx.strokeLine(...[pt, pt.clone().moveAlongAngle(intersectionAngle, 2)])
 
-        const intersectionAngleDiff = smallestAngleDiff(
-          intersectionAngle,
-          angle + Math.PI
-        )
+        const intersectionAngleDiff = smallestAngleDiff(intersectionAngle, angle + Math.PI)
 
         const reflectionAngle =
-          intersectionAngle +
-          intersectionAngleDiff +
-          (insideShape ? Math.PI : 0)
+          intersectionAngle + intersectionAngleDiff + (insideShape ? Math.PI : 0)
         // this.ctx.strokeLine(...[pt, pt.clone().moveAlongAngle(reflectionAngle, 8)])
         // if (!insideShape) this.drawingPoints.push([closestPt.clone(), reflectionAngle, false])
 
@@ -188,9 +163,7 @@ export default class Rays extends Sketch {
         const refractionAngle =
           intersectionAngle +
           Math.PI -
-          Math.asin(
-            Math.sin(intersectionAngleDiff) / this.vs.refractionIndex.value
-          )
+          Math.asin(Math.sin(intersectionAngleDiff) / this.vs.refractionIndex.value)
         // this.ctx.strokeLine(...[closestPt, closestPt.clone().moveAlongAngle(refractionAngle, 8)])
         this.drawingPoints.push([closestPt.clone(), refractionAngle, true])
 

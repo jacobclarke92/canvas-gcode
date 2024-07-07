@@ -97,8 +97,7 @@ export default class Pendulums extends Sketch {
   draw(increment: number): void {
     if (this.stopDrawing) return
 
-    const { pendulums, pendLengthStart, pendLengthFalloff, closeShapeThresh } =
-      this.vars
+    const { pendulums, pendLengthStart, pendLengthFalloff, closeShapeThresh } = this.vars
 
     // this.ctx.ctx?.clearRect(0, 0, this.cw, this.ch)
 

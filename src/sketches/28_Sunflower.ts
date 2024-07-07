@@ -79,10 +79,8 @@ export default class Sunflower extends Sketch {
       )
 
       const angleMod =
-        perlin2(
-          (basePt.x + offsetX) / perlinDiv,
-          (basePt.y + offsetY) / perlinDiv
-        ) * noiseAngleInfluence
+        perlin2((basePt.x + offsetX) / perlinDiv, (basePt.y + offsetY) / perlinDiv) *
+        noiseAngleInfluence
 
       const pt = new Point(
         this.cx + Math.cos(baseAngle + angleMod) * radius,
@@ -90,8 +88,7 @@ export default class Sunflower extends Sketch {
       )
 
       const radiusMod =
-        perlin2((pt.x + offsetX) / perlinDiv, (pt.y + offsetY) / perlinDiv) *
-        noiseSizeInfluence
+        perlin2((pt.x + offsetX) / perlinDiv, (pt.y + offsetY) / perlinDiv) * noiseSizeInfluence
 
       // debugDot(this.ctx, pt)
       this.ctx.beginPath()

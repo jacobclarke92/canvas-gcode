@@ -13,12 +13,30 @@ export default class PaleAle extends Sketch {
 
   init() {
     this.addVar('slowDown', { initialValue: 1, min: 1, max: 1000, step: 1, disableRandomize: true })
-    this.addVar('randSeed', { initialValue: 3190, min: 1000, max: 10000, step: 1, disableRandomize: true })
-    this.addVar('stopAfter', { initialValue: 1000, min: 5, max: 2000, step: 1, disableRandomize: true })
+    this.addVar('randSeed', {
+      initialValue: 3190,
+      min: 1000,
+      max: 10000,
+      step: 1,
+      disableRandomize: true,
+    })
+    this.addVar('stopAfter', {
+      initialValue: 1000,
+      min: 5,
+      max: 2000,
+      step: 1,
+      disableRandomize: true,
+    })
 
     this.addVar('gridSize', { initialValue: 4, min: 1, max: 20, step: 1 })
     this.addVar('numStartPts', { initialValue: 1, min: 1, max: 20, step: 1 })
-    this.addVar('newLineAttempts', { initialValue: 20, min: 1, max: 100, step: 1, disableRandomize: true })
+    this.addVar('newLineAttempts', {
+      initialValue: 20,
+      min: 1,
+      max: 100,
+      step: 1,
+      disableRandomize: true,
+    })
     this.vs.displayGrid = new BooleanRange({ disableRandomize: true, initialValue: false })
     this.vs.displayUsed = new BooleanRange({ disableRandomize: true, initialValue: false })
     this.vs.displayArrows = new BooleanRange({ disableRandomize: true, initialValue: false })
@@ -100,7 +118,9 @@ export default class PaleAle extends Sketch {
 
   isOutOfBounds(pos: Pos): boolean {
     const { gridSize } = this.vars
-    return pos[0] < 0 || pos[1] < 0 || pos[0] > this.cols * gridSize || pos[1] > this.rows * gridSize
+    return (
+      pos[0] < 0 || pos[1] < 0 || pos[0] > this.cols * gridSize || pos[1] > this.rows * gridSize
+    )
   }
 
   isUsed(pos: Pos, includePivots = false): boolean {
@@ -144,12 +164,16 @@ export default class PaleAle extends Sketch {
     const turn = options.pop()
     const dir = Math.atan2(pos[1] - prevPos[1], pos[0] - prevPos[0])
 
-    const nextIntermediatePos: Pos = [pos[0] + Math.round(Math.cos(dir)), pos[1] + Math.round(Math.sin(dir))]
+    const nextIntermediatePos: Pos = [
+      pos[0] + Math.round(Math.cos(dir)),
+      pos[1] + Math.round(Math.sin(dir)),
+    ]
 
     // go straight
     if (turn === 0) {
       const nextPos = nextIntermediatePos
-      if (this.isOutOfBounds(nextPos) || this.isUsed(nextPos)) return this.getNextPos(prevPos, pos, options)
+      if (this.isOutOfBounds(nextPos) || this.isUsed(nextPos))
+        return this.getNextPos(prevPos, pos, options)
       return [null, nextPos, options]
     }
 
@@ -160,7 +184,8 @@ export default class PaleAle extends Sketch {
       nextIntermediatePos[0] + Math.round(Math.cos(nextDir)),
       nextIntermediatePos[1] + Math.round(Math.sin(nextDir)),
     ]
-    if (this.isOutOfBounds(nextPos) || this.isUsed(nextPos)) return this.getNextPos(prevPos, pos, options)
+    if (this.isOutOfBounds(nextPos) || this.isUsed(nextPos))
+      return this.getNextPos(prevPos, pos, options)
     return [nextIntermediatePos, nextPos, options]
   }
 
@@ -213,7 +238,12 @@ export default class PaleAle extends Sketch {
     this.ctx.moveTo(from[0] * gridSize, from[1] * gridSize)
     if (corner) {
       if (this.vs.curvedPaths.value) {
-        this.ctx.quadraticCurveTo(corner[0] * gridSize, corner[1] * gridSize, to[0] * gridSize, to[1] * gridSize)
+        this.ctx.quadraticCurveTo(
+          corner[0] * gridSize,
+          corner[1] * gridSize,
+          to[0] * gridSize,
+          to[1] * gridSize
+        )
       } else {
         this.ctx.lineTo(to[0] * gridSize, to[1] * gridSize)
       }
@@ -264,7 +294,10 @@ export default class PaleAle extends Sketch {
     if (nextPos === false) return this.spawnNewLine(attempt + 1)
 
     const dir = Math.atan2(nextPos[1] - nextPrevPos[1], nextPos[0] - nextPrevPos[0])
-    const nextNextPos: Pos = [nextPos[0] + Math.round(Math.cos(dir)), nextPos[1] + Math.round(Math.sin(dir))]
+    const nextNextPos: Pos = [
+      nextPos[0] + Math.round(Math.cos(dir)),
+      nextPos[1] + Math.round(Math.sin(dir)),
+    ]
     if (this.isUsed(nextNextPos)) return this.spawnNewLine(attempt + 1)
 
     this.markUsed(nextPos)
@@ -338,7 +371,11 @@ export default class PaleAle extends Sketch {
         if (nextNextPositions === false) {
           console.log('gonna hit a dead end so forgettaboutit')
           this.drawSegment(pos, intermediatePos, nextPos /*, '#ff00ff'*/)
-          this.capOffLine(!this.vs.curvedPaths.value ? pos : intermediatePos || pos, nextPos, false /*, '#ffff00'*/)
+          this.capOffLine(
+            !this.vs.curvedPaths.value ? pos : intermediatePos || pos,
+            nextPos,
+            false /*, '#ffff00'*/
+          )
           const tunneledPos = this.makeTunnel(intermediatePos || pos, nextPos)
           if (tunneledPos) {
             newStartPts.push([...tunneledPos])

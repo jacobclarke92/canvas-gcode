@@ -120,15 +120,11 @@ export default class PerlinGrid extends Sketch {
 
       const xPos = outerGap + x * colWidth
       const yPos = outerGap + y * rowHeight
-      const radius =
-        Math.abs(
-          perlin2((x + offsetX) / perlinDiv, (y + offsetY) / perlinDiv)
-        ) * size
+      const radius = Math.abs(perlin2((x + offsetX) / perlinDiv, (y + offsetY) / perlinDiv)) * size
 
       this.ctx.beginPath()
       if (shape === 0) this.ctx.circle(xPos, yPos, radius)
-      else if (shape === 1)
-        this.ctx.rect(xPos - radius / 2, yPos - radius / 2, radius, radius)
+      else if (shape === 1) this.ctx.rect(xPos - radius / 2, yPos - radius / 2, radius, radius)
       this.ctx.stroke()
       this.ctx.closePath()
     }

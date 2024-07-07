@@ -30,7 +30,14 @@ export type BezierCurveToAction = {
 
 export type ArcAction = {
   type: 'ARC'
-  args: [aX: number, aY: number, aRadius: number, aStartAngle: number, aEndAngle: number, antiClockwise: boolean]
+  args: [
+    aX: number,
+    aY: number,
+    aRadius: number,
+    aStartAngle: number,
+    aEndAngle: number,
+    antiClockwise: boolean
+  ]
 }
 
 export type EllipseAction = {
@@ -444,7 +451,18 @@ export default class SubPath {
 
         case 'ELLIPSE': {
           const [aX, aY, xRadius, yRadius, aStartAngle, aEndAngle, antiClockwise] = action.args
-          points.push(...ellipseToPoints(aX, aY, xRadius, yRadius, aStartAngle, aEndAngle, antiClockwise, divisions))
+          points.push(
+            ...ellipseToPoints(
+              aX,
+              aY,
+              xRadius,
+              yRadius,
+              aStartAngle,
+              aEndAngle,
+              antiClockwise,
+              divisions
+            )
+          )
 
           break
         }
@@ -511,7 +529,8 @@ const b2p0 = (t: number, p: number) => {
 }
 const b2p1 = (t: number, p: number) => 2 * (1 - t) * t * p
 const b2p2 = (t: number, p: number) => t * t * p
-const b2 = (t: number, p0: number, p1: number, p2: number) => b2p0(t, p0) + b2p1(t, p1) + b2p2(t, p2)
+const b2 = (t: number, p0: number, p1: number, p2: number) =>
+  b2p0(t, p0) + b2p1(t, p1) + b2p2(t, p2)
 
 // Cubic Bezier Functions
 const b3p0 = (t: number, p: number) => {

@@ -20,9 +20,27 @@ export default class BubblesInCircle extends Sketch {
 
   init() {
     this.vs.seed = new Range({ initialValue: 1391, min: 1000, max: 5000, step: 1 })
-    this.vs.atLeast = new Range({ initialValue: 777, min: 1, max: 5000, step: 1, disableRandomize: true })
-    this.vs.maxRadius = new Range({ initialValue: 300, min: 0.5, max: 45, step: 0.5, disableRandomize: true })
-    this.vs.minRadius = new Range({ initialValue: 0.2, min: 0.1, max: 5, step: 0.05, disableRandomize: true })
+    this.vs.atLeast = new Range({
+      initialValue: 777,
+      min: 1,
+      max: 5000,
+      step: 1,
+      disableRandomize: true,
+    })
+    this.vs.maxRadius = new Range({
+      initialValue: 300,
+      min: 0.5,
+      max: 45,
+      step: 0.5,
+      disableRandomize: true,
+    })
+    this.vs.minRadius = new Range({
+      initialValue: 0.2,
+      min: 0.1,
+      max: 5,
+      step: 0.05,
+      disableRandomize: true,
+    })
   }
 
   initDraw(): void {
@@ -41,7 +59,9 @@ export default class BubblesInCircle extends Sketch {
     if (this.circles.length > this.vs.atLeast.value) {
       if (!this.reordered) {
         const center = new Point(this.cx, this.cy)
-        this.circles.sort((a, b) => Point.distance(center, b.position) - Point.distance(center, a.position))
+        this.circles.sort(
+          (a, b) => Point.distance(center, b.position) - Point.distance(center, a.position)
+        )
         this.ctx.reset()
         this.ctx.beginPath()
         this.ctx.circle(this.cx, this.cy, this.radius)

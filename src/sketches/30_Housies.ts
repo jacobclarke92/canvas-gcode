@@ -78,18 +78,11 @@ export default class Housies extends Sketch {
     startY: number
     offsetX: number
     offsetY: number
-    shape:
-      | (typeof this.possibleBottomShapes)[number]
-      | (typeof this.possibleTopShapes)[number]
+    shape: (typeof this.possibleBottomShapes)[number] | (typeof this.possibleTopShapes)[number]
   }) {
     switch (shape) {
       case 'rectangle': {
-        this.ctx.rect(
-          startX + offsetX,
-          startY - (offsetY + height),
-          width,
-          height
-        )
+        this.ctx.rect(startX + offsetX, startY - (offsetY + height), width, height)
         break
       }
       case 'triangle': {
@@ -100,11 +93,7 @@ export default class Housies extends Sketch {
         break
       }
       case 'circle': {
-        this.ctx.circle(
-          startX + offsetX + width / 2,
-          startY - offsetY - height / 2,
-          width / 2
-        )
+        this.ctx.circle(startX + offsetX + width / 2, startY - offsetY - height / 2, width / 2)
         break
       }
       case 'pentagon': {
@@ -145,25 +134,15 @@ export default class Housies extends Sketch {
     const bottomShapeAlign = ['left', 'center', 'right'][randIntRange(3)]
 
     const bottomShape =
-      this.possibleBottomShapes[
-        randIntRange(this.possibleBottomShapes.length - 1)
-      ]
-    const topShape =
-      this.possibleTopShapes[randIntRange(this.possibleTopShapes.length - 1)]
+      this.possibleBottomShapes[randIntRange(this.possibleBottomShapes.length - 1)]
+    const topShape = this.possibleTopShapes[randIntRange(this.possibleTopShapes.length - 1)]
 
-    const bottomShapeWidth = randFloatRange(
-      houseBlockWidth * 0.8,
-      houseBlockWidth * 0.25
-    )
-    const bottomShapeHeight = randFloatRange(
-      houseBlockHeight * 0.75,
-      houseBlockHeight * 0.5
-    )
+    const bottomShapeWidth = randFloatRange(houseBlockWidth * 0.8, houseBlockWidth * 0.25)
+    const bottomShapeHeight = randFloatRange(houseBlockHeight * 0.75, houseBlockHeight * 0.5)
     let bottomShapeOffsetX = 0
     if (bottomShapeAlign === 'center')
       bottomShapeOffsetX += (houseBlockWidth - bottomShapeWidth) / 2
-    else if (bottomShapeAlign === 'right')
-      bottomShapeOffsetX += houseBlockWidth - bottomShapeWidth
+    else if (bottomShapeAlign === 'right') bottomShapeOffsetX += houseBlockWidth - bottomShapeWidth
 
     const topShapeWidth = randFloatRange(houseBlockWidth, houseBlockWidth / 2)
     const topShapeHeight = randFloatRange(
@@ -171,10 +150,7 @@ export default class Housies extends Sketch {
       Math.max(bottomShapeHeight, houseBlockHeight * 0.25)
     )
     const topShapeOffsetX = randFloatRange(houseBlockWidth - topShapeWidth)
-    const topShapeOffsetY = randFloatRange(
-      houseBlockHeight - topShapeHeight,
-      bottomShapeHeight / 2
-    )
+    const topShapeOffsetY = randFloatRange(houseBlockHeight - topShapeHeight, bottomShapeHeight / 2)
 
     const doorWidth = Math.min(3, bottomShapeWidth / 4)
     const doorHeight = doorWidth * 1.75
@@ -220,22 +196,10 @@ export default class Housies extends Sketch {
     // Draw door
     this.ctx.save()
     this.ctx.beginPath()
-    this.ctx.moveTo(
-      startX + bottomShapeOffsetX + bottomShapeWidth / 2 - doorWidth / 2,
-      startY
-    )
+    this.ctx.moveTo(startX + bottomShapeOffsetX + bottomShapeWidth / 2 - doorWidth / 2, startY)
     this.ctx.lineToRelative(0, -doorHeight)
-    this.ctx.arcToRelative(
-      doorWidth / 2,
-      -doorWidth * 2,
-      doorWidth,
-      0,
-      doorWidth / 2
-    )
-    this.ctx.lineTo(
-      startX + bottomShapeOffsetX + bottomShapeWidth / 2 + doorWidth / 2,
-      startY
-    )
+    this.ctx.arcToRelative(doorWidth / 2, -doorWidth * 2, doorWidth, 0, doorWidth / 2)
+    this.ctx.lineTo(startX + bottomShapeOffsetX + bottomShapeWidth / 2 + doorWidth / 2, startY)
     this.ctx.stroke()
     this.ctx.closePath()
     this.ctx.restore()
@@ -255,33 +219,20 @@ export default class Housies extends Sketch {
     const effectiveWidth = this.cw - outerGap * 2
     const effectiveHeight = this.ch - outerGap * 2
 
-    const {
-      houseGap = 2,
-      housesOnBlock = 4,
-      blocks = 1,
-      blockGap = 8,
-      perspective = 2,
-    } = this.vars
+    const { houseGap = 2, housesOnBlock = 4, blocks = 1, blockGap = 8, perspective = 2 } = this.vars
 
     for (let block = 0; block < blocks; block++) {
-      const currentHousesOnBlock =
-        housesOnBlock + (blocks - 1 - block) * perspective
+      const currentHousesOnBlock = housesOnBlock + (blocks - 1 - block) * perspective
       const houseWidth =
-        (effectiveWidth - houseGap * (currentHousesOnBlock - 1)) /
-        currentHousesOnBlock
+        (effectiveWidth - houseGap * (currentHousesOnBlock - 1)) / currentHousesOnBlock
 
-      for (
-        let houseIndex = 0;
-        houseIndex < currentHousesOnBlock;
-        houseIndex++
-      ) {
+      for (let houseIndex = 0; houseIndex < currentHousesOnBlock; houseIndex++) {
         const startX = outerGap + houseIndex * (houseWidth + houseGap)
         const startY = 100
 
         this.drawHouse({
           startX,
-          startY:
-            startY - (blocks - block) * blockGap + blockGap / (blocks - block),
+          startY: startY - (blocks - block) * blockGap + blockGap / (blocks - block),
           houseBlockWidth: houseWidth,
           index: houseIndex,
           row: block,

@@ -33,17 +33,12 @@ export default class GCode extends Driver {
     this.init()
   }
 
-  public send(
-    code: string,
-    params?: Partial<AllCommandParams>,
-    comment?: string
-  ) {
+  public send(code: string, params?: Partial<AllCommandParams>, comment?: string) {
     let command = `${code}`
     if (params) {
       const keys = 'zabcijkfpqstxy'.split('') as (keyof AllCommandParams)[]
       keys.forEach((k) => {
-        if (params[k] === undefined || params[k] === null || isNaN(params[k]))
-          return
+        if (params[k] === undefined || params[k] === null || isNaN(params[k])) return
         command += ` ${k.toUpperCase()}${params[k]}`
       })
     }

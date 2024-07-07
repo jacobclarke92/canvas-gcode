@@ -1,7 +1,8 @@
 import { random } from './random'
 
 /* random int between min and max (min is 0 by default) */
-export const randIntRange = (max: number, min: number = 0): number => Math.round(random() * (max - min) + min)
+export const randIntRange = (max: number, min: number = 0): number =>
+  Math.round(random() * (max - min) + min)
 
 /* random float between min and max (min is 0 by default) */
 export const randFloatRange = (max: number, min: number = 0): number => random() * (max - min) + min
@@ -22,8 +23,12 @@ export const wrap = (value: number, max: number, min: number = 0): number => {
 }
 
 /* if splitting a total into segments, this offers a quick way to get the value at a certain index */
-export const segmentValue = (index: number, segments: number, max: number, min: number = 0): number =>
-  ((max - min) / segments) * index
+export const segmentValue = (
+  index: number,
+  segments: number,
+  max: number,
+  min: number = 0
+): number => ((max - min) / segments) * index
 
 /* converts degree to radian */
 export const degToRad = (deg: number): number => (deg * Math.PI) / 180
@@ -35,7 +40,8 @@ export const radToDeg = (rad: number, round?: boolean): number => {
 }
 
 /* normalizes any angle to be between -PI and PI */
-export const normalizeRadian = (radian: number): number => ((radian + Math.PI) % (Math.PI * 2)) - Math.PI
+export const normalizeRadian = (radian: number): number =>
+  ((radian + Math.PI) % (Math.PI * 2)) - Math.PI
 
 /* counts how many decimals a number has, default max of 8  */
 export const countDecimals = (number: number, most: number = 8): number => {
@@ -57,4 +63,5 @@ export const angleDiff = (startAngle: number, endAngle: number) =>
   ((endAngle - startAngle + Math.PI * 3) % (Math.PI * 2)) - Math.PI
 
 /* similar to angleDiff but is always positive */
-export const smallestAngleDiff = (a1: number, a2: number): number => Math.PI - Math.abs(Math.abs(a1 - a2) - Math.PI)
+export const smallestAngleDiff = (a1: number, a2: number): number =>
+  Math.PI - Math.abs(Math.abs(a1 - a2) - Math.PI)

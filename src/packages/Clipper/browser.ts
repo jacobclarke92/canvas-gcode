@@ -3,7 +3,8 @@ const nav = navigator.userAgent.toString().toLowerCase()
 export const browser = {
   chrome: nav.indexOf('chrome') != -1 && nav.indexOf('chromium') == -1,
   chromium: nav.indexOf('chromium') != -1,
-  safari: nav.indexOf('safari') != -1 && nav.indexOf('chrome') == -1 && nav.indexOf('chromium') == -1,
+  safari:
+    nav.indexOf('safari') != -1 && nav.indexOf('chrome') == -1 && nav.indexOf('chromium') == -1,
   firefox: nav.indexOf('firefox') != -1,
   firefox17: nav.indexOf('firefox/17') != -1,
   firefox15: nav.indexOf('firefox/15') != -1,

@@ -60,8 +60,7 @@ const init = () => {
     if (currentSketchIndex === index) button.classList.add('active')
     button.addEventListener('click', () => {
       const allButtons = sketchButtonsArea.getElementsByTagName('button')
-      for (let i = 0; i < allButtons.length; i++)
-        allButtons.item(i).classList.remove('active')
+      for (let i = 0; i < allButtons.length; i++) allButtons.item(i).classList.remove('active')
       button.classList.add('active')
       currentSketchIndex = saveValue('sketchIndex', index)
       initSketch(sketch)

@@ -9,9 +9,27 @@ export default class Chaser extends Sketch {
   static enableCutouts = false
 
   init() {
-    this.vs.downscaleDrawing = new Range({ initialValue: 5, min: 1, max: 200, step: 0.01, disableRandomize: true })
-    this.vs.speedUp = new Range({ initialValue: 1, min: 1, max: 500, step: 1, disableRandomize: true })
-    this.vs.stopAfter = new Range({ initialValue: 70000, min: 1, max: 100000, step: 100, disableRandomize: true })
+    this.vs.downscaleDrawing = new Range({
+      initialValue: 5,
+      min: 1,
+      max: 200,
+      step: 0.01,
+      disableRandomize: true,
+    })
+    this.vs.speedUp = new Range({
+      initialValue: 1,
+      min: 1,
+      max: 500,
+      step: 1,
+      disableRandomize: true,
+    })
+    this.vs.stopAfter = new Range({
+      initialValue: 70000,
+      min: 1,
+      max: 100000,
+      step: 100,
+      disableRandomize: true,
+    })
     this.vs.seed = new Range({ initialValue: 2222, min: 1000, max: 5000, step: 1 })
     this.vs.angleDiff = new Range({ initialValue: 23, min: 0, max: 180, step: 1 })
     this.vs.minAngleDiff = new Range({ initialValue: 7, min: 0, max: 180, step: 1 })
@@ -69,9 +87,11 @@ export default class Chaser extends Sketch {
       this.point.x += Math.cos(this.pointAngle) * this.vs.travel.value
       this.point.y += Math.sin(this.pointAngle) * this.vs.travel.value
       this.point.x +=
-        (this.cx - this.point.x) / (this.vs.centerForce.value * (centerDist / this.vs.centerDistRatio.value))
+        (this.cx - this.point.x) /
+        (this.vs.centerForce.value * (centerDist / this.vs.centerDistRatio.value))
       this.point.y +=
-        (this.cy - this.point.y) / (this.vs.centerForce.value * (centerDist / this.vs.centerDistRatio.value))
+        (this.cy - this.point.y) /
+        (this.vs.centerForce.value * (centerDist / this.vs.centerDistRatio.value))
       this.ctx.lineTo(
         (this.point.x - this.cx) / this.vs.downscaleDrawing.value + this.cx,
         (this.point.y - this.cy) / this.vs.downscaleDrawing.value + this.cy
