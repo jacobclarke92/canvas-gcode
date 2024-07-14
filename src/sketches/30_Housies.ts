@@ -1,8 +1,21 @@
 import * as clipperLib from 'js-angusj-clipper/web'
 
+import { clipper } from '../GCanvas'
+import Path from '../Path'
+import Point from '../Point'
 import { Sketch } from '../Sketch'
+import type SubPath from '../SubPath'
+import type { Line } from '../types'
+import { debugDot } from '../utils/debugUtils'
+import {
+  getLineIntersectionPoints,
+  lineIntersectsWithAny,
+  pointsToLines,
+  trimLineToIntersectionPoints,
+} from '../utils/geomUtils'
 import { seedNoise } from '../utils/noise'
-import { randFloatRange, randIntRange } from '../utils/numberUtils'
+import { flipCoin, randFloatRange, randIntRange } from '../utils/numberUtils'
+import { penUp } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
 import Range from './tools/Range'
 
@@ -12,15 +25,18 @@ export default class Housies extends Sketch {
 
   init() {
     this.addVar('speedUp', { name: 'speedUp', initialValue: 10, min: 1, max: 100, step: 1, disableRandomize: true }) // prettier-ignore
-    this.addVar('seed', { name: 'seed', initialValue: 1010, min: 1000, max: 5000, step: 1 }) // prettier-ignore
+    this.addVar('seed', { name: 'seed', initialValue: 3129, min: 1000, max: 5000, step: 1 }) // prettier-ignore
 
     this.addVar('outerGap', { initialValue: 12, min: -25, max: 25, step: 1, disableRandomize: true }) // prettier-ignore
     this.addVar('houseGap', { initialValue: 2, min: 0, max: 25, step: 1, disableRandomize: true }) // prettier-ignore
+    this.addVar('offsetY', { initialValue: 160, min: -25, max: 320, step: 1, disableRandomize: true }) // prettier-ignore
     this.addVar('housesOnBlock', { initialValue: 4, min: 1, max: 25, step: 1, disableRandomize: true }) // prettier-ignore
     this.addVar('blocks', { initialValue: 1, min: 1, max: 25, step: 1, disableRandomize: true }) // prettier-ignore
     this.addVar('blockGap', { initialValue: 8, min: 0, max: 25, step: 1, disableRandomize: true }) // prettier-ignore
     this.addVar('perspective', { initialValue: 2, min: 0, max: 10, step: 1, disableRandomize: true }) // prettier-ignore
     this.addVar('maxHouseHeightRatio', { initialValue: 1.5, min: 0.2, max: 5, step: 0.01, disableRandomize: true }) // prettier-ignore
+    this.addVar('windowCrowding', { initialValue: 20, min: 1, max: 40, step: 1.05 }) // prettier-ignore
+    this.addVar('windowSpacing', { initialValue: 12, min: 1, max: 25, step: 1 }) // prettier-ignore
   }
 
   private stopDraw = false
@@ -146,7 +162,7 @@ export default class Housies extends Sketch {
 
     const topShapeWidth = randFloatRange(houseBlockWidth, houseBlockWidth / 2)
     const topShapeHeight = randFloatRange(
-      houseBlockHeight * 0.75,
+      houseBlockHeight * 0.5,
       Math.max(bottomShapeHeight, houseBlockHeight * 0.25)
     )
     const topShapeOffsetX = randFloatRange(houseBlockWidth - topShapeWidth)
@@ -191,7 +207,86 @@ export default class Housies extends Sketch {
     })
 
     this.ctx.stroke({ cutout: row > 0 })
+
+    const subPaths = this.ctx.path!.subPaths
+    if (!intersected) console.log('intersect path', this.ctx.path)
+
     this.ctx.closePath()
+
+    // Draw supports
+    if (!intersected) {
+      const bottomShapeCenter = new Point(
+        startX + bottomShapeOffsetX + bottomShapeWidth / 2,
+        startY - bottomShapeHeight * 0.35
+      )
+      const topShapeCenter = new Point(
+        startX + topShapeOffsetX + topShapeWidth / 2,
+        startY - topShapeOffsetY - topShapeHeight / 2
+      )
+      const angle = Point.angleBetween(bottomShapeCenter, topShapeCenter)
+      const perpAngle = angle + Math.PI / 2
+      const bottomShapeSupportWidth = bottomShapeWidth * 0.5
+      const topShapeSupportWidth = topShapeWidth * 0.5
+
+      let support1line1: Line = [
+        new Point(
+          bottomShapeCenter.x + (Math.cos(perpAngle) * bottomShapeSupportWidth) / 2,
+          bottomShapeCenter.y + (Math.sin(perpAngle) * bottomShapeSupportWidth) / 2
+        ),
+        new Point(
+          topShapeCenter.x + (Math.cos(perpAngle) * topShapeSupportWidth) / 2,
+          topShapeCenter.y + (Math.sin(perpAngle) * topShapeSupportWidth) / 2
+        ),
+      ]
+
+      let support1line2: Line = [
+        new Point(
+          bottomShapeCenter.x + (Math.cos(perpAngle) * bottomShapeSupportWidth) / 2.5,
+          bottomShapeCenter.y + (Math.sin(perpAngle) * bottomShapeSupportWidth) / 2.5
+        ),
+        new Point(
+          topShapeCenter.x + (Math.cos(perpAngle) * topShapeSupportWidth) / 2.5,
+          topShapeCenter.y + (Math.sin(perpAngle) * topShapeSupportWidth) / 2.5
+        ),
+      ]
+
+      let support2line1: Line = [
+        new Point(
+          bottomShapeCenter.x - (Math.cos(perpAngle) * bottomShapeSupportWidth) / 2,
+          bottomShapeCenter.y - (Math.sin(perpAngle) * bottomShapeSupportWidth) / 2
+        ),
+        new Point(
+          topShapeCenter.x - (Math.cos(perpAngle) * topShapeSupportWidth) / 2,
+          topShapeCenter.y - (Math.sin(perpAngle) * topShapeSupportWidth) / 2
+        ),
+      ]
+
+      let support2line2: Line = [
+        new Point(
+          bottomShapeCenter.x - (Math.cos(perpAngle) * bottomShapeSupportWidth) / 2.5,
+          bottomShapeCenter.y - (Math.sin(perpAngle) * bottomShapeSupportWidth) / 2.5
+        ),
+        new Point(
+          topShapeCenter.x - (Math.cos(perpAngle) * topShapeSupportWidth) / 2.5,
+          topShapeCenter.y - (Math.sin(perpAngle) * topShapeSupportWidth) / 2.5
+        ),
+      ]
+
+      const lines = [
+        ...pointsToLines(subPaths[0].getPoints(), true),
+        ...pointsToLines(subPaths[1].getPoints(), true),
+      ]
+
+      support1line1 = trimLineToIntersectionPoints(support1line1, lines)
+      support1line2 = trimLineToIntersectionPoints(support1line2, lines)
+      support2line1 = trimLineToIntersectionPoints(support2line1, lines)
+      support2line2 = trimLineToIntersectionPoints(support2line2, lines)
+
+      this.ctx.strokeLine(...support1line1)
+      this.ctx.strokeLine(...support1line2)
+      this.ctx.strokeLine(...support2line1)
+      this.ctx.strokeLine(...support2line2)
+    }
 
     // Draw door
     this.ctx.save()
@@ -204,7 +299,109 @@ export default class Housies extends Sketch {
     this.ctx.closePath()
     this.ctx.restore()
 
+    // Draw some windows
+    this.drawWindows(subPaths)
+
+    // ClipperLib.Clipper.PointInPolygon
+
     console.log({ intersected })
+  }
+
+  drawWindows(subPaths: SubPath[]) {
+    const { windowCrowding, windowSpacing, housesOnBlock } = this.vars
+    for (let p = 0; p < subPaths.length; p++) {
+      const subPath = subPaths[p]
+      const offsetPaths = this.ctx.offsetPath(
+        subPath,
+        (-Math.max(windowSpacing, 5) * 2) / housesOnBlock
+      )
+      if (!offsetPaths.length) continue
+      for (const offsetPath of offsetPaths) {
+        const path = new Path(offsetPath)
+        const bounds = path.getBounds()
+        // this.ctx.strokeBounds(bounds)
+        // this.ctx.strokePath(offsetPath)
+
+        const area = clipper.area(offsetPath) / housesOnBlock
+        const numWindows = Math.floor(area / windowCrowding)
+        const windowPts: Point[] = []
+        let i = 0
+        let panic = 0
+        while (i < numWindows && panic < 100) {
+          const pt = new Point(
+            randFloatRange(bounds.left, bounds.right),
+            randFloatRange(
+              bounds.top,
+              p > 0 ? bounds.bottom : bounds.bottom - (bounds.bottom - bounds.top) * 0.2
+            )
+          )
+
+          if (clipper.pointInPolygon(pt, offsetPath) !== clipperLib.PointInPolygonResult.Inside) {
+            panic++
+            continue
+          }
+
+          if (
+            windowPts.some(
+              (windowPt) => Point.distance(windowPt, pt) < (windowSpacing * 4) / housesOnBlock
+            )
+          ) {
+            panic++
+            continue
+          }
+
+          windowPts.push(pt)
+          // debugDot(this.ctx, pt, 'black')
+          i++
+        }
+
+        const averageWindowSize = Math.sqrt(area) / housesOnBlock
+
+        for (const windowPt of windowPts) {
+          const windowWidth = randFloatRange(averageWindowSize, averageWindowSize + 2)
+          const windowHeight = randFloatRange(averageWindowSize + 1, averageWindowSize + 3)
+          this.ctx.strokeRect(
+            windowPt.x - windowWidth / 2,
+            windowPt.y - windowHeight / 2,
+            windowWidth,
+            windowHeight
+          )
+          if (flipCoin()) {
+            this.ctx.strokeLine(
+              windowPt.x - windowWidth / 2,
+              windowPt.y,
+              windowPt.x + windowWidth / 2,
+              windowPt.y
+            )
+            this.ctx.strokeLine(
+              windowPt.x,
+              windowPt.y - windowHeight / 2,
+              windowPt.x,
+              windowPt.y + windowHeight / 2
+            )
+          } else {
+            // add curtains
+            this.ctx.beginPath()
+            this.ctx.moveTo(windowPt.x - windowWidth * 0.2, windowPt.y - windowHeight / 2)
+            this.ctx.quadraticCurveTo(
+              windowPt.x - windowWidth * 0.2,
+              windowPt.y,
+              windowPt.x - windowWidth / 2,
+              windowPt.y + windowHeight * 0.4
+            )
+            this.ctx.moveTo(windowPt.x + windowWidth * 0.2, windowPt.y - windowHeight / 2)
+            this.ctx.quadraticCurveTo(
+              windowPt.x + windowWidth * 0.2,
+              windowPt.y,
+              windowPt.x + windowWidth / 2,
+              windowPt.y + windowHeight * 0.4
+            )
+            this.ctx.stroke()
+            this.ctx.closePath()
+          }
+        }
+      }
+    }
   }
 
   initDraw(): void {
@@ -215,7 +412,7 @@ export default class Housies extends Sketch {
 
   draw(): void {
     if (this.stopDraw) return
-    const outerGap = this.vs.outerGap.value
+    const { outerGap, offsetY } = this.vars
     const effectiveWidth = this.cw - outerGap * 2
     const effectiveHeight = this.ch - outerGap * 2
 
@@ -228,7 +425,7 @@ export default class Housies extends Sketch {
 
       for (let houseIndex = 0; houseIndex < currentHousesOnBlock; houseIndex++) {
         const startX = outerGap + houseIndex * (houseWidth + houseGap)
-        const startY = 100
+        const startY = offsetY
 
         this.drawHouse({
           startX,
@@ -239,6 +436,7 @@ export default class Housies extends Sketch {
         })
       }
       this.stopDraw = true
+      penUp(this)
     }
   }
 }

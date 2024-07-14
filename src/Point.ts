@@ -14,7 +14,8 @@ export default class Point extends IntPoint {
     return Math.sqrt(Math.pow(point2.x - point1.x, 2) + Math.pow(point2.y - point1.y, 2))
   }
   public static angleBetween(point1: Point, point2: Point) {
-    return Math.acos(point1.dot(point2) / (point1.magnitude() * point2.magnitude()))
+    // return Math.acos(point1.dot(point2) / (point1.magnitude() * point2.magnitude()))
+    return Math.atan2(point2.y - point1.y, point2.x - point1.x)
   }
   public clone() {
     return new Point(this.x, this.y)
@@ -92,5 +93,8 @@ export default class Point extends IntPoint {
   }
   public toUnit() {
     return this.multiply(1 / this.magnitude())
+  }
+  public toArray(): [x: number, y: number] {
+    return [this.x, this.y]
   }
 }

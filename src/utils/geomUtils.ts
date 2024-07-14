@@ -1,3 +1,4 @@
+import type { IntPoint } from '../packages/Clipper/IntPoint'
 import Point from '../Point'
 import type { Line, LooseLine } from '../types'
 import { sign } from './numberUtils'
@@ -46,11 +47,11 @@ export const getLineIntersectionPoint = (line1: LooseLine, line2: LooseLine): Po
   return null
 }
 
-export const getLineIntersectionPoints = (
-  line: LooseLine,
-  ...lines: LooseLine[]
-): [Point, LooseLine][] => {
-  const pointsAndLines: [Point, LooseLine][] = []
+export const getLineIntersectionPoints = <LineType extends Line | [IntPoint, IntPoint]>(
+  line: LineType,
+  ...lines: LineType[]
+): [Point, LineType][] => {
+  const pointsAndLines: [Point, LineType][] = []
   for (const l of lines) {
     const pt = getLineIntersectionPoint(line, l)
     if (pt) pointsAndLines.push([pt, l])
@@ -64,10 +65,12 @@ export const getDistancesToPoint = (pt: Point, ...pts: [Point] | Point[]): [Poin
 export const getClosestPoint = (pt: Point, ...pts: [Point] | Point[]): Point =>
   getDistancesToPoint(pt, ...pts).sort((a, b) => a[1] - b[1])[0][0]
 
-export const getClosestButNotSamePoint = (pt: Point, ...pts: [Point] | Point[]): Point => {
+export const getClosestButNotSamePoint = (pt: Point, ...pts: [Point] | Point[]): Point | null => {
+  if (!pts.length) throw new Error('No points to compare')
   const ptsWithDist = getDistancesToPoint(pt, ...pts)
     .sort((a, b) => a[1] - b[1])
     .filter((p) => p[1] > 0.0001)
+  if (!ptsWithDist.length) return null
   return ptsWithDist[0][0]
 }
 
@@ -182,4 +185,22 @@ export const boundsOverlapAny = (bound: Bounds, ...bounds: Bounds[]): boolean =>
     if (boundsOverlap(bound, boundCheck)) return true
   }
   return false
+}
+
+export const pointsToLines = (points: Point[], unclosed = false): Line[] => {
+  const lines: Line[] = []
+  for (let i = 0; i < points.length - 1; i++) {
+    lines.push([points[i], points[i + 1]])
+  }
+  if (unclosed) {
+    lines.push([points[points.length - 1], points[0]])
+  }
+  return lines
+}
+
+export const trimLineToIntersectionPoints = (line: Line, lines: Line[]): Line => {
+  const intersectionPoints = getLineIntersectionPoints(line, ...lines)
+  if (intersectionPoints.length > 2) console.log('more than 2 intersection points')
+  else if (intersectionPoints.length < 2) return line
+  return [intersectionPoints[0][0], intersectionPoints[1][0]]
 }

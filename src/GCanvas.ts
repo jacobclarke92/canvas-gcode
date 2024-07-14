@@ -9,6 +9,7 @@ import Motion from './Motion'
 import { ClipperLib } from './packages/Clipper'
 import { Clipper } from './packages/Clipper/Clipper'
 import { ClipType } from './packages/Clipper/enums'
+import type { IntPoint } from './packages/Clipper/IntPoint'
 import type { Bounds, WindingRule } from './Path'
 import Path from './Path'
 import Point from './Point'
@@ -491,6 +492,20 @@ export default class GCanvas {
     this.strokeRect(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top)
   }
 
+  public strokePath(path: IntPoint[], options?: StrokeOptions) {
+    this.beginPath()
+    for (let i = 0; i < path.length; i++) {
+      const pt = path[i]
+      if (i === 0) {
+        this.moveTo(pt.x, pt.y)
+      } else {
+        this.lineTo(pt.x, pt.y)
+      }
+    }
+    this.stroke(options)
+    this.closePath()
+  }
+
   public fillRect(
     ...args: [pt: Point, w: number, h: number] | [x: number, y: number, w: number, h: number]
   ) {
@@ -952,6 +967,40 @@ export default class GCanvas {
     // this.ctx.closePath()
 
     return { intersected }
+  }
+
+  public offsetPath(
+    path: SubPath,
+    offset: number,
+    {
+      joinType,
+      endType,
+      precision,
+    }: {
+      joinType?: clipperLib.JoinType
+      endType?: clipperLib.EndType
+      precision?: number
+    } = {
+      joinType: clipperLib.JoinType.Miter,
+      endType: clipperLib.EndType.ClosedPolygon,
+      precision: 1000,
+    }
+  ) {
+    const pathPts = path.getPoints().map((pt) => pt.scale(precision))
+    const offsetPaths = clipper.offsetToPaths({
+      delta: offset * precision,
+      offsetInputs: [
+        {
+          data: pathPts,
+          joinType,
+          endType,
+        },
+      ],
+    })
+    const paths = offsetPaths.map((offsetPath) =>
+      [...offsetPath, offsetPath[0]].map((pt) => new Point(pt.x / precision, pt.y / precision))
+    )
+    return paths
   }
 
   // public fillText(text: string, x: number, y: number, params: any) {
