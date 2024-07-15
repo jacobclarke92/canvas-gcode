@@ -32,4 +32,5 @@ export default [
   require('./30_Housies').default,
   require('./31_Crescents').default,
   require('./32_Prism').default,
+  require('./33_Tetris').default,
 ]

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import type GCanvas from './GCanvas'
+import Point from './Point'
 import type { RangeOptions } from './sketches/tools/Range'
 import Range from './sketches/tools/Range'
 
@@ -21,6 +22,8 @@ export class Sketch {
   public cx: number
   /** canvas center y */
   public cy: number
+  /** canvas center point */
+  public cp: Point
   /** editable values object */
   public vs: { [key: string]: Range } = {}
   public readonly vars: { [key: string]: number } = {}
@@ -35,6 +38,7 @@ export class Sketch {
     this.canvasHeight = this.ch = config.height
     this.cx = this.canvasWidth / 2
     this.cy = this.canvasHeight / 2
+    this.cp = new Point(this.cx, this.cy)
   }
 
   public addVar(name: string, options: RangeOptions) {
