@@ -160,9 +160,57 @@ const tetrisPieceRotations = {
       1, 0, 0, 0,
       0, 0, 0, 0,
     ],
-  ]
+  ],
+  
 } as const
 type TetrisPieceMatrix = (typeof tetrisPieceRotations)[keyof typeof tetrisPieceRotations][number]
+
+const getPieceWidth = (matrix: TetrisPieceMatrix, cols = 4) => {
+  let w = 0
+  for (let i = 0; i < matrix.length; i++) {
+    const x = (i % cols) + 1
+    if (matrix[i]) {
+      if (x === cols + 1) return cols
+      if (x > w) w = x
+    }
+  }
+  return w
+}
+
+const getPieceHeight = (matrix: TetrisPieceMatrix, cols = 4) => {
+  let h = 0
+  for (let i = 0; i < matrix.length; i++) {
+    const y = Math.floor(i / cols) + 1
+    if (matrix[i] && y > h) h = y
+  }
+  return h
+}
+
+const getBoardRowPlacementRange = (board: (1 | 0)[], cols: number, x: number) => {
+  const rows = Math.floor(board.length / cols)
+  let minRow = 0
+  let maxRow = rows - 4
+  for (let y = 0; y < rows; y++) {
+    let rowIsFull = true
+    for (let i = 0; i < 4; i++) {
+      if (board[y * cols + x + i] === 0) rowIsFull = false
+    }
+    if (rowIsFull) minRow = y
+    else break
+  }
+  for (let y = rows - 4; y >= 0; y--) {
+    let rowIsEmpty = true
+    for (let i = 0; i < 4; i++) {
+      if (board[y * cols + x + i] === 1) rowIsEmpty = false
+    }
+    if (rowIsEmpty) maxRow = y
+  }
+  return { minRow, maxRow }
+}
+
+const logMatrix = (matrix: TetrisPieceMatrix, cols = 4) => {
+  console.log(matrix.map((v, i) => (i % cols === 0 ? '\n' : '') + (v ? '██' : '░░')).join(''))
+}
 
 export default class Tetris extends Sketch {
   // static generateGCode = false
@@ -182,14 +230,26 @@ export default class Tetris extends Sketch {
       disableRandomize: true,
     })
     this.addVar('blocksWide', {
-      initialValue: 16,
+      initialValue: 24,
       min: 4,
       max: 128,
       step: 1,
     })
+    this.addVar('numBlocks', {
+      initialValue: 50,
+      min: 0,
+      max: 500,
+      step: 1,
+    })
+    this.addVar('repositionAttempts', {
+      initialValue: 1800,
+      min: 0,
+      max: 15000,
+      step: 1,
+    })
     this.vs.drawGrid = new BooleanRange({
       disableRandomize: true,
-      initialValue: true,
+      initialValue: false,
     })
   }
 
@@ -205,7 +265,7 @@ export default class Tetris extends Sketch {
     initPen(this)
     plotBounds(this)
 
-    const { gutter, blocksWide } = this.vars
+    const { gutter, blocksWide, numBlocks } = this.vars
 
     this.increment = 0
 
@@ -231,63 +291,73 @@ export default class Tetris extends Sketch {
     }
     this.ctx.strokeStyle = 'black'
 
-    this.drawTetrisPiece('O', 0, 0, 0)
-    this.drawTetrisPiece('O', 2, 0, 0)
-    this.drawTetrisPiece('I', 4, 0, 1)
-    this.drawTetrisPiece('I', 0, 2, 0)
-    this.drawTetrisPiece('I', 0, 3, 0)
-    this.drawTetrisPiece('T', 5, 0, 0)
-    this.drawTetrisPiece('T', 7, 0, 2)
-    this.drawTetrisPiece('T', 5, 1, 3)
-    this.drawTetrisPiece('T', 6, 2, 1)
-    this.drawTetrisPiece('J', 9, 0, 0)
-    this.drawTetrisPiece('J', 9, 1, 1)
-    this.drawTetrisPiece('J', 8, 2, 3)
-    this.drawTetrisPiece('J', 6, 4, 2)
-    this.drawTetrisPiece('L', 13, 0, 0)
-    this.drawTetrisPiece('L', 4, 4, 1)
-    this.drawTetrisPiece('L', 12, 0, 3)
-    this.drawTetrisPiece('L', 7, 5, 2)
-    this.drawTetrisPiece('S', 15, 0, 0)
-    this.drawTetrisPiece('S', 14, 1, 1)
-    this.drawTetrisPiece('Z', 16, 1, 1)
-    this.drawTetrisPiece('Z', 2, 4, 0)
+    // this.drawTetrisPiece('O', 0, 0, 0)
+    // this.drawTetrisPiece('O', 2, 0, 0)
+    // this.drawTetrisPiece('I', 4, 0, 1)
+    // this.drawTetrisPiece('I', 0, 2, 0)
+    // this.drawTetrisPiece('I', 0, 3, 0)
+    // this.drawTetrisPiece('T', 5, 0, 0)
+    // this.drawTetrisPiece('T', 7, 0, 2)
+    // this.drawTetrisPiece('T', 5, 1, 3)
+    // this.drawTetrisPiece('T', 6, 2, 1)
+    // this.drawTetrisPiece('J', 9, 0, 0)
+    // this.drawTetrisPiece('J', 9, 1, 1)
+    // this.drawTetrisPiece('J', 8, 2, 3)
+    // this.drawTetrisPiece('J', 6, 4, 2)
+    // this.drawTetrisPiece('L', 13, 0, 0)
+    // this.drawTetrisPiece('L', 4, 4, 1)
+    // this.drawTetrisPiece('L', 12, 0, 3)
+    // this.drawTetrisPiece('L', 7, 5, 2)
+    // this.drawTetrisPiece('S', 15, 0, 0)
+    // this.drawTetrisPiece('S', 14, 1, 1)
+    // this.drawTetrisPiece('Z', 16, 1, 1)
+    // this.drawTetrisPiece('Z', 2, 4, 0)
 
-    // for (let i = 0; i < 20; i++) {
-    //   const x = randIntRange(blocksWide - 3)
-    //   const y = randIntRange(blocksTall - 3)
-    //   const type = tetrisPieces[randIntRange(tetrisPieces.length - 1)]
-    //   const rotation = randIntRange(3)
-    //   this.drawTetrisPiece(type, x, y, rotation)
-    // }
+    this.ctx.ctx?.canvas.addEventListener('click', () => {
+      this.placeRandomTetrisPiece()
+    })
+    for (let i = 0; i < numBlocks; i++) {
+      this.placeRandomTetrisPiece()
+    }
   }
 
+  /** assumes valid placement */
   drawTetrisPiece(type: TetrisPiece, col: number, row: number, rotation = 0): void {
     if (type === 'O') rotation = 0
     else if (['I', 'S', 'Z'].includes(type)) rotation = rotation % 2
     else rotation = rotation % 4
 
     const matrix = tetrisPieceRotations[type][rotation]
+    for (let i = 0; i < matrix.length; i++) {
+      if (matrix[i]) {
+        this.board[(row + Math.floor(i / 4)) * this.vars.blocksWide + col + (i % 4)] = 1
+        // debugDot(
+        //   this.ctx,
+        //   (col + (i % 4)) * this.cellSize,
+        //   (row + Math.floor(i / 4)) * this.cellSize
+        // )
+      }
+    }
+
+    const wonk = randFloat(0.01)
 
     this.ctx.scale(this.cellSize)
     this.ctx.ctx.lineWidth /= this.cellSize
     this.ctx.translate(col, row)
-    // this.ctx.scale(1 / 1.1)
-    const rot = randFloat(0.1)
-    this.ctx.rotate(rot)
+    this.ctx.scale(1 / 1.05)
+    this.ctx.rotate(wonk)
     this.ctx.beginPath()
     this.drawMatrix(matrix)
     this.ctx.closePath()
     this.ctx.stroke({ cutout: false })
-    this.ctx.rotate(-rot)
-    // this.ctx.scale(1.1)
+    this.ctx.rotate(-wonk)
+    this.ctx.scale(1.05)
     this.ctx.translate(-col, -row)
     this.ctx.ctx.lineWidth *= this.cellSize
     this.ctx.scale(1 / this.cellSize)
   }
 
   drawMatrix(matrix: TetrisPieceMatrix, w = 4, h = 4): void {
-    console.log(matrix.map((v, i) => (i % w === 0 ? '\n' : '') + (v ? '██' : '░░')).join(''))
     const cells = w * h
     let dir: 'u' | 'd' | 'l' | 'r' = 'r'
     let x = 0,
@@ -314,6 +384,7 @@ export default class Tetris extends Sketch {
       else if (dir === 'd') y += 1
       else if (dir === 'l') x -= 1
       else if (dir === 'u') y -= 1
+
       this.ctx.lineTo(x, y)
 
       if (dir === 'r') {
@@ -333,6 +404,66 @@ export default class Tetris extends Sketch {
 
       if (x === initialX && y === initialY) complete = true
     }
+  }
+
+  placeRandomTetrisPiece() {
+    const { blocksWide, repositionAttempts } = this.vars
+    const type = tetrisPieces[randIntRange(tetrisPieces.length - 1)]
+
+    const placementAttempts: {
+      x: number
+      y: number
+      rotation: number
+      coverage: number
+      minRow: number
+      maxRow: number
+    }[] = []
+    for (let i = 0; i < repositionAttempts; i++) {
+      const rotation =
+        type === 'O' ? 0 : ['I', 'S', 'Z'].includes(type) ? randIntRange(1) : randIntRange(3)
+
+      const matrix = tetrisPieceRotations[type][rotation]
+      const pieceWidth = getPieceWidth(matrix)
+      const pieceHeight = getPieceHeight(matrix)
+
+      const x = randIntRange(blocksWide - pieceWidth)
+      let { minRow, maxRow } = getBoardRowPlacementRange(this.board, blocksWide, x)
+      minRow = Math.max(0, minRow - 1)
+      const y = randIntRange(maxRow, minRow)
+      const bits: number[] = []
+      let badPlacement = false
+      pieceLoop: for (let py = 0; py < pieceHeight; py++) {
+        for (let px = 0; px < pieceWidth; px++) {
+          const pieceVal = matrix[py * 4 + px]
+          const boardVal = this.board[(y + py) * blocksWide + x + px]
+          if (pieceVal && boardVal) {
+            badPlacement = true
+            break pieceLoop
+          }
+          const goodRowPlacementPercent =
+            1 + (maxRow + pieceHeight - (y - minRow)) / (maxRow + pieceHeight - minRow)
+          bits.push(
+            (pieceVal ^ boardVal) *
+              (py === 0 ? (pieceVal ? 1.5 : 0.05) : 1) *
+              (py === 1 ? (pieceVal ? 1.3 : 0.1) : 1) *
+              (!pieceVal ? 1 : goodRowPlacementPercent * 2)
+          )
+        }
+      }
+      if (badPlacement) continue
+      const coverage = bits.reduce((a, b) => a + b, 0)
+      placementAttempts.push({ x, y, coverage, rotation, minRow, maxRow })
+    }
+    if (!placementAttempts.length) return
+    const sortedPlacementAttempts = [...placementAttempts].sort((a, b) => b.coverage - a.coverage)
+
+    const { x, y, rotation, coverage, minRow, maxRow } = sortedPlacementAttempts[0]
+
+    const matrix = tetrisPieceRotations[type][rotation]
+    logMatrix(matrix)
+    console.log({ type, rotation, coverage, minRow, maxRow })
+    console.log('lowest:', sortedPlacementAttempts[sortedPlacementAttempts.length - 1].coverage)
+    this.drawTetrisPiece(type, x, y, rotation)
   }
 
   draw(increment: number): void {
