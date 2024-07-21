@@ -351,6 +351,7 @@ export default class Tetris extends Sketch {
         }
       }
     }
+    penUp(this)
   }
 
   /** assumes valid placement, also populates board values */
