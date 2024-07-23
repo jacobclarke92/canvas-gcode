@@ -288,15 +288,14 @@ class RedBlackTree<T extends RedBlackNode> {
   }
 }
 
-export class BoundingBox {
-  xl: number
-  xr: number
-
-  yt: number
-  yb: number
+export interface BoundingBox {
+  left: number
+  width: number
+  top: number
+  height: number
 }
 
-class Cell {
+export class Cell {
   site: Site
   halfEdges: HalfEdge[]
   closeMe: boolean
@@ -335,7 +334,6 @@ class Cell {
     return halfEdges.length
   }
 
-  // Return a list of the neighbor Ids
   getNeighborIds() {
     const neighbors = []
     let iHalfEdge = this.halfEdges.length
@@ -351,8 +349,6 @@ class Cell {
     return neighbors
   }
 
-  // Compute bounding box
-  //
   getBoundingBox(): BoundingBox {
     const halfedges = this.halfEdges
     let iHalfEdge = halfedges.length
@@ -378,20 +374,21 @@ class Cell {
     }
 
     return <BoundingBox>{
-      xl: xMin,
-      yt: yMin,
-      xr: xMax,
-      yb: yMax,
+      left: xMin,
+      top: yMin,
+      width: xMax,
+      height: yMax,
       // width: xmax-xmin,
       // height: ymax-ymin
     }
   }
 
-  // Return whether a point is inside, on, or outside the cell:
-  //   -1: point is outside the perimeter of the cell
-  //    0: point is on the perimeter of the cell
-  //    1: point is inside the perimeter of the cell
-  //
+  /**
+   * Return whether a point is inside, on, or outside the cell:
+   *   -1: point is outside the perimeter of the cell
+   *    0: point is on the perimeter of the cell
+   *    1: point is inside the perimeter of the cell
+   */
   pointIntersection(x: number, y: number) {
     // Check if point in polygon. Since all polygons of a Voronoi
     // diagram are convex, then:
@@ -423,23 +420,16 @@ class Cell {
   }
 }
 
-export class Vertex {
+export interface Vertex {
   // static _id = 1// Useful for tracking uniqueness
   x: number
   y: number
-
-  // readonly id = Vertex._id++
-
-  constructor(x: number, y: number) {
-    this.x = x
-    this.y = y
-  }
 }
 
-export class Site {
-  x = 0
-  y = 0
-  voronoiId = 0
+export interface Site {
+  x: number
+  y: number
+  voronoiId?: number
 }
 
 export class Edge {
@@ -455,7 +445,7 @@ export class Edge {
   }
 }
 
-class HalfEdge {
+export class HalfEdge {
   site: Site = null
   edge: Edge = null
   angle: number
@@ -498,7 +488,7 @@ class HalfEdge {
 
 // rhill 2011-06-07: For some reasons, performance suffers significantly
 // when instantiating a literal object instead of an empty ctor
-class BeachSection extends RedBlackNode {
+export class BeachSection extends RedBlackNode {
   site: Site = null
   circleEvent: CircleEvent = null
   edge: Edge = null
@@ -509,7 +499,7 @@ class BeachSection extends RedBlackNode {
 }
 
 // rhill 2011-06-07: For some reasons, performance suffers significantly when instanciating a literal object instead of an empty ctor
-class CircleEvent extends RedBlackNode {
+export class CircleEvent extends RedBlackNode {
   arc: BeachSection
 
   site: Site = null
@@ -607,7 +597,7 @@ export class Voronoi {
   createVertex(x: number, y: number): Vertex {
     let v = this.vertexJunkyard.pop()
     if (!v) {
-      v = new Vertex(x, y)
+      v = { x, y }
     } else {
       v.x = x
       v.y = y
@@ -1143,10 +1133,10 @@ export class Voronoi {
       fm: number,
       fb: number
 
-    const xl = boundingBox.xl,
-      xr = boundingBox.xr,
-      yt = boundingBox.yt,
-      yb = boundingBox.yb,
+    const xl = boundingBox.left,
+      xr = boundingBox.width,
+      yt = boundingBox.top,
+      yb = boundingBox.height,
       lSite = edge.lSite,
       rSite = edge.rSite,
       lx = lSite.x,
@@ -1182,7 +1172,7 @@ export class Voronoi {
 
     // rhill 2013-12-02:
     // While at it, since we have the values which define the line,
-    // clip the end of va if it is outside the bbox.
+    // clip the end of va if it is outside the boundingBox.
     // https://github.com/gorhill/Javascript-Voronoi/issues/15
     // TODO: Do all the clipping here rather than rely on Liang-Barsky
     // which does not do well sometimes due to loss of arithmetic
@@ -1252,7 +1242,7 @@ export class Voronoi {
    * Thanks!
    * A bit modified to minimize code paths
    */
-  clipEdge(edge: Edge, bbox: BoundingBox): boolean {
+  clipEdge(edge: Edge, boundingBox: BoundingBox): boolean {
     let t0 = 0,
       t1 = 1
 
@@ -1264,7 +1254,7 @@ export class Voronoi {
       dy = by - ay
 
     // left
-    let q = ax - bbox.xl
+    let q = ax - boundingBox.left
     if (dx === 0 && q < 0) return false
 
     let r = -q / dx
@@ -1277,7 +1267,7 @@ export class Voronoi {
     }
 
     // right
-    q = bbox.xr - ax
+    q = boundingBox.width - ax
     if (dx === 0 && q < 0) return false
     r = q / dx
     if (dx < 0) {
@@ -1289,7 +1279,7 @@ export class Voronoi {
     }
 
     // top
-    q = ay - bbox.yt
+    q = ay - boundingBox.top
     if (dy === 0 && q < 0) return false
     r = -q / dy
     if (dy < 0) {
@@ -1301,7 +1291,7 @@ export class Voronoi {
     }
 
     // bottom
-    q = bbox.yb - ay
+    q = boundingBox.height - ay
     if (dy === 0 && q < 0) return false
     r = q / dy
     if (dy < 0) {
@@ -1312,7 +1302,7 @@ export class Voronoi {
       if (r < t1) t1 = r
     }
 
-    // if we reach this point, Voronoi edge is within bbox
+    // if we reach this point, Voronoi edge is within boundingBox
 
     // if t0 > 0, va needs to change
     // rhill 2011-06-03: we need to create a new vertex rather
@@ -1337,7 +1327,7 @@ export class Voronoi {
   }
 
   // Connect/cut edges at bounding box
-  clipEdges(bbox: BoundingBox) {
+  clipEdges(boundingBox: BoundingBox) {
     // connect all dangling edges to bounding box
     // or get rid of them if it can't be done
     const edges = this.edges
@@ -1351,8 +1341,8 @@ export class Voronoi {
       //   it is wholly outside the bounding box
       //   it is looking more like a point than a line
       if (
-        !this.connectEdge(edge, bbox) ||
-        !this.clipEdge(edge, bbox) ||
+        !this.connectEdge(edge, boundingBox) ||
+        !this.clipEdge(edge, boundingBox) ||
         (Math.abs(edge.va.x - edge.vb.x) < 1e-9 && Math.abs(edge.va.y - edge.vb.y) < 1e-9)
       ) {
         edge.va = edge.vb = null
@@ -1366,10 +1356,10 @@ export class Voronoi {
   // Each cell refers to its associated site, and a list
   // of halfedges ordered counterclockwise.
   closeCells(boundingBox: BoundingBox) {
-    const xl = boundingBox.xl,
-      xr = boundingBox.xr,
-      yt = boundingBox.yt,
-      yb = boundingBox.yb,
+    const xl = boundingBox.left,
+      xr = boundingBox.width,
+      yt = boundingBox.top,
+      yb = boundingBox.height,
       cells = this.cells
 
     let iCell = cells.length,
@@ -1535,7 +1525,7 @@ export class Voronoi {
    * rhill 2011-05-19:
    * Voronoi sites are kept client-side now, to allow user to freely modify content. At compute time, *references* to sites are copied locally.
    */
-  public compute(sites: Site[], bbox: BoundingBox): Diagram {
+  public compute(sites: Site[], boundingBox: BoundingBox): Diagram {
     // to measure execution time
     const startTime = new Date()
 
@@ -1607,10 +1597,10 @@ export class Voronoi {
     //   cut edges as per bounding box
     //   discard edges completely outside bounding box
     //   discard edges which are point-like
-    this.clipEdges(bbox)
+    this.clipEdges(boundingBox)
 
     //   add missing edges in order to close opened cells
-    this.closeCells(bbox)
+    this.closeCells(boundingBox)
 
     // to measure execution time
     const stopTime = new Date()
