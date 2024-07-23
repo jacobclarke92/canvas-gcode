@@ -3,7 +3,7 @@ import { Sketch } from '../Sketch'
 import { debugDot } from '../utils/debugUtils'
 import { seedNoise } from '../utils/noise'
 import { randFloatRange } from '../utils/numberUtils'
-import { initPen, plotBounds } from '../utils/penUtils'
+import { initPen, penUp, plotBounds } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
 import type { BoundingBox, Cell, Diagram, Edge, HalfEdge, Site, Vertex } from '../Voronoi'
 import { Voronoi } from '../Voronoi'
@@ -81,7 +81,8 @@ export default class VoronoiBoi extends Sketch {
     seedRandom(this.vs.seed.value)
     seedNoise(this.vs.seed.value)
     initPen(this)
-    plotBounds(this)
+    // plotBounds(this)
+
     this.voronoi = new Voronoi()
     this.diagram = null
     this.sites = []
@@ -104,6 +105,8 @@ export default class VoronoiBoi extends Sketch {
     }
 
     this.render()
+
+    penUp(this)
   }
 
   compute(sites: Site[]) {
