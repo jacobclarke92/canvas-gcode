@@ -1483,7 +1483,8 @@ export class Voronoi {
             // fall through
 
             default:
-              throw 'Voronoi.closeCells() > this makes no sense!'
+              // throw 'Voronoi.closeCells() > this makes no sense!'
+              break
           }
         }
         iLeft++
