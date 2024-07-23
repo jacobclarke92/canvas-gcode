@@ -19,6 +19,10 @@ button {
   }
 }
 
+a {
+  color: white;
+}
+
 #app {
   width: calc(100vw - 20px);
   display: flex;
@@ -36,6 +40,8 @@ button {
           display: flex;
           flex-direction: column;
           padding-top: 10px;
+          max-height: 428px;
+          overflow: auto;
         }
       }
       & > .preset-area {
