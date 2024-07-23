@@ -67,10 +67,14 @@ export class ClipperOffset {
     this.polygonNodes.addChild(newNode)
     //if this path's lowest pt is lower than all the others then update m_lowest
     if (endType !== EndType.closedPolygon) return
-    if (this.lowestPoint.x < 0) this.lowestPoint = new IntPoint(this.polygonNodes.childCount() - 1, k)
+    if (this.lowestPoint.x < 0)
+      this.lowestPoint = new IntPoint(this.polygonNodes.childCount() - 1, k)
     else {
       const ip = this.polygonNodes.children[this.lowestPoint.x].polygon[this.lowestPoint.y]
-      if (newNode.polygon[k].y > ip.y || (newNode.polygon[k].y === ip.y && newNode.polygon[k].x < ip.x))
+      if (
+        newNode.polygon[k].y > ip.y ||
+        (newNode.polygon[k].y === ip.y && newNode.polygon[k].x < ip.x)
+      )
         this.lowestPoint = new IntPoint(this.polygonNodes.childCount() - 1, k)
     }
   }
@@ -82,7 +86,10 @@ export class ClipperOffset {
   public fixOrientations() {
     // fixup orientations of all closed paths if the orientation of the
     // closed path with the lowermost vertex is wrong ...
-    if (this.lowestPoint.x >= 0 && !Clipper.orientation(this.polygonNodes.children[this.lowestPoint.x].polygon)) {
+    if (
+      this.lowestPoint.x >= 0 &&
+      !Clipper.orientation(this.polygonNodes.children[this.lowestPoint.x].polygon)
+    ) {
       for (let i = 0; i < this.polygonNodes.childCount(); i++) {
         const node = this.polygonNodes.children[i]
         if (
@@ -94,7 +101,8 @@ export class ClipperOffset {
     } else {
       for (let i = 0; i < this.polygonNodes.childCount(); i++) {
         const node = this.polygonNodes.children[i]
-        if (node.endType === EndType.closedLine && !Clipper.orientation(node.polygon)) node.polygon.reverse()
+        if (node.endType === EndType.closedLine && !Clipper.orientation(node.polygon))
+          node.polygon.reverse()
       }
     }
   }
@@ -186,10 +194,14 @@ export class ClipperOffset {
 
       // this.m_normals.set_Capacity(len);
       for (let j = 0; j < len - 1; j++)
-        this.normals.push(ClipperOffset.getUnitNormal(this.sourcePolygon[j], this.sourcePolygon[j + 1]))
+        this.normals.push(
+          ClipperOffset.getUnitNormal(this.sourcePolygon[j], this.sourcePolygon[j + 1])
+        )
 
       if (node.endType === EndType.closedLine || node.endType === EndType.closedPolygon)
-        this.normals.push(ClipperOffset.getUnitNormal(this.sourcePolygon[len - 1], this.sourcePolygon[0]))
+        this.normals.push(
+          ClipperOffset.getUnitNormal(this.sourcePolygon[len - 1], this.sourcePolygon[0])
+        )
       else this.normals.push(new DoublePoint(this.normals[len - 2]))
 
       if (node.endType === EndType.closedPolygon) {
@@ -261,7 +273,9 @@ export class ClipperOffset {
     }
   }
 
-  public execute(...args: [p: PolygonTree | Paths] | [solution: PolygonTree | Paths, delta: number]) {
+  public execute(
+    ...args: [p: PolygonTree | Paths] | [solution: PolygonTree | Paths, delta: number]
+  ) {
     if (args[0] instanceof PolygonTree) {
       const [solution, delta] = args
       solution.clear()
@@ -355,7 +369,8 @@ export class ClipperOffset {
     } else {
       switch (joinType) {
         case JoinType.miter: {
-          const r = 1 + (this.normals[j].x * this.normals[k].x + this.normals[j].y * this.normals[k].y)
+          const r =
+            1 + (this.normals[j].x * this.normals[k].x + this.normals[j].y * this.normals[k].y)
           if (r >= this.miterLim) this.doMiter(j, k, r)
           else this.doSquare(j, k)
           break
@@ -375,18 +390,29 @@ export class ClipperOffset {
 
   public doSquare(j: number, k: number) {
     const dx = Math.tan(
-      Math.atan2(this.sinA, this.normals[k].x * this.normals[j].x + this.normals[k].y * this.normals[j].y) / 4
+      Math.atan2(
+        this.sinA,
+        this.normals[k].x * this.normals[j].x + this.normals[k].y * this.normals[j].y
+      ) / 4
     )
     this.destinationPolygon.push(
       new IntPoint(
-        ClipperOffset.round(this.sourcePolygon[j].x + this.delta * (this.normals[k].x - this.normals[k].y * dx)),
-        ClipperOffset.round(this.sourcePolygon[j].y + this.delta * (this.normals[k].y + this.normals[k].x * dx))
+        ClipperOffset.round(
+          this.sourcePolygon[j].x + this.delta * (this.normals[k].x - this.normals[k].y * dx)
+        ),
+        ClipperOffset.round(
+          this.sourcePolygon[j].y + this.delta * (this.normals[k].y + this.normals[k].x * dx)
+        )
       )
     )
     this.destinationPolygon.push(
       new IntPoint(
-        ClipperOffset.round(this.sourcePolygon[j].x + this.delta * (this.normals[j].x + this.normals[j].y * dx)),
-        ClipperOffset.round(this.sourcePolygon[j].y + this.delta * (this.normals[j].y - this.normals[j].x * dx))
+        ClipperOffset.round(
+          this.sourcePolygon[j].x + this.delta * (this.normals[j].x + this.normals[j].y * dx)
+        ),
+        ClipperOffset.round(
+          this.sourcePolygon[j].y + this.delta * (this.normals[j].y - this.normals[j].x * dx)
+        )
       )
     )
   }
@@ -402,9 +428,15 @@ export class ClipperOffset {
   }
 
   public doRound(j: number, k: number) {
-    const a = Math.atan2(this.sinA, this.normals[k].x * this.normals[j].x + this.normals[k].y * this.normals[j].y)
+    const a = Math.atan2(
+      this.sinA,
+      this.normals[k].x * this.normals[j].x + this.normals[k].y * this.normals[j].y
+    )
 
-    const steps = Math.max(ClipperLib.castInt32(ClipperOffset.round(this.stepsPerRad * Math.abs(a))), 1)
+    const steps = Math.max(
+      ClipperLib.castInt32(ClipperOffset.round(this.stepsPerRad * Math.abs(a))),
+      1
+    )
 
     let X = this.normals[k].x,
       Y = this.normals[k].y,

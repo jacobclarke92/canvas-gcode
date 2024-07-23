@@ -1,6 +1,7 @@
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { randFloat, randFloatRange } from '../utils/numberUtils'
+import { initPen, penUp } from '../utils/penUtils'
 import { random, seedRandom } from '../utils/random'
 import Range from './tools/Range'
 
@@ -16,19 +17,86 @@ export default class Tree extends Sketch {
 
   init() {
     // this.vs.speedUp = new Range({ initialValue: 1, min: 1, max: 100, step: 1, disableRandomize: true })
-    this.vs.seed = new Range({ initialValue: 2222, min: 1000, max: 5000, step: 1 })
-    this.vs.initBranchLength = new Range({ initialValue: 8, min: 5, max: 10, step: 0.1 })
-    this.vs.branchLengthFalloff = new Range({ initialValue: 0.83, min: 0.4, max: 0.9, step: 0.005 })
-    this.vs.splitProbability = new Range({ initialValue: 0.6, min: 0, max: 1, step: 0.005 })
-    this.vs.pruneProbability = new Range({ initialValue: 0.95, min: 0, max: 1, step: 0.05 })
-    this.vs.bloomProbability = new Range({ initialValue: 0.6, min: 0, max: 1, step: 0.05 })
-    this.vs.bloomSize = new Range({ initialValue: 0.3, min: 0.2, max: 1.2, step: 0.1 })
-    this.vs.splitAngleRange = new Range({ initialValue: 0.44, min: 0, max: Math.PI / 2, step: Math.PI / 256 })
-    this.vs.splitAngleBranchLevelMulti = new Range({ initialValue: 0.1, min: -1, max: 1, step: 0.05 })
-    this.vs.splitAngleMinPercent = new Range({ initialValue: 0.5, min: 0, max: 1, step: 0.05 })
-    this.vs.chaosFactor = new Range({ initialValue: 0.85, min: 0, max: 2, step: 0.01 })
-    this.vs.splitCount = new Range({ initialValue: 2, min: 2, max: 5, step: 1, disableRandomize: true })
-    this.vs.maxBranchLevels = new Range({ initialValue: 14, min: 1, max: 24, step: 1, disableRandomize: true })
+    this.vs.seed = new Range({
+      initialValue: 2222,
+      min: 1000,
+      max: 5000,
+      step: 1,
+    })
+    this.vs.initBranchLength = new Range({
+      initialValue: 8,
+      min: 5,
+      max: 10,
+      step: 0.1,
+    })
+    this.vs.branchLengthFalloff = new Range({
+      initialValue: 0.83,
+      min: 0.4,
+      max: 0.9,
+      step: 0.005,
+    })
+    this.vs.splitProbability = new Range({
+      initialValue: 0.6,
+      min: 0,
+      max: 1,
+      step: 0.005,
+    })
+    this.vs.pruneProbability = new Range({
+      initialValue: 0.95,
+      min: 0,
+      max: 1,
+      step: 0.05,
+    })
+    this.vs.bloomProbability = new Range({
+      initialValue: 0.6,
+      min: 0,
+      max: 1,
+      step: 0.05,
+    })
+    this.vs.bloomSize = new Range({
+      initialValue: 0.3,
+      min: 0.2,
+      max: 1.2,
+      step: 0.1,
+    })
+    this.vs.splitAngleRange = new Range({
+      initialValue: 0.44,
+      min: 0,
+      max: Math.PI / 2,
+      step: Math.PI / 256,
+    })
+    this.vs.splitAngleBranchLevelMulti = new Range({
+      initialValue: 0.1,
+      min: -1,
+      max: 1,
+      step: 0.05,
+    })
+    this.vs.splitAngleMinPercent = new Range({
+      initialValue: 0.5,
+      min: 0,
+      max: 1,
+      step: 0.05,
+    })
+    this.vs.chaosFactor = new Range({
+      initialValue: 0.85,
+      min: 0,
+      max: 2,
+      step: 0.01,
+    })
+    this.vs.splitCount = new Range({
+      initialValue: 2,
+      min: 2,
+      max: 5,
+      step: 1,
+      disableRandomize: true,
+    })
+    this.vs.maxBranchLevels = new Range({
+      initialValue: 14,
+      min: 1,
+      max: 24,
+      step: 1,
+      disableRandomize: true,
+    })
   }
 
   private branchLevel = 0
@@ -38,6 +106,7 @@ export default class Tree extends Sketch {
 
   initDraw(): void {
     seedRandom(this.vs.seed.value)
+    initPen(this)
 
     this.branchLevel = 0
     this.drawnCurrentStems = 0
@@ -54,7 +123,10 @@ export default class Tree extends Sketch {
   }
 
   draw(increment: number): void {
-    if (this.branchLevel > this.vs.maxBranchLevels.value) return
+    if (this.branchLevel > this.vs.maxBranchLevels.value) {
+      penUp(this)
+      return
+    }
     if (this.drawnCurrentStems >= this.currentStems.length) {
       // time to calculate new stems
       this.currentStems = [...this.nextStems]
@@ -92,7 +164,8 @@ export default class Tree extends Sketch {
         }
       } else {
         const splitInto = this.vs.splitCount.value
-        const adjustedSplitAngleRange = splitAngleRange * (1 + (splitAngleBranchLevelMulti * this.branchLevel) / 4)
+        const adjustedSplitAngleRange =
+          splitAngleRange * (1 + (splitAngleBranchLevelMulti * this.branchLevel) / 4)
         const splitAngleSpan =
           adjustedSplitAngleRange * splitAngleMinPercent +
           randFloatRange(adjustedSplitAngleRange * (1 - splitAngleMinPercent)) +
@@ -102,7 +175,11 @@ export default class Tree extends Sketch {
 
         for (let s = 0; s < splitInto; s++) {
           const length = stem.length * branchLengthFalloff * (1 + randFloat(chaosFactor / 8))
-          const angle = stem.angle - splitAngleSpan / 2 + splitSlice * s + randFloat((Math.PI * chaosFactor) / 10)
+          const angle =
+            stem.angle -
+            splitAngleSpan / 2 +
+            splitSlice * s +
+            randFloat((Math.PI * chaosFactor) / 10)
           const endPoint = this.drawBranch(stem.position, angle, length)
           this.nextStems.push({
             position: endPoint,
@@ -119,7 +196,9 @@ export default class Tree extends Sketch {
   drawBranch(position: Point, angle: number, length: number): Point {
     this.ctx.beginPath()
     this.ctx.moveTo(position.x, position.y)
-    const endPoint = position.clone().add(new Point(Math.cos(angle) * length, Math.sin(angle) * length))
+    const endPoint = position
+      .clone()
+      .add(new Point(Math.cos(angle) * length, Math.sin(angle) * length))
     this.ctx.lineTo(endPoint.x, endPoint.y)
     this.ctx.stroke()
     this.ctx.closePath()
@@ -134,7 +213,11 @@ export default class Tree extends Sketch {
     // this.ctx.lineTo(position.x + Math.cos(angle - offsetAngle) * bloomSize, position.y + Math.sin(angle - offsetAngle) * bloomSize)
     // this.ctx.lineTo(position.x + Math.cos(angle + offsetAngle) * bloomSize, position.y + Math.sin(angle + offsetAngle) * bloomSize)
     // this.ctx.lineTo(position.x, position.y)
-    this.ctx.circle(position.x + Math.cos(angle) * bloomSize, position.y + Math.sin(angle) * bloomSize, bloomSize)
+    this.ctx.circle(
+      position.x + Math.cos(angle) * bloomSize,
+      position.y + Math.sin(angle) * bloomSize,
+      bloomSize
+    )
     this.ctx.stroke()
     this.ctx.closePath()
   }

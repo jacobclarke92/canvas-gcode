@@ -1,7 +1,11 @@
 import { Sketch } from '../Sketch'
+import { initPen, penUp, plotBounds } from '../utils/penUtils'
 
 export default class GCodeTest extends Sketch {
   init() {
+    initPen(this)
+    plotBounds(this)
+
     this.ctx.driver.comment('Drawing single line')
 
     // /*
@@ -59,8 +63,10 @@ export default class GCodeTest extends Sketch {
     for (let i = 0; i < 20; i++) {
       this.ctx.strokeCircle(100, 30, 1 + i)
     }
-    // this.ctx.strokeCircle(100, 30, 20)
-    this.ctx.clearRect(100, 35, 20, 20)
-    this.ctx.clearCircle(100, 15, 8)
+    // // this.ctx.strokeCircle(100, 30, 20)
+    // this.ctx.clearRect(100, 35, 20, 20)
+    // this.ctx.clearCircle(100, 15, 8)
+
+    penUp(this)
   }
 }

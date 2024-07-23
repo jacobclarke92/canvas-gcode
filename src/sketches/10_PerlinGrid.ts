@@ -1,5 +1,6 @@
 import { Sketch } from '../Sketch'
 import { perlin2, seedNoise } from '../utils/noise'
+import { initPen, penUp } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
 import Range from './tools/Range'
 
@@ -8,16 +9,67 @@ export default class PerlinGrid extends Sketch {
   static enableCutouts = false
 
   init() {
-    this.vs.speedUp = new Range({ initialValue: 10, min: 1, max: 100, step: 1, disableRandomize: true })
-    this.vs.seed = new Range({ initialValue: 1000, min: 1000, max: 5000, step: 1 })
-    this.vs.cols = new Range({ initialValue: 90, min: 1, max: 200, step: 1, disableRandomize: true })
-    this.vs.rows = new Range({ initialValue: 90, min: 1, max: 200, step: 1, disableRandomize: true })
-    this.vs.shape = new Range({ initialValue: 1, min: 0, max: 1, step: 1, disableRandomize: true })
+    this.vs.speedUp = new Range({
+      initialValue: 10,
+      min: 1,
+      max: 100,
+      step: 1,
+      disableRandomize: true,
+    })
+    this.vs.seed = new Range({
+      initialValue: 1000,
+      min: 1000,
+      max: 5000,
+      step: 1,
+    })
+    this.vs.cols = new Range({
+      initialValue: 90,
+      min: 1,
+      max: 200,
+      step: 1,
+      disableRandomize: true,
+    })
+    this.vs.rows = new Range({
+      initialValue: 90,
+      min: 1,
+      max: 200,
+      step: 1,
+      disableRandomize: true,
+    })
+    this.vs.shape = new Range({
+      initialValue: 1,
+      min: 0,
+      max: 1,
+      step: 1,
+      disableRandomize: true,
+    })
     this.vs.size = new Range({ initialValue: 18, min: 0.1, max: 64, step: 0.1 })
-    this.vs.perlinDiv = new Range({ initialValue: 25, min: 1, max: 100, step: 1, disableRandomize: true })
-    this.vs.offsetX = new Range({ initialValue: 0, min: -100, max: 100, step: 1 })
-    this.vs.offsetY = new Range({ initialValue: 0, min: -100, max: 100, step: 1 })
-    this.vs.outerGap = new Range({ initialValue: 12, min: 0, max: 25, step: 1, disableRandomize: true })
+    this.vs.perlinDiv = new Range({
+      initialValue: 25,
+      min: 1,
+      max: 100,
+      step: 1,
+      disableRandomize: true,
+    })
+    this.vs.offsetX = new Range({
+      initialValue: 0,
+      min: -100,
+      max: 100,
+      step: 1,
+    })
+    this.vs.offsetY = new Range({
+      initialValue: 0,
+      min: -100,
+      max: 100,
+      step: 1,
+    })
+    this.vs.outerGap = new Range({
+      initialValue: 12,
+      min: 0,
+      max: 25,
+      step: 1,
+      disableRandomize: true,
+    })
   }
 
   private drawCount = 0
@@ -28,6 +80,7 @@ export default class PerlinGrid extends Sketch {
   initDraw(): void {
     seedRandom(this.vs.seed.value)
     seedNoise(this.vs.seed.value)
+    initPen(this)
     const cols = this.vs.cols.value
     const rows = this.vs.rows.value
     const outerGap = this.vs.outerGap.value
@@ -38,7 +91,10 @@ export default class PerlinGrid extends Sketch {
   }
 
   draw(increment: number): void {
-    if (this.drawCount >= this.maxDrawCount) return
+    if (this.drawCount >= this.maxDrawCount) {
+      penUp(this)
+      return
+    }
 
     let speedUp = this.vs.speedUp.value
     const cols = this.vs.cols.value

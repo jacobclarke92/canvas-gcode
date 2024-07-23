@@ -1,0 +1,593 @@
+G17 (select the xy plane)
+M05 (pen up)
+G4 P2000 (wait 2000ms)
+M03 (pen down)
+G4 P5000 (wait 5000ms)
+M05 (pen up)
+G4 P2000 (wait 2000ms)
+(toolDiameter=0.15)
+G93 (inverse time mode)
+G1 Z0 F2000 X2 Y0
+G1 Z0 F2000 X2 Y2
+G1 Z0 F2000 X0 Y2
+G1 Z0 F2000 X0 Y0
+G0 F279000 X279 Y0
+G4 P279 (wait 279ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F2000 X281 Y0
+G1 Z0 F2000 X281 Y2
+G1 Z0 F2000 X279 Y2
+G1 Z0 F2000 X279 Y0
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F192000 X279 Y192
+G4 P192 (wait 192ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F2000 X281 Y192
+G1 Z0 F2000 X281 Y194
+G1 Z0 F2000 X279 Y194
+G1 Z0 F2000 X279 Y192
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F279000 X0 Y192
+G4 P279 (wait 279ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F2000 X2 Y192
+G1 Z0 F2000 X2 Y194
+G1 Z0 F2000 X0 Y194
+G1 Z0 F2000 X0 Y192
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F184271.53877 X10 Y8
+G4 P185 (wait 185ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X10 Y12
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F6000 X10 Y18
+G4 P6 (wait 6ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X10 Y22
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F6000 X10 Y28
+G4 P6 (wait 6ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X10 Y32
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F6000 X10 Y38
+G4 P6 (wait 6ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X10 Y42
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F6000 X10 Y48
+G4 P6 (wait 6ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X10 Y52
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F6000 X10 Y58
+G4 P6 (wait 6ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X10 Y62
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F6000 X10 Y68
+G4 P6 (wait 6ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X10 Y72
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F6000 X10 Y78
+G4 P6 (wait 6ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X10 Y82
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F6000 X10 Y88
+G4 P6 (wait 6ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X10 Y92
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F6000 X10 Y98
+G4 P6 (wait 6ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X10 Y102
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F160829.87906 X140.5 Y8
+G4 P161 (wait 161ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X140.5 Y12
+G1 Z0 F4000 X140.5 Y8
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F15620.49935 X128.5 Y18
+G4 P16 (wait 16ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X128.5 Y22
+G1 Z0 F4000 X128.5 Y18
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F15620.49935 X116.5 Y28
+G4 P16 (wait 16ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X116.5 Y32
+G1 Z0 F4000 X116.5 Y28
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F15620.49935 X104.5 Y38
+G4 P16 (wait 16ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X104.5 Y42
+G1 Z0 F4000 X104.5 Y38
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F15620.49935 X92.5 Y48
+G4 P16 (wait 16ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X92.5 Y52
+G1 Z0 F4000 X92.5 Y48
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F15620.49935 X80.5 Y58
+G4 P16 (wait 16ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X80.5 Y62
+G1 Z0 F4000 X80.5 Y58
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F15620.49935 X68.5 Y68
+G4 P16 (wait 16ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X68.5 Y72
+G1 Z0 F4000 X68.5 Y68
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F15620.49935 X56.5 Y78
+G4 P16 (wait 16ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X56.5 Y82
+G1 Z0 F4000 X56.5 Y78
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F15620.49935 X44.5 Y88
+G4 P16 (wait 16ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X44.5 Y92
+G1 Z0 F4000 X44.5 Y88
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F15620.49935 X32.5 Y98
+G4 P16 (wait 16ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X32.5 Y102
+G1 Z0 F4000 X32.5 Y98
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F90830.88682 X10 Y10
+G4 P91 (wait 91ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F130500 X140.5 Y10
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F130882.58097 X10 Y20
+G4 P131 (wait 131ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F118500 X128.5 Y20
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F118921.19239 X10 Y30
+G4 P119 (wait 119ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F106500 X116.5 Y30
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F106968.45329 X10 Y40
+G4 P107 (wait 107ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F94500 X104.5 Y40
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F95027.62756 X10 Y50
+G4 P96 (wait 96ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F82500 X92.5 Y50
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F83103.85069 X10 Y60
+G4 P84 (wait 84ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F70500 X80.5 Y60
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F71205.68797 X10 Y70
+G4 P72 (wait 72ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F58500 X68.5 Y70
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F59348.54674 X10 Y80
+G4 P60 (wait 60ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F46500 X56.5 Y80
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F47563.11596 X10 Y90
+G4 P48 (wait 48ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F34500 X44.5 Y90
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F35920.05011 X10 Y100
+G4 P36 (wait 36ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F22500 X32.5 Y100
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F253045.94445 X269 Y10
+G4 P254 (wait 254ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X273 Y10
+G1 Z0 F4000 X269 Y10
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F10000 X259 Y10
+G4 P10 (wait 10ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X263 Y10
+G1 Z0 F4000 X259 Y10
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F10000 X249 Y10
+G4 P10 (wait 10ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X253 Y10
+G1 Z0 F4000 X249 Y10
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F10000 X239 Y10
+G4 P10 (wait 10ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X243 Y10
+G1 Z0 F4000 X239 Y10
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F10000 X229 Y10
+G4 P10 (wait 10ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X233 Y10
+G1 Z0 F4000 X229 Y10
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F10000 X219 Y10
+G4 P10 (wait 10ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X223 Y10
+G1 Z0 F4000 X219 Y10
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F10000 X209 Y10
+G4 P10 (wait 10ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X213 Y10
+G1 Z0 F4000 X209 Y10
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F10000 X199 Y10
+G4 P10 (wait 10ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X203 Y10
+G1 Z0 F4000 X199 Y10
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F10000 X189 Y10
+G4 P10 (wait 10ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X193 Y10
+G1 Z0 F4000 X189 Y10
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F10000 X179 Y10
+G4 P10 (wait 10ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X183 Y10
+G1 Z0 F4000 X179 Y10
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F190588.56209 X269 Y178
+G4 P191 (wait 191ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X273 Y178
+G1 Z0 F4000 X269 Y178
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F18867.96226 X259 Y162
+G4 P19 (wait 19ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X263 Y162
+G1 Z0 F4000 X259 Y162
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F18867.96226 X249 Y146
+G4 P19 (wait 19ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X253 Y146
+G1 Z0 F4000 X249 Y146
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F18867.96226 X239 Y130
+G4 P19 (wait 19ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X243 Y130
+G1 Z0 F4000 X239 Y130
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F18867.96226 X229 Y114
+G4 P19 (wait 19ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X233 Y114
+G1 Z0 F4000 X229 Y114
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F18867.96226 X219 Y98
+G4 P19 (wait 19ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X223 Y98
+G1 Z0 F4000 X219 Y98
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F18867.96226 X209 Y82
+G4 P19 (wait 19ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X213 Y82
+G1 Z0 F4000 X209 Y82
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F18867.96226 X199 Y66
+G4 P19 (wait 19ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X203 Y66
+G1 Z0 F4000 X199 Y66
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F18867.96226 X189 Y50
+G4 P19 (wait 19ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X193 Y50
+G1 Z0 F4000 X189 Y50
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F18867.96226 X179 Y34
+G4 P19 (wait 19ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X183 Y34
+G1 Z0 F4000 X179 Y34
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F95078.91459 X271 Y10
+G4 P96 (wait 96ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F168000 X271 Y178
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F168297.35589 X261 Y10
+G4 P169 (wait 169ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F152000 X261 Y162
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F152328.5922 X251 Y10
+G4 P153 (wait 153ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F136000 X251 Y146
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F136367.15147 X241 Y10
+G4 P137 (wait 137ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F120000 X241 Y130
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F120415.94579 X231 Y10
+G4 P121 (wait 121ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F104000 X231 Y114
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F104479.66309 X221 Y10
+G4 P105 (wait 105ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F88000 X221 Y98
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F88566.3593 X211 Y10
+G4 P89 (wait 89ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F72000 X211 Y82
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F72691.12738 X201 Y10
+G4 P73 (wait 73ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F56000 X201 Y66
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F56885.85061 X191 Y10
+G4 P57 (wait 57ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F40000 X191 Y50
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F41231.05626 X181 Y10
+G4 P42 (wait 42ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F24000 X181 Y34
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F226152.60335 X10 Y182
+G4 P227 (wait 227ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F2000 X12 Y182
+G1 Z0 F2000 X12 Y184
+G1 Z0 F2000 X10 Y184
+G1 Z0 F2000 X10 Y182
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F3605.55128 X13 Y180
+G4 P4 (wait 4ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F4000 X17 Y180
+G1 Z0 F4000 X17 Y184
+G1 Z0 F4000 X13 Y184
+G1 Z0 F4000 X13 Y180
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F5385.16481 X18 Y178
+G4 P6 (wait 6ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F6000 X24 Y178
+G1 Z0 F6000 X24 Y184
+G1 Z0 F6000 X18 Y184
+G1 Z0 F6000 X18 Y178
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F7280.10989 X25 Y176
+G4 P8 (wait 8ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F8000 X33 Y176
+G1 Z0 F8000 X33 Y184
+G1 Z0 F8000 X25 Y184
+G1 Z0 F8000 X25 Y176
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F9219.54446 X34 Y174
+G4 P10 (wait 10ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F10000 X44 Y174
+G1 Z0 F10000 X44 Y184
+G1 Z0 F10000 X34 Y184
+G1 Z0 F10000 X34 Y174
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F11180.33989 X45 Y172
+G4 P12 (wait 12ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F12000 X57 Y172
+G1 Z0 F12000 X57 Y184
+G1 Z0 F12000 X45 Y184
+G1 Z0 F12000 X45 Y172
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F13152.94644 X58 Y170
+G4 P14 (wait 14ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F14000 X72 Y170
+G1 Z0 F14000 X72 Y184
+G1 Z0 F14000 X58 Y184
+G1 Z0 F14000 X58 Y170
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F15132.74595 X73 Y168
+G4 P16 (wait 16ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F16000 X89 Y168
+G1 Z0 F16000 X89 Y184
+G1 Z0 F16000 X73 Y184
+G1 Z0 F16000 X73 Y168
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F17117.24277 X90 Y166
+G4 P18 (wait 18ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F18000 X108 Y166
+G1 Z0 F18000 X108 Y184
+G1 Z0 F18000 X90 Y184
+G1 Z0 F18000 X90 Y166
+M05 (pen up)
+G4 P250 (wait 250ms)
+G0 F19104.97318 X109 Y164
+G4 P20 (wait 20ms)
+M03 (pen down)
+G4 P500 (wait 500ms)
+G1 Z0 F20000 X129 Y164
+G1 Z0 F20000 X129 Y184
+G1 Z0 F20000 X109 Y184
+G1 Z0 F20000 X109 Y164
+M05 (pen up)
+G4 P250 (wait 250ms)

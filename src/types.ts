@@ -8,6 +8,7 @@ export type Edge = [Point, Point]
 export type Line = [Point, Point]
 export type LooseLine = Line | [IntPoint, IntPoint]
 
-export type OverloadedFunctionWithOptionals<MainParams extends any[], OptionalParams extends any[]> = (
-  ...args: [...MainParams, ...OptionalParams] | [...MainParams]
-) => void
+export type OverloadedFunctionWithOptionals<
+  MainParams extends any[],
+  OptionalParams extends any[]
+> = (...args: [...MainParams, ...OptionalParams] | [...MainParams]) => void

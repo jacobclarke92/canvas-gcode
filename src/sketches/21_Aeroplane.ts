@@ -4,10 +4,11 @@ import type { Bounds, Circle } from '../utils/geomUtils'
 import { boundsOverlap, circleOverlapsCircles, getBoundsFromCircles } from '../utils/geomUtils'
 import { perlin2, seedNoise } from '../utils/noise'
 import { randFloat, randIntRange } from '../utils/numberUtils'
+import { initPen, plotBounds } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
 
 export default class Aeroplane extends Sketch {
-  static generateGCode = false
+  // static generateGCode = false
 
   init() {
     this.ctx._background = '#111111'
@@ -15,21 +16,86 @@ export default class Aeroplane extends Sketch {
     this.ctx._strokeStyle = '#ffffff'
     this.ctx.ctx.fillStyle = '#111111'
     this.ctx.ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight)
-    this.addVar('speedUp', { initialValue: 1, min: 1, max: 100, step: 1, disableRandomize: true })
-    this.addVar('randSeed', { initialValue: 9275, min: 1000, max: 5000, step: 1, disableRandomize: true })
-    this.addVar('noiseSeed', { initialValue: 9275, min: 1000, max: 5000, step: 1, disableRandomize: true })
-    this.addVar('stopAfter', { initialValue: 12500, min: 5, max: 20000, step: 1, disableRandomize: true })
-    this.addVar('startRadius', { initialValue: 1.5, min: 1, max: 20, step: 0.1 })
-    this.addVar('startRadiusVary', { initialValue: 0.5, min: 0, max: 10, step: 0.01 })
+    this.addVar('speedUp', {
+      initialValue: 1,
+      min: 1,
+      max: 100,
+      step: 1,
+      disableRandomize: true,
+    })
+    this.addVar('randSeed', {
+      initialValue: 9275,
+      min: 1000,
+      max: 5000,
+      step: 1,
+      disableRandomize: true,
+    })
+    this.addVar('noiseSeed', {
+      initialValue: 9275,
+      min: 1000,
+      max: 5000,
+      step: 1,
+      disableRandomize: true,
+    })
+    this.addVar('stopAfter', {
+      initialValue: 6000,
+      min: 5,
+      max: 20000,
+      step: 1,
+      disableRandomize: true,
+    })
+    this.addVar('startRadius', {
+      initialValue: 1.5,
+      min: 1,
+      max: 20,
+      step: 0.1,
+    })
+    this.addVar('startRadiusVary', {
+      initialValue: 0.5,
+      min: 0,
+      max: 10,
+      step: 0.01,
+    })
     this.addVar('radiusVary', { initialValue: 0, min: 0, max: 2, step: 0.01 })
-    this.addVar('radiusReductionDiv', { initialValue: 1.08, min: 1.001, max: 2, step: 0.001 })
-    this.addVar('radiusFitDiv', { initialValue: 1.1, min: 1.01, max: 10, step: 0.01 })
-    this.addVar('radiusDiffChainCutoff', { initialValue: 2, min: 1.01, max: 10, step: 0.001 })
+    this.addVar('radiusReductionDiv', {
+      initialValue: 1.08,
+      min: 1.001,
+      max: 2,
+      step: 0.001,
+    })
+    this.addVar('radiusFitDiv', {
+      initialValue: 1.1,
+      min: 1.01,
+      max: 10,
+      step: 0.01,
+    })
+    this.addVar('radiusDiffChainCutoff', {
+      initialValue: 2,
+      min: 1.01,
+      max: 10,
+      step: 0.001,
+    })
+    this.addVar('radiusMin', {
+      initialValue: 0.07,
+      min: 0.01,
+      max: 5,
+      step: 0.01,
+    })
     this.addVar('minChainLength', { initialValue: 6, min: 1, max: 15, step: 1 })
     this.addVar('perlinDivX', { initialValue: 40, min: 1, max: 100, step: 1 })
     this.addVar('perlinDivY', { initialValue: 75, min: 1, max: 100, step: 1 })
-    this.addVar('perlinOffsetX', { initialValue: 0, min: -100, max: 100, step: 1 })
-    this.addVar('perlinOffsetY', { initialValue: 0, min: -100, max: 100, step: 1 })
+    this.addVar('perlinOffsetX', {
+      initialValue: 0,
+      min: -100,
+      max: 100,
+      step: 1,
+    })
+    this.addVar('perlinOffsetY', {
+      initialValue: 0,
+      min: -100,
+      max: 100,
+      step: 1,
+    })
   }
 
   increment = 0
@@ -42,6 +108,8 @@ export default class Aeroplane extends Sketch {
   initDraw(): void {
     seedRandom(this.vars.randSeed)
     seedNoise(this.vars.noiseSeed)
+    initPen(this)
+    plotBounds(this)
     this.increment = 0
     this.circleCount = 0
 
@@ -67,6 +135,7 @@ export default class Aeroplane extends Sketch {
       radiusReductionDiv,
       radiusVary,
       startRadiusVary,
+      radiusMin,
       perlinDivX,
       perlinDivY,
       perlinOffsetX,
@@ -121,10 +190,12 @@ export default class Aeroplane extends Sketch {
             let panic = 0
             while (
               panic < 1000 &&
-              nextRadius > 0.07 &&
+              nextRadius > radiusMin &&
               circleOverlapsCircles(
                 [nextPos, nextRadius],
-                ...this.getCirclesNearBounds(getBoundsFromCircles(...this.currentChain, [nextPos, nextRadius])),
+                ...this.getCirclesNearBounds(
+                  getBoundsFromCircles(...this.currentChain, [nextPos, nextRadius])
+                ),
                 ...this.currentChain
               )
             ) {
@@ -135,7 +206,7 @@ export default class Aeroplane extends Sketch {
             }
 
             if (
-              nextRadius <= 0.07 ||
+              nextRadius <= radiusMin ||
               nextPos.x + nextRadius < 0 ||
               nextPos.x - nextRadius > this.cw ||
               nextPos.y + nextRadius < 0 ||

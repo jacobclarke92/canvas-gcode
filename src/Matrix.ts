@@ -33,7 +33,12 @@ export default class Matrix {
   }
 
   static rotation(theta: number, aboutPoint?: Point) {
-    let rotationMatrix = new Matrix(Math.cos(theta), Math.sin(theta), -Math.sin(theta), Math.cos(theta))
+    let rotationMatrix = new Matrix(
+      Math.cos(theta),
+      Math.sin(theta),
+      -Math.sin(theta),
+      Math.cos(theta)
+    )
     if (aboutPoint) {
       rotationMatrix = Matrix.translation(aboutPoint.x, aboutPoint.y)
         .concat(rotationMatrix)

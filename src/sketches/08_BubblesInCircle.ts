@@ -1,5 +1,6 @@
 import Point from '../Point'
 import { Sketch } from '../Sketch'
+import { initPen, penUp, plotBounds } from '../utils/penUtils'
 import { random, seedRandom } from '../utils/random'
 import Range from './tools/Range'
 
@@ -9,7 +10,7 @@ interface Circle {
 }
 
 export default class BubblesInCircle extends Sketch {
-  static generateGCode = false
+  // static generateGCode = false
   static enableCutouts = false
 
   redrawnCount: number
@@ -20,13 +21,33 @@ export default class BubblesInCircle extends Sketch {
 
   init() {
     this.vs.seed = new Range({ initialValue: 1391, min: 1000, max: 5000, step: 1 })
-    this.vs.atLeast = new Range({ initialValue: 777, min: 1, max: 5000, step: 1, disableRandomize: true })
-    this.vs.maxRadius = new Range({ initialValue: 300, min: 0.5, max: 45, step: 0.5, disableRandomize: true })
-    this.vs.minRadius = new Range({ initialValue: 0.2, min: 0.1, max: 5, step: 0.05, disableRandomize: true })
+    this.vs.atLeast = new Range({
+      initialValue: 777,
+      min: 1,
+      max: 5000,
+      step: 1,
+      disableRandomize: true,
+    })
+    this.vs.maxRadius = new Range({
+      initialValue: 300,
+      min: 0.5,
+      max: 100,
+      step: 0.5,
+      disableRandomize: true,
+    })
+    this.vs.minRadius = new Range({
+      initialValue: 0.2,
+      min: 0.1,
+      max: 5,
+      step: 0.05,
+      disableRandomize: true,
+    })
   }
 
   initDraw(): void {
     seedRandom(this.vs.seed.value)
+    initPen(this)
+    plotBounds(this)
     this.reordered = false
     this.redrawnCount = 0
     this.circles = []
@@ -40,8 +61,16 @@ export default class BubblesInCircle extends Sketch {
   draw(increment: number): void {
     if (this.circles.length > this.vs.atLeast.value) {
       if (!this.reordered) {
-        const center = new Point(this.cx, this.cy)
-        this.circles.sort((a, b) => Point.distance(center, b.position) - Point.distance(center, a.position))
+        const largestCirclePos = this.circles.reduce((a, b) =>
+          a.radius > b.radius ? a : b
+        ).position
+        this.circles = this.circles.sort((a, b) => {
+          // https://stackoverflow.com/a/6989383
+          return (
+            (a.position.x - largestCirclePos.x) * (b.position.y - largestCirclePos.y) -
+            (b.position.x - largestCirclePos.x) * (a.position.y - largestCirclePos.y)
+          )
+        })
         this.ctx.reset()
         this.ctx.beginPath()
         this.ctx.circle(this.cx, this.cy, this.radius)
@@ -56,6 +85,8 @@ export default class BubblesInCircle extends Sketch {
           this.ctx.stroke()
           this.ctx.closePath()
           this.redrawnCount++
+        } else {
+          penUp(this)
         }
       }
       return

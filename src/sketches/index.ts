@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 export default [
-  require('./01_InitialSketch').default, // maybe work?
+  require('./01_Calibration').default, // maybe work?
   require('./02_GCodeTest').default,
   require('./03_Arcs').default,
   require('./04_BezierScribbles').default,
@@ -14,7 +14,7 @@ export default [
   require('./12_Tree').default,
   require('./13_MondayMaze').default,
   require('./14_Chaser').default,
-  require('./15_Kaleido').default,
+  require('./15_Snowflake').default,
   require('./16_KaleidoCurve').default,
   require('./17_Perpendicularity').default,
   require('./18_Rays').default,
@@ -30,4 +30,8 @@ export default [
   require('./28_Sunflower').default,
   require('./29_AgeRings').default,
   require('./30_Housies').default,
+  require('./31_Crescents').default,
+  require('./32_Prism').default,
+  require('./33_Tetris').default,
+  require('./34_Voronoi').default,
 ]

@@ -26,7 +26,7 @@ export const renderSketchSaveSlots = (sketch: Sketch, onLoad?: () => void) => {
       sketch.reset()
       console.log('Loading:', preset)
       Object.keys(preset).forEach((key) => {
-        sketch.vs[key].setValue(preset[key], true)
+        sketch.vs[key]?.setValue(preset[key], true)
       })
       sketch.initDraw()
     })

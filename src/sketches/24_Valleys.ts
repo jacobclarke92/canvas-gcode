@@ -10,7 +10,13 @@ export default class Valleys extends Sketch {
 
   init() {
     this.addVar('speedUp', { initialValue: 1, min: 1, max: 100, step: 1, disableRandomize: true })
-    this.addVar('randSeed', { initialValue: 5321, min: 1000, max: 10000, step: 1, disableRandomize: true })
+    this.addVar('randSeed', {
+      initialValue: 5321,
+      min: 1000,
+      max: 10000,
+      step: 1,
+      disableRandomize: true,
+    })
 
     this.addVar('mainAngle', { initialValue: 1.169, min: 0, max: Math.PI * 2, step: 0.001 })
 
@@ -84,7 +90,10 @@ export default class Valleys extends Sketch {
     let ohBabyDontStop = true
     while (ohBabyDontStop) {
       direction += randFloat(this.vars.lineDrift)
-      currentPt = currentPt.moveAlongAngle(direction, this.vars.jointSpace * (1 + randFloat(this.vars.lineStretchy)))
+      currentPt = currentPt.moveAlongAngle(
+        direction,
+        this.vars.jointSpace * (1 + randFloat(this.vars.lineStretchy))
+      )
       direction += (alignmentAngle - direction) * this.vars.lineConformance // ease back to alignment
       pts.push(currentPt.clone())
       const distToEnd = currentPt.distanceTo(endPt)
@@ -113,8 +122,10 @@ export default class Valleys extends Sketch {
     if (this.stopDrawing) return
     this.increment++
 
-    const line1 = this.lines[this.drawingLineIndex % 2 ? this.drawingLineIndex - 1 : this.drawingLineIndex]
-    const line2 = this.lines[this.drawingLineIndex % 2 ? this.drawingLineIndex : this.drawingLineIndex - 1]
+    const line1 =
+      this.lines[this.drawingLineIndex % 2 ? this.drawingLineIndex - 1 : this.drawingLineIndex]
+    const line2 =
+      this.lines[this.drawingLineIndex % 2 ? this.drawingLineIndex : this.drawingLineIndex - 1]
     const maxLineSegments = Math.min(line1.length, line2.length) - this.vars.mountainJointsHeight
 
     const pt1 = line1[this.lineSegIndex]

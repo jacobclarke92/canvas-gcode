@@ -50,7 +50,12 @@ export class ClipperBase {
     return false
   }
 
-  public isPointOnLineSegment(pt: IntPoint, linePt1: IntPoint, linePt2: IntPoint, UseFullRange: boolean) {
+  public isPointOnLineSegment(
+    pt: IntPoint,
+    linePt1: IntPoint,
+    linePt2: IntPoint,
+    UseFullRange: boolean
+  ) {
     if (UseFullRange)
       return (
         (pt.x === linePt1.x && pt.y === linePt1.y) ||
@@ -68,7 +73,8 @@ export class ClipperBase {
         (pt.x === linePt2.x && pt.y === linePt2.y) ||
         (pt.x > linePt1.x === pt.x < linePt2.x &&
           pt.y > linePt1.y === pt.y < linePt2.y &&
-          (pt.x - linePt1.x) * (linePt2.y - linePt1.y) === (linePt2.x - linePt1.x) * (pt.y - linePt1.y))
+          (pt.x - linePt1.x) * (linePt2.y - linePt1.y) ===
+            (linePt2.x - linePt1.x) * (pt.y - linePt1.y))
       )
   }
 
@@ -93,8 +99,15 @@ export class ClipperBase {
     if (args.length === 3) {
       const [e1, e2, UseFullRange] = args
       if (UseFullRange)
-        return Int128.op_Equality(Int128.Int128Mul(e1.delta.y, e2.delta.x), Int128.Int128Mul(e1.delta.x, e2.delta.y))
-      else return ClipperLib.castInt64(e1.delta.y * e2.delta.x) === ClipperLib.castInt64(e1.delta.x * e2.delta.y)
+        return Int128.op_Equality(
+          Int128.Int128Mul(e1.delta.y, e2.delta.x),
+          Int128.Int128Mul(e1.delta.x, e2.delta.y)
+        )
+      else
+        return (
+          ClipperLib.castInt64(e1.delta.y * e2.delta.x) ===
+          ClipperLib.castInt64(e1.delta.x * e2.delta.y)
+        )
     } else if (args.length === 4) {
       const [pt1, pt2, pt3, UseFullRange] = args
       if (UseFullRange)
@@ -162,7 +175,9 @@ export class ClipperBase {
   }
 
   public initEdge(
-    ...args: [e: Edge, nextEdge: Edge | null, prevEdge: Edge | null, pt: IntPoint] | [e: Edge, polyType: PolyType]
+    ...args:
+      | [e: Edge, nextEdge: Edge | null, prevEdge: Edge | null, pt: IntPoint]
+      | [e: Edge, polyType: PolyType]
   ) {
     if (args.length === 2) {
       const [e, polyType] = args
@@ -204,7 +219,10 @@ export class ClipperBase {
     const timeToPanic = panicker()
     while (true) {
       if (timeToPanic()) break
-      while (IntPoint.op_Inequality(edge.bottom, edge.prev.bottom) || IntPoint.op_Equality(edge.current, edge.top))
+      while (
+        IntPoint.op_Inequality(edge.bottom, edge.prev.bottom) ||
+        IntPoint.op_Equality(edge.current, edge.top)
+      )
         edge = edge.next
       if (edge.dx !== ClipperBase.HORIZONTAL && edge.prev.dx !== ClipperBase.HORIZONTAL) break
       while (edge.prev.dx === ClipperBase.HORIZONTAL) edge = edge.prev
@@ -261,13 +279,15 @@ export class ClipperBase {
 
       if (startEdge.dx === ClipperBase.HORIZONTAL) {
         //ie an adjoining horizontal skip edge
-        if (startEdge.bottom.x !== edge.bottom.x && startEdge.top.x !== edge.bottom.x) this.reverseHorizontal(edge)
+        if (startEdge.bottom.x !== edge.bottom.x && startEdge.top.x !== edge.bottom.x)
+          this.reverseHorizontal(edge)
       } else if (startEdge.bottom.x !== edge.bottom.x) this.reverseHorizontal(edge)
     }
 
     startEdge = edge
     if (leftBoundIsForward) {
-      while (result.top.y === result.next.bottom.y && result.next.outIndex !== ClipperBase.SKIP) result = result.next
+      while (result.top.y === result.next.bottom.y && result.next.outIndex !== ClipperBase.SKIP)
+        result = result.next
       if (result.dx === ClipperBase.HORIZONTAL && result.next.outIndex !== ClipperBase.SKIP) {
         //nb: at the top of a bound, horizontals are added to the bound
         //only when the preceding edge attaches to the horizontal's left vertex
@@ -278,30 +298,50 @@ export class ClipperBase {
       }
       while (edge !== result) {
         edge.nextInLML = edge.next
-        if (edge.dx === ClipperBase.HORIZONTAL && edge !== startEdge && edge.bottom.x !== edge.prev.top.x)
+        if (
+          edge.dx === ClipperBase.HORIZONTAL &&
+          edge !== startEdge &&
+          edge.bottom.x !== edge.prev.top.x
+        )
           this.reverseHorizontal(edge)
         edge = edge.next
       }
-      if (edge.dx === ClipperBase.HORIZONTAL && edge !== startEdge && edge.bottom.x !== edge.prev.top.x)
+      if (
+        edge.dx === ClipperBase.HORIZONTAL &&
+        edge !== startEdge &&
+        edge.bottom.x !== edge.prev.top.x
+      )
         this.reverseHorizontal(edge)
       result = result.next
       //move to the edge just beyond current bound
     } else {
-      while (result.top.y === result.prev.bottom.y && result.prev.outIndex !== ClipperBase.SKIP) result = result.prev
+      while (result.top.y === result.prev.bottom.y && result.prev.outIndex !== ClipperBase.SKIP)
+        result = result.prev
       if (result.dx === ClipperBase.HORIZONTAL && result.prev.outIndex !== ClipperBase.SKIP) {
         horizontal = result
         while (horizontal.next.dx === ClipperBase.HORIZONTAL) horizontal = horizontal.next
-        if (horizontal.next.top.x === result.prev.top.x || horizontal.next.top.x > result.prev.top.x) {
+        if (
+          horizontal.next.top.x === result.prev.top.x ||
+          horizontal.next.top.x > result.prev.top.x
+        ) {
           result = horizontal.next
         }
       }
       while (edge !== result) {
         edge.nextInLML = edge.prev
-        if (edge.dx === ClipperBase.HORIZONTAL && edge !== startEdge && edge.bottom.x !== edge.next.top.x)
+        if (
+          edge.dx === ClipperBase.HORIZONTAL &&
+          edge !== startEdge &&
+          edge.bottom.x !== edge.next.top.x
+        )
           this.reverseHorizontal(edge)
         edge = edge.prev
       }
-      if (edge.dx === ClipperBase.HORIZONTAL && edge !== startEdge && edge.bottom.x !== edge.next.top.x)
+      if (
+        edge.dx === ClipperBase.HORIZONTAL &&
+        edge !== startEdge &&
+        edge.bottom.x !== edge.next.top.x
+      )
         this.reverseHorizontal(edge)
       result = result.prev
       //move to the edge just beyond current bound
@@ -312,7 +352,8 @@ export class ClipperBase {
 
   public addPath(path: Path, polyType: PolyType, isClosed: boolean): boolean {
     if (ClipperLib.use_lines) {
-      if (!isClosed && polyType === PolyType.clip) throw new Error('AddPath: Open paths must be subject.')
+      if (!isClosed && polyType === PolyType.clip)
+        throw new Error('AddPath: Open paths must be subject.')
     } else {
       if (!isClosed) throw new Error('AddPath: Open paths have been disabled.')
     }
@@ -369,7 +410,10 @@ export class ClipperBase {
       if (timeToPanic()) break
       // console.log(edge.next, eStart);
       // nb: allows matching start and end points when not Closed ...
-      if (IntPoint.op_Equality(edge.current, edge.next.current) && (isClosed || edge.next !== startEdge)) {
+      if (
+        IntPoint.op_Equality(edge.current, edge.next.current) &&
+        (isClosed || edge.next !== startEdge)
+      ) {
         // duplicate vertex ...
         if (edge === edge.next) {
           console.warn('duplicate vertex', edge)
@@ -388,8 +432,14 @@ export class ClipperBase {
         break
       } else if (
         isClosed &&
-        ClipperBase.slopesEqual(edge.prev.current, edge.current, edge.next.current, this.useFullRange) &&
-        (!this.preserveCollinear || !this.pt2IsBetweenPt1AndPt3(edge.prev.current, edge.current, edge.next.current))
+        ClipperBase.slopesEqual(
+          edge.prev.current,
+          edge.current,
+          edge.next.current,
+          this.useFullRange
+        ) &&
+        (!this.preserveCollinear ||
+          !this.pt2IsBetweenPt1AndPt3(edge.prev.current, edge.current, edge.next.current))
       ) {
         // Collinear edges are allowed for open paths but in closed paths
         // the default is to merge adjacent collinear edges into a single edge.
@@ -494,7 +544,8 @@ export class ClipperBase {
       if (edge.outIndex === ClipperBase.SKIP) edge = this.processBoundary(edge, leftBoundIsForward)
 
       let edge2 = this.processBoundary(locMin.rightBoundary, !leftBoundIsForward)
-      if (edge2.outIndex === ClipperBase.SKIP) edge2 = this.processBoundary(edge2, !leftBoundIsForward)
+      if (edge2.outIndex === ClipperBase.SKIP)
+        edge2 = this.processBoundary(edge2, !leftBoundIsForward)
 
       if (locMin.leftBoundary.outIndex === ClipperBase.SKIP) locMin.leftBoundary = null
       else if (locMin.rightBoundary.outIndex === ClipperBase.SKIP) locMin.rightBoundary = null
@@ -517,7 +568,11 @@ export class ClipperBase {
   }
 
   public pt2IsBetweenPt1AndPt3(pt1: IntPoint, pt2: IntPoint, pt3: IntPoint) {
-    if (IntPoint.op_Equality(pt1, pt3) || IntPoint.op_Equality(pt1, pt2) || IntPoint.op_Equality(pt3, pt2))
+    if (
+      IntPoint.op_Equality(pt1, pt3) ||
+      IntPoint.op_Equality(pt1, pt2) ||
+      IntPoint.op_Equality(pt3, pt2)
+    )
       // if ((pt1 == pt3) || (pt1 == pt2) || (pt3 == pt2))
       return false
     else if (pt1.x !== pt3.x) return pt2.x > pt1.x === pt2.x < pt3.x
@@ -561,7 +616,10 @@ export class ClipperBase {
   }
 
   public popLocalMinimums(y: number, check: LocalMinimum) {
-    if (this.currentLocalMinimum === this.minimaList[this.minimaList.length - 1] || this.currentLocalMinimum.y !== y) {
+    if (
+      this.currentLocalMinimum === this.minimaList[this.minimaList.length - 1] ||
+      this.currentLocalMinimum.y !== y
+    ) {
       return false
     }
     check.y = this.currentLocalMinimum.y

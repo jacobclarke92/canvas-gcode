@@ -11,7 +11,13 @@ import type {
 import type GCanvas from './GCanvas'
 import type Path from './Path'
 import Point from './Point'
-import type { BezierCurveToAction, EllipseAction, LineToAction, MoveToAction, QuadraticCurveToAction } from './SubPath'
+import type {
+  BezierCurveToAction,
+  EllipseAction,
+  LineToAction,
+  MoveToAction,
+  QuadraticCurveToAction,
+} from './SubPath'
 import SubPath, { DEFAULT_DIVISIONS } from './SubPath'
 import { arcToPoints, pointsToArc, sameFloat, samePos } from './utils/pathUtils'
 
@@ -23,6 +29,7 @@ export default class Motion {
   public currentAtc: number
   public position: Point = new Point()
   public ctx: GCanvas
+  private penState: 'up' | 'down' | 'unknown' = 'unknown'
 
   constructor(ctx: GCanvas) {
     this.ctx = ctx
@@ -37,11 +44,17 @@ export default class Motion {
     this.position = new Point()
   }
 
-  public retract() {
-    this.ctx.driver.send(`M03 S090 (pen up)`)
+  public retract(timeMs = 250) {
+    if (this.penState === 'up') return
+    this.ctx.driver.send('M05 (pen up)')
+    this.ctx.driver.wait(timeMs)
+    this.penState = 'up'
   }
-  public plunge() {
-    this.ctx.driver.send(`M03 S070 (pen down)`)
+  public plunge(timeMs = 500) {
+    if (this.penState === 'down') return
+    this.ctx.driver.send('M03 (pen down)')
+    this.ctx.driver.wait(timeMs)
+    this.penState = 'down'
   }
   public zero(params: ZeroParams) {
     this.ctx.driver.zero(params)
@@ -111,10 +124,10 @@ export default class Motion {
 
   public postProcess(params: Partial<AllCommandParams>) {
     // Sync meta
-    if (this.ctx.driver.unit && this.ctx.unit != this.currentUnit) {
-      this.ctx.driver.unit(this.ctx.unit)
-      this.currentUnit = this.ctx.unit
-    }
+    // if (this.ctx.driver.unit && this.ctx.unit != this.currentUnit) {
+    //   this.ctx.driver.unit(this.ctx.unit)
+    //   this.currentUnit = this.ctx.unit
+    // }
 
     // Sync meta
     if (this.ctx.driver.meta && this.ctx.toolDiameter != this.currentToolDiameter) {
@@ -132,7 +145,8 @@ export default class Motion {
 
     // Set new spindle speed changed
     if (this.ctx.driver.speed && this.ctx.speed != this.currentSpeed) {
-      this.ctx.driver.speed(this.ctx.speed)
+      // we ignore speed command because is messes up the vigo drawer software
+      // this.ctx.driver.speed(this.ctx.speed)
       this.currentSpeed = this.ctx.speed
     }
 
@@ -160,7 +174,9 @@ export default class Motion {
     )
 
     const v2 = this.position
-    const dist = Math.sqrt(Math.pow(v2.x - v1.x, 2) + Math.pow(v2.y - v1.y, 2) /* + Math.pow(v2.z - v1.z, 2)*/)
+    const dist = Math.sqrt(
+      Math.pow(v2.x - v1.x, 2) + Math.pow(v2.y - v1.y, 2) /* + Math.pow(v2.z - v1.z, 2)*/
+    )
 
     if (!params.f) {
       let f = dist / (1 / this.ctx.feed)
@@ -209,7 +225,11 @@ export default class Motion {
       const yo = p.y - this.position.y
       curLen += Math.sqrt(xo * xo + yo * yo)
 
-      this.linear({ x: p.x, y: p.y, z: zStart + (curLen / totalLen) * fullDelta })
+      this.linear({
+        x: p.x,
+        y: p.y,
+        z: zStart + (curLen / totalLen) * fullDelta,
+      })
     }
   }
 
@@ -296,7 +316,9 @@ export default class Motion {
           interpolate(this, 'ellipse', args)
         }
       },
-      ['BEZIER_CURVE_TO' as BezierCurveToAction['type']]: (...args: BezierCurveToAction['args']) => {
+      ['BEZIER_CURVE_TO' as BezierCurveToAction['type']]: (
+        ...args: BezierCurveToAction['args']
+      ) => {
         // console.log('[motion] bezierCurveTo', args)
         /*if (this.ctx.driver.bezierCurve) {
           // args: [aCP1x: number, aCP1y: number, aCP2x: number, aCP2y: number, aX: number, aY: number]
@@ -311,7 +333,9 @@ export default class Motion {
         } else */
         interpolate(this, 'bezierCurveTo', args)
       },
-      ['QUADRATIC_CURVE_TO' as QuadraticCurveToAction['type']]: (...args: QuadraticCurveToAction['args']) => {
+      ['QUADRATIC_CURVE_TO' as QuadraticCurveToAction['type']]: (
+        ...args: QuadraticCurveToAction['args']
+      ) => {
         // console.log('[motion] quadraticCurveTo', args)
         interpolate(this, 'quadraticCurveTo', args)
       },

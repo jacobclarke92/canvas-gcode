@@ -52,7 +52,11 @@ export default class GCode extends Driver {
     // this.send('G80 (cancel any previously used canned cycles)')
     this.send('G17 (select the xy plane)')
     // this.send('G28 (rapid to home position)')
-    this.send('M3 S0 (activate servo)')
+    // this.send('M3 S0 (activate servo)')
+  }
+
+  public wait(ms: number) {
+    this.send(`G4 P${ms} (wait ${ms}ms)`)
   }
 
   public unit(name: Unit) {
@@ -78,6 +82,7 @@ export default class GCode extends Driver {
   }
   public rapid(params: RapidParams, comment?: string) {
     this.send('G0', params, comment)
+    if (params.f) this.wait(Math.ceil(params.f / 1000)) // this is to compensate for Vigo dogness
   }
   public linear(params: LinearParams, comment?: string) {
     this.send('G1', params, comment)

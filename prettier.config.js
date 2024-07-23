@@ -3,5 +3,5 @@ const config = require('@bigfishtv/prettier-config')
 
 module.exports = {
   ...config,
-  printWidth: 80,
+  printWidth: 100,
 }

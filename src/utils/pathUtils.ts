@@ -7,7 +7,14 @@ import { pathToCanvasCommands } from './pathToCanvasCommands'
 export const EPSILON = 0.000001
 
 // Convert start+end angle arc to start/end points.
-export const arcToPoints = (x: number, y: number, aStart: number, aEnd: number, radiusX: number, radiusY?: number) => {
+export const arcToPoints = (
+  x: number,
+  y: number,
+  aStart: number,
+  aEnd: number,
+  radiusX: number,
+  radiusY?: number
+) => {
   if (radiusY === undefined) radiusY = radiusX
   aStart = aStart % (Math.PI * 2)
   aEnd = aEnd % (Math.PI * 2)

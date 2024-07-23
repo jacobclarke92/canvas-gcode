@@ -6,7 +6,11 @@ import { Paths } from '../packages/Clipper/Path'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 // import type { Line } from '../types'
-import { getClosestButNotSamePoint, getLineIntersectionPoints, lineIntersectsWithAny } from '../utils/geomUtils'
+import {
+  getClosestButNotSamePoint,
+  getLineIntersectionPoints,
+  lineIntersectsWithAny,
+} from '../utils/geomUtils'
 import { randFloatRange, randIntRange, wrap } from '../utils/numberUtils'
 import type { SimplifiedSvgPathSegment } from '../utils/pathToCanvasCommands'
 import { pathToCanvasCommands } from '../utils/pathToCanvasCommands'
@@ -52,7 +56,13 @@ export default class Yes extends Sketch {
     this.ctx.ctx.fillStyle = '#111111'
     this.ctx.ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight)
 
-    this.vs.speedUp = new Range({ initialValue: 1, min: 1, max: 100, step: 1, disableRandomize: true })
+    this.vs.speedUp = new Range({
+      initialValue: 1,
+      min: 1,
+      max: 100,
+      step: 1,
+      disableRandomize: true,
+    })
     this.vs.stopAfterLinesDrawn = new Range({
       initialValue: 1000,
       min: 1,
@@ -61,13 +71,31 @@ export default class Yes extends Sketch {
       disableRandomize: true,
     })
     this.vs.seed = new Range({ initialValue: 9275, min: 1000, max: 5000, step: 1 })
-    this.vs.pointGenAmount = new Range({ initialValue: 5000, min: 0, max: 10000, step: 1, disableRandomize: true })
+    this.vs.pointGenAmount = new Range({
+      initialValue: 5000,
+      min: 0,
+      max: 10000,
+      step: 1,
+      disableRandomize: true,
+    })
     this.vs.minPointSpacing = new Range({ initialValue: 2, min: 0, max: 15, step: 0.25 })
     this.vs.maxLineJoinDist = new Range({ initialValue: 12, min: 0.5, max: 150, step: 0.5 })
     this.vs.minLineJoinDist = new Range({ initialValue: 0, min: 0, max: 5, step: 0.25 })
     this.vs.allowLineCrossing = new BooleanRange({ initialValue: false })
-    this.vs.maxLineCrossings = new Range({ requires: 'allowLineCrossing', initialValue: 0, min: 0, max: 10, step: 1 })
-    this.vs.letterStrokeWidth = new Range({ initialValue: 0, min: 0, max: 4.5, step: 0.001, disableRandomize: true })
+    this.vs.maxLineCrossings = new Range({
+      requires: 'allowLineCrossing',
+      initialValue: 0,
+      min: 0,
+      max: 10,
+      step: 1,
+    })
+    this.vs.letterStrokeWidth = new Range({
+      initialValue: 0,
+      min: 0,
+      max: 4.5,
+      step: 0.001,
+      disableRandomize: true,
+    })
     this.vs.lineWidth = new Range({ initialValue: 0.25, min: 0.001, max: 2, step: 0.001 })
     this.vs.allowInnerCircles = new BooleanRange({ initialValue: true, disableRandomize: true })
     this.vs.innerCircleSize = new Range({
@@ -99,7 +127,13 @@ export default class Yes extends Sketch {
       max: 1,
       step: 0.001,
     })
-    this.vs.curveQuality = new Range({ initialValue: 20, min: 3, max: 120, step: 1, disableRandomize: true })
+    this.vs.curveQuality = new Range({
+      initialValue: 20,
+      min: 3,
+      max: 120,
+      step: 1,
+      disableRandomize: true,
+    })
 
     this.pathsCommands[0] = pathToCanvasCommands('m59.4 1.5-19 55V81H18.7V56.4L0 1.5h24l5.8 25.9h1l5.6-25.9h23Z', true) // prettier-ignore
     this.pathsCommands[1] = pathToCanvasCommands('M108 81H65V1.5h44.3L108 21.1H87V33h18.3v16.9H86.9v13.2h22.4L108 81Z', true) // prettier-ignore
@@ -118,9 +152,15 @@ export default class Yes extends Sketch {
     if (this.vs.minLineJoinDist.value > this.vs.maxLineJoinDist.value)
       this.vs.minLineJoinDist.setValue(this.vs.maxLineJoinDist.value, true)
 
-    if (this.vs.allowInnerCircles.value && this.vs.innerCircleSize.value > this.vs.minPointSpacing.value)
+    if (
+      this.vs.allowInnerCircles.value &&
+      this.vs.innerCircleSize.value > this.vs.minPointSpacing.value
+    )
       this.vs.minPointSpacing.setValue(this.vs.innerCircleSize.value, true)
-    if (this.vs.allowOuterCircles.value && this.vs.outerCircleSize.value > this.vs.minPointSpacing.value)
+    if (
+      this.vs.allowOuterCircles.value &&
+      this.vs.outerCircleSize.value > this.vs.minPointSpacing.value
+    )
       this.vs.minPointSpacing.setValue(this.vs.outerCircleSize.value, true)
 
     this.increment = 0
@@ -172,7 +212,8 @@ export default class Yes extends Sketch {
             anyInside = true
             if (
               this.insidePts[o].length > 1 &&
-              getClosestButNotSamePoint(randPt, ...this.insidePts[o]).distanceTo(randPt) < this.vs.minPointSpacing.value
+              getClosestButNotSamePoint(randPt, ...this.insidePts[o]).distanceTo(randPt) <
+                this.vs.minPointSpacing.value
             ) {
               continue
             }
@@ -191,7 +232,8 @@ export default class Yes extends Sketch {
           ) {
             if (
               !this.outsidePts.length ||
-              getClosestButNotSamePoint(randPt, ...this.outsidePts).distanceTo(randPt) > this.vs.minPointSpacing.value
+              getClosestButNotSamePoint(randPt, ...this.outsidePts).distanceTo(randPt) >
+                this.vs.minPointSpacing.value
             ) {
               this.ctx.ctx.lineWidth = this.vs.outerCircleStrokeWidth.value
 
@@ -214,7 +256,10 @@ export default class Yes extends Sketch {
           if (lineIntersectsWithAny([randPt1, randPt2], ...this.outlinesEdges[o])) continue
 
           if (this.vs.allowLineCrossing.value) {
-            const intersectionPoints = getLineIntersectionPoints([randPt1, randPt2], ...this.insideLines[o])
+            const intersectionPoints = getLineIntersectionPoints(
+              [randPt1, randPt2],
+              ...this.insideLines[o]
+            )
             if (intersectionPoints.length > this.vs.maxLineCrossings.value) continue
           } else {
             if (lineIntersectsWithAny([randPt1, randPt2], ...this.insideLines[o])) continue

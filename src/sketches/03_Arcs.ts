@@ -25,14 +25,17 @@ export default class Arcs extends Sketch {
       },
       radius: (i) =>
         new Point(
-          this.vs.radiusMin.value + Math.cos(i * this.vs.radiusThetaMulti.value) * this.vs.radiusMax.value,
-          this.vs.radiusMin.value + Math.sin(i * this.vs.radiusThetaMulti.value) * this.vs.radiusMax.value
+          this.vs.radiusMin.value +
+            Math.cos(i * this.vs.radiusThetaMulti.value) * this.vs.radiusMax.value,
+          this.vs.radiusMin.value +
+            Math.sin(i * this.vs.radiusThetaMulti.value) * this.vs.radiusMax.value
         ),
     })
   }
 
   initDraw(): void {
-    if (this.vs.radiusMin.value > this.vs.radiusMax.value) this.vs.radiusMax.setValue(this.vs.radiusMin.value, true)
+    if (this.vs.radiusMin.value > this.vs.radiusMax.value)
+      this.vs.radiusMax.setValue(this.vs.radiusMin.value, true)
 
     console.log({
       precision: this.vs.precision.value,

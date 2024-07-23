@@ -8,7 +8,13 @@ export default class MondayMaze extends Sketch {
   static enableCutouts = false
 
   init() {
-    this.vs.speedUp = new Range({ initialValue: 1, min: 1, max: 100, step: 1, disableRandomize: true })
+    this.vs.speedUp = new Range({
+      initialValue: 1,
+      min: 1,
+      max: 100,
+      step: 1,
+      disableRandomize: true,
+    })
     this.vs.seed = new Range({ initialValue: 2222, min: 1000, max: 5000, step: 1 })
     this.vs.gridSize = new Range({ initialValue: 2, min: 1, max: 8, step: 0.25 })
     this.vs.radialDivs = new Range({ initialValue: 2, min: 1, max: 4, step: 1 })

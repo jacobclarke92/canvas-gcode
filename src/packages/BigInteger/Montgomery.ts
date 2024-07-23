@@ -42,7 +42,8 @@ export class Montgomery {
     for (let i = 0; i < this.m.t; ++i) {
       // faster way of calculating u0 = x[i]*mp mod DV
       let j = x[i] & 0x7fff
-      const u0 = (j * this.mpl + (((j * this.mph + (x[i] >> 15) * this.mpl) & this.um) << 15)) & x.DM
+      const u0 =
+        (j * this.mpl + (((j * this.mph + (x[i] >> 15) * this.mpl) & this.um) << 15)) & x.DM
       // use am to combine the multiply-shift-add into one call
       j = i + this.m.t
       x[j] += this.m.am(0, u0, x, i, 0, this.m.t)

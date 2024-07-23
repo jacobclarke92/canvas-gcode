@@ -1,7 +1,15 @@
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { perlin2 } from '../utils/noise'
-import { degToRad, normalizeRadian, randFloat, randFloatRange, randInt, randIntRange, wrap } from '../utils/numberUtils'
+import {
+  degToRad,
+  normalizeRadian,
+  randFloat,
+  randFloatRange,
+  randInt,
+  randIntRange,
+  wrap,
+} from '../utils/numberUtils'
 import { random, seedRandom } from '../utils/random'
 import Range from './tools/Range'
 

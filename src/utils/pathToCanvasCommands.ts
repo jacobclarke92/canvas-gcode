@@ -27,7 +27,10 @@ const commandsMap = {
 type Command = keyof typeof commandsMap
 
 export type SvgPathSegment = { type: Command; values: number[] }
-export type SimplifiedSvgPathSegment = { type: Extract<Command, 'M' | 'L' | 'C' | 'Z'>; values: number[] }
+export type SimplifiedSvgPathSegment = {
+  type: Extract<Command, 'M' | 'L' | 'C' | 'Z'>
+  values: number[]
+}
 type Vec2 = [x: number, y: number]
 
 type Curve = [r1: number, r1: number, r2: number, r2: number, r3: number, r3: number]
@@ -53,7 +56,10 @@ export function pathToCanvasCommands(string: string, normalize = false) {
       if (prevCommand === null) return null
 
       // Check for remaining coordinates in the current command.
-      if ((char === '+' || char === '-' || char === '.' || (char >= '0' && char <= '9')) && prevCommand !== 'Z') {
+      if (
+        (char === '+' || char === '-' || char === '.' || (char >= '0' && char <= '9')) &&
+        prevCommand !== 'Z'
+      ) {
         if (prevCommand === 'M') command = 'L'
         else if (prevCommand === 'm') command = 'l'
         else {
@@ -81,7 +87,14 @@ export function pathToCanvasCommands(string: string, normalize = false) {
     } else if (cmd === 'S' || cmd === 'Q') {
       values = [parseNumber(), parseNumber(), parseNumber(), parseNumber()]
     } else if (cmd === 'C') {
-      values = [parseNumber(), parseNumber(), parseNumber(), parseNumber(), parseNumber(), parseNumber()]
+      values = [
+        parseNumber(),
+        parseNumber(),
+        parseNumber(),
+        parseNumber(),
+        parseNumber(),
+        parseNumber(),
+      ]
     } else if (cmd === 'A') {
       values = [
         parseNumber(),
@@ -125,7 +138,10 @@ export function pathToCanvasCommands(string: string, normalize = false) {
 
   function isCurrentSpace() {
     const char = string[currentIndex]
-    return char <= ' ' && (char === ' ' || char === '\n' || char === '\t' || char === '\r' || char === '\f')
+    return (
+      char <= ' ' &&
+      (char === ' ' || char === '\n' || char === '\t' || char === '\r' || char === '\f')
+    )
   }
 
   function skipOptionalSpaces() {
@@ -208,7 +224,11 @@ export function pathToCanvasCommands(string: string, normalize = false) {
         return null
       }
 
-      while (currentIndex < endIndex && string[currentIndex] >= '0' && string[currentIndex] <= '9') {
+      while (
+        currentIndex < endIndex &&
+        string[currentIndex] >= '0' &&
+        string[currentIndex] <= '9'
+      ) {
         frac *= 10
         // @ts-expect-error js quirk
         decimal += (string.charAt(currentIndex) - '0') / frac
@@ -239,7 +259,11 @@ export function pathToCanvasCommands(string: string, normalize = false) {
         return null
       }
 
-      while (currentIndex < endIndex && string[currentIndex] >= '0' && string[currentIndex] <= '9') {
+      while (
+        currentIndex < endIndex &&
+        string[currentIndex] >= '0' &&
+        string[currentIndex] <= '9'
+      ) {
         exponent *= 10
         // @ts-expect-error js quirk
         exponent += string[currentIndex] - '0'
@@ -685,7 +709,17 @@ export const reduce = (pathData: SvgPathSegment[]): SimplifiedSvgPathSegment[] =
           currentY = y
         } else {
           if (currentX !== x || currentY !== y) {
-            const curves = arcToCubicCurves(currentX, currentY, x, y, r1, r2, angle, largeArcFlag, sweepFlag)
+            const curves = arcToCubicCurves(
+              currentX,
+              currentY,
+              x,
+              y,
+              r1,
+              r2,
+              angle,
+              largeArcFlag,
+              sweepFlag
+            )
             for (const curve of curves) reducedPathData.push({ type: 'C', values: curve })
 
             currentX = x
@@ -813,7 +847,12 @@ function arcToCubicCurves(
 
     x2 = cx + r1 * Math.cos(f2)
     y2 = cy + r2 * Math.sin(f2)
-    params = arcToCubicCurves(x2, y2, x2old, y2old, r1, r2, angle, 0, sweepFlag, [f2, f2old, cx, cy])
+    params = arcToCubicCurves(x2, y2, x2old, y2old, r1, r2, angle, 0, sweepFlag, [
+      f2,
+      f2old,
+      cx,
+      cy,
+    ])
   }
 
   df = f2 - f1

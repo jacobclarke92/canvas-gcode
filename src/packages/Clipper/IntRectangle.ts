@@ -3,7 +3,9 @@ export class IntRectangle {
   public top: number
   public right: number
   public bottom: number
-  constructor(...args: [] | [ir: IntRectangle] | [left: number, top: number, right: number, bottom: number]) {
+  constructor(
+    ...args: [] | [ir: IntRectangle] | [left: number, top: number, right: number, bottom: number]
+  ) {
     if (args.length === 4) {
       this.left = args[0]
       this.top = args[1]

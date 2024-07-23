@@ -4,6 +4,7 @@ import type { Line } from '../types'
 import { getLineIntersectionPoints } from '../utils/geomUtils'
 import { degToRad, randFloat, randFloatRange } from '../utils/numberUtils'
 import { lineToPoints, sameFloat } from '../utils/pathUtils'
+import { initPen, penUp, plotBounds } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
 import Range from './tools/Range'
 
@@ -86,44 +87,25 @@ export default class Perpendicularity extends Sketch {
       angle += Math.PI
     }
 
-    const testLine: Line = [
-      startPoint,
-      startPoint.clone().moveAlongAngle(angle, 1000),
-    ]
+    const testLine: Line = [startPoint, startPoint.clone().moveAlongAngle(angle, 1000)]
 
-    let intersectionPointAndLines = getLineIntersectionPoints(
-      testLine,
-      ...this.drawnLines
-    )
-      .map(
-        ([pt, line]) =>
-          [pt, line, startPoint.distanceTo(pt)] as [Point, Line, number]
-      )
+    let intersectionPointAndLines = getLineIntersectionPoints(testLine, ...this.drawnLines)
+      .map(([pt, line]) => [pt, line, startPoint.distanceTo(pt)] as [Point, Line, number])
       .filter(([, , dist]) => dist > 0.001)
       .sort(([, , dist1], [, , dist2]) => dist1 - dist2)
 
     if (!intersectionPointAndLines.length) {
       testLine[1] = testLine[0].clone().moveAlongAngle(angle + Math.PI, 1000)
-      intersectionPointAndLines = getLineIntersectionPoints(
-        testLine,
-        ...this.drawnLines
-      )
-        .map(
-          ([pt, line]) =>
-            [pt, line, startPoint.distanceTo(pt)] as [Point, Line, number]
-        )
+      intersectionPointAndLines = getLineIntersectionPoints(testLine, ...this.drawnLines)
+        .map(([pt, line]) => [pt, line, startPoint.distanceTo(pt)] as [Point, Line, number])
         .filter(([, , dist]) => dist > 0.001)
         .sort(([, , dist1], [, , dist2]) => dist1 - dist2)
     }
 
     if (intersectionPointAndLines.length > 0) {
-      const [closestIntersectionPoint, closestIntersectionLine] =
-        intersectionPointAndLines[0]
+      const [closestIntersectionPoint, closestIntersectionLine] = intersectionPointAndLines[0]
       testLine[1] = closestIntersectionPoint
-      this.nextSpawnPoints.push([
-        closestIntersectionPoint,
-        closestIntersectionLine,
-      ])
+      this.nextSpawnPoints.push([closestIntersectionPoint, closestIntersectionLine])
     }
 
     this.drawnLines.push(testLine)
@@ -132,6 +114,9 @@ export default class Perpendicularity extends Sketch {
 
   initDraw(): void {
     console.log('init draw called')
+    initPen(this)
+    plotBounds(this)
+
     this.increment = 0
     this.segmentAngles = []
     this.segmentsLines = []
@@ -145,9 +130,7 @@ export default class Perpendicularity extends Sketch {
     let angle = 0
     for (let a = 0; a < this.vs.segments.value; a++) {
       const angleWonkAmount = randFloatRange(this.vs.segmentAngleWonk.value)
-      angle +=
-        segAngle +
-        randFloatRange(-segAngle * angleWonkAmount, segAngle * angleWonkAmount)
+      angle += segAngle + randFloatRange(-segAngle * angleWonkAmount, segAngle * angleWonkAmount)
       this.segmentAngles.push(angle)
       const segEndPt = new Point(
         this.cx + Math.cos(angle) * this.vs.maxRadius.value,
@@ -174,23 +157,20 @@ export default class Perpendicularity extends Sketch {
       const line = this.segmentsLines[s]
       const startPoints = lineToPoints(...line, this.vs.radialSpawnPoints.value)
       for (let r = 0; r < this.vs.radialSpawnPoints.value; r++) {
-        this.drawLineFromPointAtAngle(
-          startPoints[r],
-          line,
-          this.vs.offsetPerpAngle.value
-        )
+        this.drawLineFromPointAtAngle(startPoints[r], line, this.vs.offsetPerpAngle.value)
       }
     }
   }
 
   draw(increment: number): void {
-    if (this.increment > this.vs.stopAfter.value) return
+    if (this.increment > this.vs.stopAfter.value) {
+      penUp(this)
+      return
+    }
     const spawnPoints = [...this.nextSpawnPoints]
     this.nextSpawnPoints = []
     for (const [pt, line] of spawnPoints) {
-      const angle =
-        this.vs.offsetPerpAngle.value +
-        randFloat(this.vs.offsetPerpAngleWonk.value)
+      const angle = this.vs.offsetPerpAngle.value + randFloat(this.vs.offsetPerpAngleWonk.value)
       this.drawLineFromPointAtAngle(pt, line, angle)
     }
     this.increment++

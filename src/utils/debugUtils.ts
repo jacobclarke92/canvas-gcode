@@ -15,10 +15,7 @@ export const debugDot: OverloadedFunctionWithOptionals<
     args.length === 2 || (args.length === 3 && typeof args[2] !== 'number')
       ? (args[1] as Point).y
       : (args[2] as number)
-  const color =
-    args.length === 3 && typeof args[2] === 'string'
-      ? args[2]
-      : args[3] || '#ff0000'
+  const color = args.length === 3 && typeof args[2] === 'string' ? args[2] : args[3] || '#ff0000'
 
   ctx.beginPath()
   ctx.fillStyle = color

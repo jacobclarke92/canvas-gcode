@@ -2,6 +2,7 @@ import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { debugDot } from '../utils/debugUtils'
 import { perlin2, seedNoise } from '../utils/noise'
+import { initPen, penUp, plotBounds } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
 import Range, { BooleanRange } from './tools/Range'
 
@@ -32,11 +33,11 @@ export default class AgeRings extends Sketch {
     //   this.initDraw()
     // }, 5000)
 
-    setInterval(() => {
-      this.reset()
-      this.vs.offsetX.setValue(this.vs.offsetX.value + 1)
-      this.initDraw()
-    }, 1000 / 30)
+    // setInterval(() => {
+    //   this.reset()
+    //   this.vs.offsetX.setValue(this.vs.offsetX.value + 1)
+    //   this.initDraw()
+    // }, 1000 / 30)
   }
 
   private drawCount = 0
@@ -46,6 +47,8 @@ export default class AgeRings extends Sketch {
   initDraw(): void {
     seedRandom(this.vs.seed.value)
     seedNoise(this.vs.seed.value)
+    initPen(this)
+    plotBounds(this)
 
     const outerGap = this.vs.outerGap.value
     this.effectiveWidth = this.cw - outerGap * 2
@@ -66,7 +69,10 @@ export default class AgeRings extends Sketch {
       offsetY,
     } = this.vars
 
-    if (this.drawCount >= rings) return
+    if (this.drawCount >= rings) {
+      penUp(this)
+      return
+    }
 
     const ringSpacing = this.effectiveHeight / 2 / rings
 
@@ -86,16 +92,12 @@ export default class AgeRings extends Sketch {
       )
 
       const angleMod =
-        perlin2(
-          (basePt.x + offsetX) / perlinDiv,
-          (basePt.y + offsetY) / perlinDiv
-        ) * noiseAngleInfluence
+        perlin2((basePt.x + offsetX) / perlinDiv, (basePt.y + offsetY) / perlinDiv) *
+        noiseAngleInfluence
 
       const radiusMod =
-        perlin2(
-          (basePt.x + offsetX) / perlinDiv,
-          (basePt.y + offsetY) / perlinDiv
-        ) * noiseRadiusInfluence
+        perlin2((basePt.x + offsetX) / perlinDiv, (basePt.y + offsetY) / perlinDiv) *
+        noiseRadiusInfluence
 
       const radius = Math.max(0, baseRadius + radiusMod)
 
