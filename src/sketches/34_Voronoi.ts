@@ -7,29 +7,67 @@ import { initPen, plotBounds } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
 import type { BoundingBox, Cell, Diagram, Edge, HalfEdge, Site, Vertex } from '../Voronoi'
 import { Voronoi } from '../Voronoi'
+import { BooleanRange } from './tools/Range'
 
 export default class VoronoiBoi extends Sketch {
   // static generateGCode = false
 
   init() {
     this.addVar('seed', {
-      initialValue: 3975,
+      initialValue: 1234,
       min: 1000,
       max: 5000,
       step: 1,
     })
-    this.addVar('gutter', {
+    this.addVar('gutterX', {
       initialValue: 0,
       min: 0,
-      max: 120,
+      max: this.cw / 2,
       step: 1,
+    })
+    this.addVar('gutterY', {
+      initialValue: 0,
+      min: 0,
+      max: this.ch / 2,
+      step: 1,
+    })
+    this.vs.linkGutter = new BooleanRange({
       disableRandomize: true,
+      initialValue: false,
     })
     this.addVar('points', {
       initialValue: 150,
       min: 0,
       max: 5000,
       step: 1,
+    })
+    this.addVar('loosenIterations', {
+      initialValue: 2,
+      min: 0,
+      max: 250,
+      step: 1,
+    })
+    this.addVar('loosenDistCutoff', {
+      initialValue: 2,
+      min: 0,
+      max: 12,
+      step: 0.1,
+    })
+    this.addVar('loosenStrength', {
+      initialValue: 2,
+      min: 1,
+      max: 10,
+      step: 0.001,
+    })
+    this.addVar('apoptosisMitosis', {
+      initialValue: 0.1,
+      min: 0.0001,
+      max: 50,
+      step: 0.0001,
+    })
+    this.vs.showDebugDots = new BooleanRange({
+      disableRandomize: true,
+      initialValue: false,
     })
   }
 
@@ -48,73 +86,76 @@ export default class VoronoiBoi extends Sketch {
     this.diagram = null
     this.sites = []
 
-    const { points, gutter } = this.vars
+    const { points, gutterX, gutterY: _gutterY, loosenIterations } = this.vars
+    const linkGutter = !!this.vs.linkGutter.value
+    const gutterY = linkGutter ? gutterX : _gutterY
+
     for (let i = 0; i < points; i++) {
       this.sites.push({
-        x: gutter + randFloatRange(this.cw - gutter * 2),
-        y: gutter + randFloatRange(this.ch - gutter * 2),
+        x: gutterX + randFloatRange(this.cw - gutterX * 2),
+        y: gutterY + randFloatRange(this.ch - gutterY * 2),
       })
     }
 
     this.compute(this.sites)
 
-    // setInterval(() => this.relaxSites(), 100)
-  }
-
-  /*
-relaxSites() {
-    if (!this.diagram) return
-    var cells = this.diagram.cells,
-        iCell = cells.length,
-        cell,
-        site, sites = [],
-        again = false,
-        rn, dist;
-    var p = 1 / iCell * 0.1;
-    while (iCell--) {
-        cell = cells[iCell];
-        rn = Math.random();
-        // probability of apoptosis
-        if (rn < p) {
-            continue;
-            }
-        site = this.cellCentroid(cell);
-        dist = this.distance(site, cell.site);
-        again = again || dist > 1;
-        // don't relax too fast
-        if (dist > 2) {
-            site.x = (site.x+cell.site.x)/2;
-            site.y = (site.y+cell.site.y)/2;
-            }
-        // probability of mytosis
-        if (rn > (1-p)) {
-            dist /= 2;
-            sites.push({
-                x: site.x+(site.x-cell.site.x)/dist,
-                y: site.y+(site.y-cell.site.y)/dist,
-                });
-            }
-        sites.push(site);
-        }
-    this.compute(sites);
-    if (again) {
-        var me = this;
-        this.timeout = setTimeout(function(){
-            me.relaxSites();
-            }, this.timeoutDelay);
+    for (let i = 0; i < loosenIterations; i++) {
+      this.relaxSites()
     }
-}
-*/
 
-  /*
-  distance(a, b) {
-    var dx = a.x-b.x,
-        dy = a.y-b.y;
-    return Math.sqrt(dx*dx+dy*dy);
+    this.render()
   }
-  */
 
-  /*
+  compute(sites: Site[]) {
+    this.sites = sites
+    this.voronoi.recycle(this.diagram)
+    this.diagram = this.voronoi.compute(sites, this.boundingBox)
+  }
+
+  relaxSites() {
+    if (!this.diagram) return
+
+    const { apoptosisMitosis, loosenStrength, loosenDistCutoff } = this.vars
+
+    const cells = this.diagram.cells
+    const sites: Site[] = []
+    let iCell = cells.length,
+      site: Site,
+      cell: Cell,
+      again = false,
+      dist: number
+
+    const p = (1 / cells.length) * apoptosisMitosis
+    while (iCell--) {
+      const rand = randFloatRange(1)
+      cell = cells[iCell]
+
+      // probability of apoptosis
+      if (rand < p) continue
+
+      site = this.cellCentroid(cell)
+      dist = Point.distance(site as Point, cell.site as Point)
+      again = again || dist > 1
+
+      // don't relax too fast
+      if (dist > loosenDistCutoff) {
+        site.x = site.x + (cell.site.x - site.x) / loosenStrength
+        site.y = site.y + (cell.site.y - site.y) / loosenStrength
+      }
+
+      // probability of mitosis
+      if (rand > 1 - p) {
+        dist /= 2
+        sites.push({
+          x: site.x + (site.x - cell.site.x) / dist,
+          y: site.y + (site.y - cell.site.y) / dist,
+        })
+      }
+      sites.push(site)
+    }
+    this.compute(sites)
+  }
+
   cellArea(cell: Cell) {
     const halfEdges = cell.halfEdges
     let area = 0,
@@ -133,9 +174,7 @@ relaxSites() {
     area /= 2
     return area
   }
-*/
 
-  /*
   cellCentroid(cell: Cell) {
     const halfEdges = cell.halfEdges
     let x = 0,
@@ -157,15 +196,6 @@ relaxSites() {
     v = this.cellArea(cell) * 6
     return { x: x / v, y: y / v }
   }
-*/
-
-  compute(sites: Site[]) {
-    this.sites = sites
-    this.voronoi.recycle(this.diagram)
-    this.diagram = this.voronoi.compute(sites, this.boundingBox)
-
-    this.render()
-  }
 
   render(): void {
     if (!this.diagram) return
@@ -185,7 +215,8 @@ relaxSites() {
     this.ctx.stroke()
     this.ctx.closePath()
 
-    // this.sites.forEach((site) => debugDot(this.ctx, new Point(site.x, site.y)))
+    if (this.vs.showDebugDots.value)
+      this.sites.forEach((site) => debugDot(this.ctx, new Point(site.x, site.y)))
   }
 
   draw(increment: number): void {
