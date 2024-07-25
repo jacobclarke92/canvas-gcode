@@ -102,11 +102,12 @@ export default class VoronoiBoi extends Sketch {
 
     for (let i = 0; i < loosenIterations; i++) {
       this.relaxSites()
+      // this.render()
     }
 
     this.render()
 
-    // penUp(this)
+    penUp(this)
   }
 
   compute(sites: Site[]) {
