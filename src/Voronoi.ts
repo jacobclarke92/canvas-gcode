@@ -322,7 +322,7 @@ export class Cell {
     // to be fancy: dangling edges are a typically a minority.
     while (iHalfEdge--) {
       edge = halfEdges[iHalfEdge].edge
-      if (!edge.vb || !edge.va) halfEdges.splice(iHalfEdge, 1)
+      if (!edge.vertex2 || !edge.vertex1) halfEdges.splice(iHalfEdge, 1)
     }
 
     // rhill 2011-05-26: I tried to use a binary search at insertion
@@ -435,13 +435,13 @@ export interface Site {
 export class Edge {
   lSite: Site
   rSite: Site
-  va: Vertex
-  vb: Vertex
+  vertex1: Vertex
+  vertex2: Vertex
 
   constructor(lSite: Site, rSite: Site) {
     this.lSite = lSite
     this.rSite = rSite
-    this.va = this.vb = null
+    this.vertex1 = this.vertex2 = null
   }
 }
 
@@ -463,8 +463,8 @@ export class HalfEdge {
     if (rSite) {
       this.angle = Math.atan2(rSite.y - lSite.y, rSite.x - lSite.x)
     } else {
-      const va = edge.va
-      const vb = edge.vb
+      const va = edge.vertex1
+      const vb = edge.vertex2
       // rhill 2011-05-31: used to call getStartPoint()/getEndPoint(),
       // but for performance purpose, these are expanded in place here.
       this.angle =
@@ -475,11 +475,11 @@ export class HalfEdge {
   }
 
   getStartPoint() {
-    return this.edge.lSite === this.site ? this.edge.va : this.edge.vb
+    return this.edge.lSite === this.site ? this.edge.vertex1 : this.edge.vertex2
   }
 
   getEndPoint() {
-    return this.edge.lSite === this.site ? this.edge.vb : this.edge.va
+    return this.edge.lSite === this.site ? this.edge.vertex2 : this.edge.vertex1
   }
 }
 
@@ -623,7 +623,7 @@ export class Voronoi {
     } else {
       edge.lSite = lSite
       edge.rSite = rSite
-      edge.va = edge.vb = null
+      edge.vertex1 = edge.vertex2 = null
     }
 
     this.edges.push(edge)
@@ -642,21 +642,21 @@ export class Voronoi {
       edge.lSite = lSite
       edge.rSite = null
     }
-    edge.va = va
-    edge.vb = vb
+    edge.vertex1 = va
+    edge.vertex2 = vb
     this.edges.push(edge)
     return edge
   }
 
   setEdgeStartPoint(edge: Edge, lSite: Site, rSite: Site, vertex: Vertex) {
-    if (!edge.va && !edge.vb) {
-      edge.va = vertex
+    if (!edge.vertex1 && !edge.vertex2) {
+      edge.vertex1 = vertex
       edge.lSite = lSite
       edge.rSite = rSite
     } else if (edge.lSite === rSite) {
-      edge.vb = vertex
+      edge.vertex2 = vertex
     } else {
-      edge.va = vertex
+      edge.vertex1 = vertex
     }
   }
 
@@ -1123,13 +1123,13 @@ export class Voronoi {
    */
   connectEdge(edge: Edge, boundingBox: BoundingBox) {
     // skip if end point already connected
-    let vb = edge.vb
+    let vb = edge.vertex2
     if (!!vb) {
       return true
     }
 
     // make local copy for performance purpose
-    let va = edge.va,
+    let va = edge.vertex1,
       fm: number,
       fb: number
 
@@ -1229,8 +1229,8 @@ export class Voronoi {
         vb = this.createVertex(xl, fm * xl + fb)
       }
     }
-    edge.va = va
-    edge.vb = vb
+    edge.vertex1 = va
+    edge.vertex2 = vb
 
     return true
   }
@@ -1246,10 +1246,10 @@ export class Voronoi {
     let t0 = 0,
       t1 = 1
 
-    const ax = edge.va.x,
-      ay = edge.va.y,
-      bx = edge.vb.x,
-      by = edge.vb.y,
+    const ax = edge.vertex1.x,
+      ay = edge.vertex1.y,
+      bx = edge.vertex2.x,
+      by = edge.vertex2.y,
       dx = bx - ax,
       dy = by - ay
 
@@ -1308,13 +1308,13 @@ export class Voronoi {
     // rhill 2011-06-03: we need to create a new vertex rather
     // than modifying the existing one, since the existing
     // one is likely shared with at least another edge
-    if (t0 > 0) edge.va = this.createVertex(ax + t0 * dx, ay + t0 * dy)
+    if (t0 > 0) edge.vertex1 = this.createVertex(ax + t0 * dx, ay + t0 * dy)
 
     // if t1 < 1, vb needs to change
     // rhill 2011-06-03: we need to create a new vertex rather
     // than modifying the existing one, since the existing
     // one is likely shared with at least another edge
-    if (t1 < 1) edge.vb = this.createVertex(ax + t1 * dx, ay + t1 * dy)
+    if (t1 < 1) edge.vertex2 = this.createVertex(ax + t1 * dx, ay + t1 * dy)
 
     // va and/or vb were clipped, thus we will need to close
     // cells which use this edge.
@@ -1343,9 +1343,10 @@ export class Voronoi {
       if (
         !this.connectEdge(edge, boundingBox) ||
         !this.clipEdge(edge, boundingBox) ||
-        (Math.abs(edge.va.x - edge.vb.x) < 1e-9 && Math.abs(edge.va.y - edge.vb.y) < 1e-9)
+        (Math.abs(edge.vertex1.x - edge.vertex2.x) < 1e-9 &&
+          Math.abs(edge.vertex1.y - edge.vertex2.y) < 1e-9)
       ) {
-        edge.va = edge.vb = null
+        edge.vertex1 = edge.vertex2 = null
         edges.splice(iEdge, 1)
       }
     }
