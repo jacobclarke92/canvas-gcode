@@ -106,7 +106,7 @@ export default class VoronoiBoi extends Sketch {
 
     this.render()
 
-    penUp(this)
+    // penUp(this)
   }
 
   compute(sites: Site[]) {
@@ -200,20 +200,63 @@ export default class VoronoiBoi extends Sketch {
     return { x: x / v, y: y / v }
   }
 
+  sortEdges(edges: Edge[]): Edge[] {
+    // Create a graph representation
+    const graph = new Map<Vertex, Set<Edge>>()
+
+    for (const edge of edges) {
+      if (!graph.has(edge.vertex1)) graph.set(edge.vertex1, new Set())
+      if (!graph.has(edge.vertex2)) graph.set(edge.vertex2, new Set())
+      graph.get(edge.vertex1)!.add(edge)
+      graph.get(edge.vertex2)!.add(edge)
+    }
+
+    const sortedEdges: Edge[] = []
+    const visited = new Set<Edge>()
+
+    function dfs(currentVertex: Vertex) {
+      const adjacentEdges = graph.get(currentVertex)!
+      for (const edge of adjacentEdges) {
+        if (!visited.has(edge)) {
+          visited.add(edge)
+          sortedEdges.push(edge)
+          const nextVertex = edge.vertex1 === currentVertex ? edge.vertex2 : edge.vertex1
+          dfs(nextVertex)
+        }
+      }
+    }
+
+    // Start DFS from the first vertex of the first edge
+    if (edges.length > 0) {
+      dfs(edges[0].vertex1)
+    }
+
+    // Handle any disconnected components
+    for (const edge of edges) {
+      if (!visited.has(edge)) {
+        visited.add(edge)
+        sortedEdges.push(edge)
+        dfs(edge.vertex1)
+        dfs(edge.vertex2)
+      }
+    }
+
+    return sortedEdges
+  }
+
+  iEdge = 0
+  edges: Edge[] = []
   render(): void {
     if (!this.diagram) return
 
-    this.ctx.beginPath()
-    const edges = this.diagram.edges
-    let iEdge = edges.length
+    this.edges = this.sortEdges(this.diagram.edges)
+    this.iEdge = this.edges.length
     let edge: Edge
-    let v: Vertex
-    while (iEdge--) {
-      edge = edges[iEdge]
-      v = edge.va
-      this.ctx.moveTo(v.x, v.y)
-      v = edge.vb
-      this.ctx.lineTo(v.x, v.y)
+    this.ctx.beginPath()
+    while (this.iEdge--) {
+      edge = this.edges[this.iEdge]
+      this.ctx.moveTo(edge.vertex1.x, edge.vertex1.y)
+      this.ctx.lineTo(edge.vertex2.x, edge.vertex2.y)
     }
     this.ctx.stroke()
     this.ctx.closePath()
@@ -222,7 +265,18 @@ export default class VoronoiBoi extends Sketch {
       this.sites.forEach((site) => debugDot(this.ctx, new Point(site.x, site.y)))
   }
 
-  draw(increment: number): void {
-    //
-  }
+  // draw(increment: number): void {
+  //   if (increment % 50 !== 0) return
+  //   //
+  //   this.iEdge--
+  //   if (this.iEdge < 0) return
+
+  //   const edge = this.edges[this.iEdge]
+  //   if (!edge) return
+  //   this.ctx.beginPath()
+  //   this.ctx.moveTo(edge.vertex1.x, edge.vertex1.y)
+  //   this.ctx.lineTo(edge.vertex2.x, edge.vertex2.y)
+  //   this.ctx.stroke()
+  //   this.ctx.closePath()
+  // }
 }
