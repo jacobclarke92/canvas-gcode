@@ -373,14 +373,14 @@ export class Cell {
       // since each end point matches a start point
     }
 
-    return <BoundingBox>{
+    return {
       left: xMin,
       top: yMin,
       width: xMax,
       height: yMax,
       // width: xmax-xmin,
       // height: ymax-ymin
-    }
+    } satisfies BoundingBox
   }
 
   /**

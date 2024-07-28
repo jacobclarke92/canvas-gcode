@@ -51,6 +51,17 @@ export type CanvasStackItem = {
 }
 type CanvasStackItemKey = keyof CanvasStackItem
 
+interface OffsetOptions {
+  joinType: clipperLib.JoinType
+  endType: clipperLib.EndType
+  precision: number
+}
+const defaultOffsetOptions: OffsetOptions = {
+  joinType: clipperLib.JoinType.Miter,
+  endType: clipperLib.EndType.ClosedPolygon,
+  precision: 1000,
+}
+
 export type StrokeOptions = {
   align?: StrokeAlign
   depth?: number
@@ -908,9 +919,6 @@ export default class GCanvas {
     detailScale?: number
     pathDivisions?: number
   }) {
-    /**
-     * TODO: Abstract this into GCanvas
-     */
     if (!this.path) {
       console.warn('no paths drawn!')
       return
@@ -972,20 +980,9 @@ export default class GCanvas {
   public offsetPath(
     path: SubPath,
     offset: number,
-    {
-      joinType,
-      endType,
-      precision,
-    }: {
-      joinType?: clipperLib.JoinType
-      endType?: clipperLib.EndType
-      precision?: number
-    } = {
-      joinType: clipperLib.JoinType.Miter,
-      endType: clipperLib.EndType.ClosedPolygon,
-      precision: 1000,
-    }
+    { joinType, endType, precision }: OffsetOptions = defaultOffsetOptions
   ) {
+    console.log(path.getPoints())
     const pathPts = path.getPoints().map((pt) => pt.scale(precision))
     const offsetPaths = clipper.offsetToPaths({
       delta: offset * precision,
@@ -1001,6 +998,25 @@ export default class GCanvas {
       [...offsetPath, offsetPath[0]].map((pt) => new Point(pt.x / precision, pt.y / precision))
     )
     return paths
+  }
+
+  public strokeOffsetPath(
+    offset: number,
+    { joinType, endType, precision }: OffsetOptions = defaultOffsetOptions
+  ) {
+    const subPaths = this.path.subPaths
+    for (const subPath of subPaths) {
+      const offsetPaths = this.offsetPath(subPath, offset, { joinType, endType, precision })
+      for (const offsetPath of offsetPaths) {
+        this.beginPath()
+        this.moveTo(offsetPath[0].x, offsetPath[0].y)
+        for (let i = 1; i < offsetPath.length; i++) {
+          this.lineTo(offsetPath[i].x, offsetPath[i].y)
+        }
+        this.stroke()
+        this.closePath()
+      }
+    }
   }
 
   // public fillText(text: string, x: number, y: number, params: any) {
