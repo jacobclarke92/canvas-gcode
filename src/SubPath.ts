@@ -335,12 +335,24 @@ export default class SubPath {
     return result
   }
 
+  /**
+   * my drawing machine shits the bed after doing a couple of thousand lineTo's
+   * so have to break them up and start a new line at some point
+   */
+  private lineToCount = 0
+
   public moveTo(...args: MoveToAction['args']) {
+    this.lineToCount = 0
     this.addAction({ type: 'MOVE_TO', args })
   }
 
   public lineTo(...args: LineToAction['args']) {
+    this.lineToCount++
     this.addAction({ type: 'LINE_TO', args })
+    if (this.lineToCount > 8000) {
+      this.lineToCount = 0
+      this.moveTo(...args)
+    }
   }
 
   public quadraticCurveTo(...args: QuadraticCurveToAction['args']) {
