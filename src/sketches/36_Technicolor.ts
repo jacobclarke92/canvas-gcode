@@ -110,6 +110,12 @@ export default class Technicolor extends Sketch {
       max: 1,
       step: 0.0001,
     })
+    this.addVar('numPens', {
+      initialValue: 4,
+      min: 1,
+      max: this.colors.length + 1,
+      step: 1,
+    })
     this.addVar('simSpeed', {
       initialValue: 10,
       min: 0.1,
@@ -138,7 +144,20 @@ export default class Technicolor extends Sketch {
   panicCount = 0
   finalized = false
 
-  colors = ['#00ff00', '#ff00ff', '#00ffff', '#ff0000'] as const
+  colors = [
+    '#ffd100',
+    '#2cdd0d',
+    '#ff00ff',
+    '#7de2d1',
+    '#f695c5',
+    '#8601f6',
+    '#f68b08',
+    '#1985a1',
+    '#041fb9',
+    '#6e1ced',
+    '#710280',
+    '#a4161a',
+  ] as const
   colorShapes: Record<number, (Vector[] | { pos: Vector; radius: number })[]>
 
   initDraw(): void {
@@ -154,12 +173,6 @@ export default class Technicolor extends Sketch {
     initPen(this)
     plotBounds(this)
 
-    this.colorShapes = { 0: [], 1: [], 2: [], 3: [] }
-    this.engine = Engine.create({ enableSleeping: true, velocityIterations: 12 })
-    this.shapes = []
-    this.panicCount = 0
-    this.finalized = false
-
     const {
       objects,
       minSize,
@@ -172,7 +185,16 @@ export default class Technicolor extends Sketch {
       initialX,
       initialY,
       initialTorque,
+      numPens,
     } = this.vars
+
+    this.colorShapes = {}
+    for (let i = 0; i < numPens; i++) this.colorShapes[i] = []
+
+    this.engine = Engine.create({ enableSleeping: true, velocityIterations: 12 })
+    this.shapes = []
+    this.panicCount = 0
+    this.finalized = false
 
     const isCircle = !!this.vs.circleInstead.value
 
@@ -182,6 +204,7 @@ export default class Technicolor extends Sketch {
       const shapeProperties: IBodyDefinition = {
         restitution: bounciness,
         // friction: isCircle ? 0.9 : 0.1,
+        friction: 0.05,
         density: 0.0001,
         angle: initialAngle,
         // angularSpeed
@@ -199,29 +222,39 @@ export default class Technicolor extends Sketch {
       }
     }
 
+    const wallProperties: IBodyDefinition = {
+      isStatic: true,
+      restitution: 1,
+      friction: 0.0,
+    }
+
     const ground = Bodies.rectangle(
       this.cw / 2,
       this.ch - wallThickness / 2,
       this.cw,
       wallThickness,
-      { isStatic: true, restitution: 1, friction: 0.05 }
+      wallProperties
     )
-    const roof = Bodies.rectangle(this.cw / 2, wallThickness / 2, this.cw, wallThickness, {
-      isStatic: true,
-      restitution: 1,
-      friction: 0.05,
-    })
-    const wallLeft = Bodies.rectangle(wallThickness / 2, this.ch / 2, wallThickness, this.ch, {
-      isStatic: true,
-      restitution: 1,
-      friction: 0.05,
-    })
+    const roof = Bodies.rectangle(
+      this.cw / 2,
+      wallThickness / 2,
+      this.cw,
+      wallThickness,
+      wallProperties
+    )
+    const wallLeft = Bodies.rectangle(
+      wallThickness / 2,
+      this.ch / 2,
+      wallThickness,
+      this.ch,
+      wallProperties
+    )
     const wallRight = Bodies.rectangle(
       this.cw - wallThickness / 2,
       this.ch / 2,
       wallThickness,
       this.ch,
-      { isStatic: true, restitution: 1, friction: 0.05 }
+      wallProperties
     )
     Composite.add(this.engine.world, [ground, roof, wallLeft, wallRight, ...this.shapes])
 
@@ -250,7 +283,7 @@ export default class Technicolor extends Sketch {
 
   finalizeDraw(): void {
     if (this.finalized) return
-    for (let i = 0; i < this.colors.length; i++) {
+    for (let i = 0; i < this.vars.numPens; i++) {
       const color = this.colors[i]
       if (i > 0) stopAndWigglePen(this, `color ${color}`)
       this.ctx.strokeStyle = color
@@ -269,7 +302,7 @@ export default class Technicolor extends Sketch {
   }
 
   draw(increment: number): void {
-    const { startAfter } = this.vars
+    const { startAfter, numPens } = this.vars
 
     const bedtime = this.shapes.every((box) => box.isSleeping)
     if (bedtime || ++this.panicCount >= this.vars.stopAfter) {
@@ -286,7 +319,7 @@ export default class Technicolor extends Sketch {
     Engine.update(this.engine, this.vars.simSpeed)
 
     if (increment < startAfter) return
-    const colorIndex = increment % this.colors.length
+    const colorIndex = increment % numPens // this.colors.length
 
     for (const shape of this.shapes) {
       if (!!this.vs.circleInstead.value) {
