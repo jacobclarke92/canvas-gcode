@@ -24,11 +24,13 @@ export const stopAndWigglePen = (sketch: Sketch, message?: string) => {
   sketch.ctx.motion.retract()
   sketch.ctx.driver.wait(3000)
   const [x, y] = sketch.ctx.motion.position.toArray()
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 10; i++) {
     sketch.ctx.motion.linear({ x: x + 5, y })
     sketch.ctx.motion.linear({ x: x - 5, y })
   }
   sketch.ctx.driver.wait(8000)
+  sketch.ctx.motion.plunge(5000)
+  sketch.ctx.motion.retract(2000)
   sketch.ctx.motion.plunge(5000)
   sketch.ctx.motion.retract(2000)
   sketch.ctx.driver.comment('----------')
