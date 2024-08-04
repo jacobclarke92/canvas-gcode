@@ -36,4 +36,5 @@ export default [
   require('./34_Voronoi').default,
   require('./35_VoronoiCells').default,
   require('./36_Technicolor').default,
+  require('./37_Moire').default,
 ]
