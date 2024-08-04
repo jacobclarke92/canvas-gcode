@@ -93,6 +93,15 @@ export default class ConcentricCircles extends Sketch {
       if (this.radius > 0) {
         this.ctx.beginPath()
         this.ctx.circle(this.lastPoint.x, this.lastPoint.y, this.radius)
+        // const angleOffset = ((realIncrement * Math.PI) / 64) % (Math.PI * 2)
+        // this.ctx.arc(
+        //   this.lastPoint.x,
+        //   this.lastPoint.y,
+        //   this.radius,
+        //   angleOffset,
+        //   angleOffset + Math.PI * 2,
+        //   false
+        // )
         this.ctx.stroke()
         this.ctx.closePath()
       }
