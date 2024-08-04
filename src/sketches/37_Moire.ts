@@ -114,19 +114,17 @@ export default class Moire extends Sketch {
         const theta =
           perlin2((x + noiseOffset) / noiseDiv, (0 + noiseOffset) / noiseDiv) * Math.PI * 2
 
-        let testPts: Line = [
-          new Point(
-            offsetX + x * (layerLineSpacing + theta) + Math.cos(angle) * this.cw * 2,
-            offsetY + Math.sin(angle) * this.cw * 2
-          ),
-          new Point(
-            offsetX + x * (layerLineSpacing + theta) + Math.cos(angle + Math.PI) * this.cw * 2,
-            offsetY + Math.sin(angle + Math.PI) * this.cw * 2
-          ),
-        ]
-        if (x % 2) testPts = testPts.reverse() as Line
         const pts = getPointsWhereLineIntersectsCircle(
-          testPts,
+          [
+            new Point(
+              offsetX + x * (layerLineSpacing + theta) + Math.cos(angle) * this.cw * 2,
+              offsetY + Math.sin(angle) * this.cw * 2
+            ),
+            new Point(
+              offsetX + x * (layerLineSpacing + theta) + Math.cos(angle + Math.PI) * this.cw * 2,
+              offsetY + Math.sin(angle + Math.PI) * this.cw * 2
+            ),
+          ],
           new Point(this.cw / 2, this.ch / 2),
           circleRadius
         )
@@ -134,8 +132,9 @@ export default class Moire extends Sketch {
         if (pts.length !== 2) continue
 
         this.ctx.beginPath()
-        this.ctx.moveTo(pts[0].x, pts[0].y)
-        this.ctx.lineTo(pts[1].x, pts[1].y)
+
+        this.ctx.moveTo(pts[x % 2].x, pts[x % 2].y)
+        this.ctx.lineTo(pts[(x + 1) % 2].x, pts[(x + 1) % 2].y)
         this.ctx.stroke()
         this.ctx.closePath()
       }
@@ -143,19 +142,18 @@ export default class Moire extends Sketch {
       for (let y = 1; y < lines; y++) {
         const theta =
           perlin2((0 + noiseOffset) / noiseDiv, (y + noiseOffset) / noiseDiv) * Math.PI * 2
-        let testPts: Line = [
-          new Point(
-            offsetX + Math.cos(angle) * this.cw * 2,
-            offsetY + y * (layerLineSpacing + theta) + Math.sin(angle) * this.cw * 2
-          ),
-          new Point(
-            offsetX + Math.cos(angle + Math.PI) * this.cw * 2,
-            offsetY + y * (layerLineSpacing + theta) + Math.sin(angle + Math.PI) * this.cw * 2
-          ),
-        ]
-        if (y % 2) testPts = testPts.reverse() as Line
+
         const pts = getPointsWhereLineIntersectsCircle(
-          testPts,
+          [
+            new Point(
+              offsetX + Math.cos(angle) * this.cw * 2,
+              offsetY + y * (layerLineSpacing + theta) + Math.sin(angle) * this.cw * 2
+            ),
+            new Point(
+              offsetX + Math.cos(angle + Math.PI) * this.cw * 2,
+              offsetY + y * (layerLineSpacing + theta) + Math.sin(angle + Math.PI) * this.cw * 2
+            ),
+          ],
           new Point(this.cw / 2, this.ch / 2),
           circleRadius
         )
@@ -163,8 +161,8 @@ export default class Moire extends Sketch {
         if (pts.length !== 2) continue
 
         this.ctx.beginPath()
-        this.ctx.moveTo(pts[0].x, pts[0].y)
-        this.ctx.lineTo(pts[1].x, pts[1].y)
+        this.ctx.moveTo(pts[y % 2].x, pts[y % 2].y)
+        this.ctx.lineTo(pts[(y + 1) % 2].x, pts[(y + 1) % 2].y)
         this.ctx.stroke()
         this.ctx.closePath()
       }
