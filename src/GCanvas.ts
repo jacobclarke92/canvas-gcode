@@ -466,6 +466,26 @@ export default class GCanvas {
     }
   }
 
+  public rectCentered: OverloadedFunctionWithOptionals<
+    [pt: Point, w: number, h: number] | [x: number, y: number, w: number, h: number],
+    [cutout: true]
+  > = (...args) => {
+    const cutout = (args.length === 4 && args[3] === true) || args.length === 5 || false
+    const x = args.length === 3 || (args.length === 4 && args[3] === true) ? args[0].x : args[0]
+    const y = args.length === 3 || (args.length === 4 && args[3] === true) ? args[0].y : args[1]
+    const w = args.length === 3 || (args.length === 4 && args[3] === true) ? args[1] : args[2]
+    const h = args.length === 3 || (args.length === 4 && args[3] === true) ? args[2] : args[3]
+    if (cutout) {
+      this.clearRect(x - w / 2, y - h / 2, w, h)
+    } else {
+      this.moveTo(x - w / 2, y - h / 2)
+      this.lineTo(x + w - w / 2, y - h / 2)
+      this.lineTo(x + w - w / 2, y + h - h / 2)
+      this.lineTo(x - w / 2, y + h - h / 2)
+      this.lineTo(x - w / 2, y - h / 2)
+    }
+  }
+
   public strokeRect: OverloadedFunctionWithOptionals<
     [pt: Point, w: number, h: number] | [x: number, y: number, w: number, h: number],
     [options: StrokeOptions]
@@ -499,6 +519,40 @@ export default class GCanvas {
     if (options?.cutout === clipperLib.ClipType.Union) this.clearRect(x, y, w, h)
   }
 
+  public strokeRectCentered: OverloadedFunctionWithOptionals<
+    [pt: Point, w: number, h: number] | [x: number, y: number, w: number, h: number],
+    [options: StrokeOptions]
+  > = (...args) => {
+    const x =
+      args.length === 3 || (args.length === 4 && typeof args[3] !== 'number')
+        ? (args[0] as Point).x
+        : (args[0] as number)
+    const y =
+      args.length === 3 || (args.length === 4 && typeof args[3] !== 'number')
+        ? (args[0] as Point).y
+        : (args[1] as number)
+    const w =
+      args.length === 3 || (args.length === 4 && typeof args[3] !== 'number') ? args[1] : args[2]
+    const h =
+      args.length === 3 || (args.length === 4 && typeof args[3] !== 'number')
+        ? args[2]
+        : (args[3] as number)
+    const options =
+      args.length === 5
+        ? args[4]
+        : args.length === 4 && typeof args[3] !== 'number'
+        ? args[3]
+        : undefined
+
+    if (options?.cutout && options.cutout !== clipperLib.ClipType.Union)
+      this.clearRect(x - w / 2, y - h / 2, w, h)
+    this.beginPath()
+    this.rectCentered(x, y, w, h)
+    this.stroke(options ? { ...options, cutout: false } : undefined)
+    this.closePath()
+    if (options?.cutout === clipperLib.ClipType.Union) this.clearRect(x, y, w, h)
+  }
+
   public strokeBounds(bounds: Bounds) {
     this.strokeRect(bounds.left, bounds.top, bounds.right - bounds.left, bounds.bottom - bounds.top)
   }
@@ -526,6 +580,19 @@ export default class GCanvas {
     const h = args.length === 3 ? args[2] : args[3]
     this.beginPath()
     this.rect(x, y, w, h)
+    this.fill()
+    this.closePath()
+  }
+
+  public fillRectCentered(
+    ...args: [pt: Point, w: number, h: number] | [x: number, y: number, w: number, h: number]
+  ) {
+    const x = args.length === 3 ? args[0].x : args[0]
+    const y = args.length === 3 ? args[0].y : args[1]
+    const w = args.length === 3 ? args[1] : args[2]
+    const h = args.length === 3 ? args[2] : args[3]
+    this.beginPath()
+    this.rectCentered(x, y, w, h)
     this.fill()
     this.closePath()
   }
