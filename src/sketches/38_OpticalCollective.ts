@@ -42,14 +42,20 @@ export default class OpticalCollective extends Sketch {
       max: 0.51,
       step: 0.001,
     })
-    this.addVar('concentricCircles', {
-      initialValue: 0,
-      min: 0,
-      max: 12,
-      step: 1,
+
+    this.addVar('lineTightness', {
+      initialValue: 0.5,
+      min: 0.1,
+      max: 3,
+      step: 0.01,
     })
 
     this.vs.ignoreEdges = new BooleanRange({
+      disableRandomize: true,
+      initialValue: true,
+    })
+
+    this.vs.flatFill = new BooleanRange({
       disableRandomize: true,
       initialValue: true,
     })
@@ -70,8 +76,9 @@ export default class OpticalCollective extends Sketch {
     initPen(this)
     plotBounds(this)
 
-    const { cellSize, gutter, joinerRatio, joinerBluntness, concentricCircles } = this.vars
+    const { cellSize, gutter, joinerRatio, joinerBluntness, lineTightness } = this.vars
     const ignoreEdges = !!this.vs.ignoreEdges.value
+    const flatFill = !!this.vs.flatFill.value
 
     const canvasW = this.cw - gutter * 2
     const canvasH = this.ch - gutter * 2
@@ -93,7 +100,6 @@ export default class OpticalCollective extends Sketch {
         const y = offsetY + iy * cellSize
 
         const joinerSize = cellSize * joinerRatio * 2
-        const centerPt = new Point(x + cellSize / 2, y + cellSize / 2)
 
         this.ctx.beginPath()
         this.ctx.rect(x, y, cellSize, cellSize)
@@ -152,15 +158,21 @@ export default class OpticalCollective extends Sketch {
           clipType: clipperLib.ClipType.Difference,
           pathDivisions: 24,
         })
-        this.ctx.fillStyle = this.circleColors[blockColorIndex]
-        this.ctx.fill()
-        // TODO: fill with winding pattern instead
-        this.ctx.closePath()
-
-        const ccGap = (cellSize * 0.5) / (concentricCircles + 1)
-        for (let c = 0; c < concentricCircles; c++) {
-          this.ctx.strokeCircle(centerPt, ccGap * (c + 1))
+        if (flatFill) {
+          this.ctx.fillStyle = this.circleColors[blockColorIndex]
+          this.ctx.fill()
+        } else {
+          this.ctx.strokeStyle = this.circleColors[blockColorIndex]
+          for (let i = 0; i < cellSize / 2 / lineTightness; i++) {
+            this.ctx.strokeOffsetPath(-lineTightness, {
+              joinType: clipperLib.JoinType.Round,
+              endType: clipperLib.EndType.ClosedPolygon,
+              precision: 10,
+            })
+          }
         }
+
+        this.ctx.closePath()
       }
     }
 
@@ -169,7 +181,7 @@ export default class OpticalCollective extends Sketch {
         const patternIndex = (ix + iy) % this.pattern.length
         const colorIndex = this.pattern[patternIndex]
 
-        if (ix >= hCells - 1 || iy >= vCells - 1) continue
+        if (colorIndex === 0 || ix >= hCells - 1 || iy >= vCells - 1) continue
 
         const joinerSize = cellSize * joinerRatio * 2
 
@@ -184,8 +196,11 @@ export default class OpticalCollective extends Sketch {
         this.ctx.lineTo(x, y - joinerSize)
         this.ctx.lineTo(x + joinerSize * joinerBluntness, y - joinerSize * 0.5)
         this.ctx.lineTo(x, y)
-        // this.ctx.fill()
-        this.ctx.stroke()
+        if (flatFill) this.ctx.fill()
+        else {
+          this.ctx.stroke()
+          for (let i = 0; i < joinerSize * 0.5; i++) this.ctx.strokeOffsetPath(-lineTightness)
+        }
         this.ctx.closePath()
 
         this.ctx.beginPath()
@@ -194,8 +209,11 @@ export default class OpticalCollective extends Sketch {
         this.ctx.lineTo(x, y + joinerSize)
         this.ctx.lineTo(x + joinerSize * joinerBluntness, y + joinerSize * 0.5)
         this.ctx.lineTo(x, y)
-        // this.ctx.fill()
-        this.ctx.stroke()
+        if (flatFill) this.ctx.fill()
+        else {
+          this.ctx.stroke()
+          for (let i = 0; i < joinerSize * 0.5; i++) this.ctx.strokeOffsetPath(-lineTightness)
+        }
         this.ctx.closePath()
 
         this.ctx.beginPath()
@@ -204,8 +222,11 @@ export default class OpticalCollective extends Sketch {
         this.ctx.lineTo(x + joinerSize, y)
         this.ctx.lineTo(x + joinerSize * 0.5, y + joinerSize * joinerBluntness)
         this.ctx.lineTo(x, y)
-        // this.ctx.fill()
-        this.ctx.stroke()
+        if (flatFill) this.ctx.fill()
+        else {
+          this.ctx.stroke()
+          for (let i = 0; i < joinerSize * 0.5; i++) this.ctx.strokeOffsetPath(-lineTightness)
+        }
         this.ctx.closePath()
 
         this.ctx.beginPath()
@@ -214,8 +235,11 @@ export default class OpticalCollective extends Sketch {
         this.ctx.lineTo(x - joinerSize, y)
         this.ctx.lineTo(x - joinerSize * 0.5, y + joinerSize * joinerBluntness)
         this.ctx.lineTo(x, y)
-        // this.ctx.fill()
-        this.ctx.stroke()
+        if (flatFill) this.ctx.fill()
+        else {
+          this.ctx.stroke()
+          for (let i = 0; i < joinerSize * 0.5; i++) this.ctx.strokeOffsetPath(-lineTightness)
+        }
         this.ctx.closePath()
       }
     }
