@@ -38,4 +38,5 @@ export default [
   require('./36_Technicolor').default,
   require('./37_Moire').default,
   require('./38_OpticalCollective').default,
+  require('./39_LazyStrokes').default,
 ]
