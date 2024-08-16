@@ -973,7 +973,8 @@ export default class GCanvas {
     clipType,
     subjectFillType = clipperLib.PolyFillType.NonZero,
     clipFillType = clipperLib.PolyFillType.NonZero,
-    pathsAreOpen = false,
+    subjectIsOpen = false,
+    inputsAreOpen = false,
     reverseSolution = false,
     detailScale = 1000,
     pathDivisions = DEFAULT_DIVISIONS,
@@ -982,6 +983,8 @@ export default class GCanvas {
     subjectFillType?: clipperLib.PolyFillType
     clipFillType?: clipperLib.PolyFillType
     pathsAreOpen?: boolean
+    subjectIsOpen?: boolean
+    inputsAreOpen?: boolean
     reverseSolution?: boolean
     detailScale?: number
     pathDivisions?: number
@@ -997,14 +1000,14 @@ export default class GCanvas {
       clipType,
       subjectInputs: (clipType === clipperLib.ClipType.Union ? paths : [paths[0]]).map((path) => ({
         data: path.getPoints(pathDivisions).map((pt) => pt.scale(detailScale)),
-        closed: !pathsAreOpen,
+        closed: !subjectIsOpen,
       })),
       clipInputs:
         clipType === clipperLib.ClipType.Union
           ? undefined
           : paths.slice(1).map((path) => ({
               data: path.getPoints(pathDivisions).map((pt) => pt.scale(detailScale)),
-              closed: !pathsAreOpen,
+              closed: !inputsAreOpen,
             })),
       reverseSolution,
       subjectFillType,
@@ -1028,7 +1031,7 @@ export default class GCanvas {
     }
     this.path.current = this.path.subPaths[this.path.subPaths.length - 1]
 
-    this.ctx.closePath()
+    if (!subjectIsOpen) this.ctx.closePath()
 
     this.ctx.beginPath()
     for (const pts of ptPts) {
@@ -1036,7 +1039,7 @@ export default class GCanvas {
       for (const pt of pts) {
         this.ctx.lineTo(pt.x, pt.y)
       }
-      this.ctx.lineTo(pts[0].x, pts[0].y)
+      if (!subjectIsOpen) this.ctx.lineTo(pts[0].x, pts[0].y)
     }
     // this.ctx.stroke()
     // this.ctx.closePath()
