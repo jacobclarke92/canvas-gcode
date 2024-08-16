@@ -27,22 +27,28 @@ export default class LazyStrokes extends Sketch {
       step: 1,
     })
     this.addVar('strokes', {
-      initialValue: 35,
+      initialValue: 99,
       min: 5,
       max: 200,
       step: 1,
     })
     this.addVar('amplitude', {
-      initialValue: 100,
+      initialValue: 423,
       min: 5,
       max: 500,
       step: 1,
     })
     this.addVar('angle', {
-      initialValue: 0,
+      initialValue: 0.572,
       min: -Math.PI,
       max: Math.PI,
       step: 0.001,
+    })
+    this.addVar('pathDivisions', {
+      initialValue: 96,
+      min: 3,
+      max: 1024,
+      step: 1,
     })
     this.vs.trimToGutter = new BooleanRange({
       disableRandomize: true,
@@ -50,7 +56,7 @@ export default class LazyStrokes extends Sketch {
     })
     this.vs.cutGutter = new BooleanRange({
       disableRandomize: true,
-      initialValue: false,
+      initialValue: true,
     })
     this.addVar('trimAmplitudeFalloff', {
       initialValue: 0,
@@ -118,18 +124,12 @@ export default class LazyStrokes extends Sketch {
         }
       }
     }
-
-    if (cutGutter) {
-      // top
-      this.ctx.clearRect(-1000, -1000 + gutter, this.cw + 2000, 1000)
-      this.ctx.clearRect(-1000, -1000, 1000 + gutter, this.ch + 2000)
-      this.ctx.clearRect(this.cw - gutter, -1000, gutter + 1000, this.ch + 2000)
-      this.ctx.clearRect(-1000, this.ch - gutter, this.cw + 2000, gutter + 1000)
-    }
   }
 
   curvyBoi({ pt1, pt2, amplitude }: { pt1: Point; pt2: Point; amplitude: number }) {
     //
+    const { gutter, pathDivisions } = this.vars
+
     const angle = Point.angleBetween(pt1, pt2)
     const fullDist = Point.distance(pt1, pt2)
     const length1 = fullDist * (1 / 3)
@@ -140,7 +140,6 @@ export default class LazyStrokes extends Sketch {
 
     this.ctx.beginPath()
     this.ctx.moveTo(pt1.x, pt1.y)
-    // (25, -25, 50, 25, 75, 0)
     this.ctx.bezierCurveTo(
       firstMidPt.x + Math.cos(angle - quarterTurn) * amplitude,
       firstMidPt.y + Math.sin(angle - quarterTurn) * -amplitude,
@@ -149,8 +148,23 @@ export default class LazyStrokes extends Sketch {
       pt2.x,
       pt2.y
     )
+
+    if (this.vs.cutGutter.value) {
+      this.ctx.rect(gutter, gutter, this.cw - gutter * 2, this.ch - gutter * 2)
+      try {
+        this.ctx.clipCurrentPath({
+          clipType: clipperLib.ClipType.Intersection,
+          pathDivisions,
+          subjectIsOpen: true,
+          inputsAreOpen: false,
+          clipFillType: clipperLib.PolyFillType.NonZero,
+        })
+      } catch (e) {
+        return
+      }
+    }
+
     this.ctx.stroke()
-    this.ctx.closePath()
   }
 
   draw(increment: number): void {
