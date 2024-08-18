@@ -4,7 +4,7 @@ import Point from '../Point'
 import { Sketch } from '../Sketch'
 import type { Line } from '../types'
 import { getLineIntersectionPoint, getLineIntersectionPoints } from '../utils/geomUtils'
-import { initPen, plotBounds } from '../utils/penUtils'
+import { initPen, penUp, plotBounds } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
 import type Osc from './tools/Osc'
 import { BooleanRange } from './tools/Range'
@@ -124,6 +124,7 @@ export default class LazyStrokes extends Sketch {
         }
       }
     }
+    penUp(this)
   }
 
   curvyBoi({ pt1, pt2, amplitude }: { pt1: Point; pt2: Point; amplitude: number }) {
