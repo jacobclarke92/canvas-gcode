@@ -111,11 +111,10 @@ export default class Valleys extends Sketch {
     this.ctx.beginPath()
     pts.forEach((pt, i) => {
       if (i < 1) return
-      this.ctx.moveTo(pts[i - 1].x, pts[i - 1].y)
-      this.ctx.lineTo(pt.x, pt.y)
-      this.ctx.stroke()
+      if (i === 1) this.ctx.moveTo(pts[i - 1].x, pts[i - 1].y)
+      else this.ctx.lineTo(pt.x, pt.y)
     })
-    this.ctx.closePath()
+    this.ctx.stroke()
   }
 
   draw(increment: number): void {
