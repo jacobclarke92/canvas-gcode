@@ -54,6 +54,12 @@ export default class SpiralBasic extends Sketch {
       max: 0.1,
       step: 0.001,
     })
+    this.addVar('outwardSpeedOscOffset', {
+      initialValue: 0,
+      min: -Math.PI,
+      max: Math.PI,
+      step: 0.001,
+    })
     this.addVar('angularSpeed', {
       initialValue: 0.01,
       min: 0.001,
@@ -90,7 +96,7 @@ export default class SpiralBasic extends Sketch {
     this.done = false
     this.angle = this.vars.initialAngle
     this.dist = 0
-    this.osc1Angle = 0
+    this.osc1Angle = this.vars.outwardSpeedOscOffset
     this.osc2Angle = 0
     this.position.set(this.cw / 2, this.ch / 2)
   }
