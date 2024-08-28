@@ -40,4 +40,5 @@ export default [
   require('./38_OpticalCollective').default,
   require('./39_LazyStrokes').default,
   require('./40_SpiralBasic').default,
+  require('./41_Comb').default,
 ]
