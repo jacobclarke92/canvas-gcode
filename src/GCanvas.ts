@@ -139,7 +139,7 @@ export default class GCanvas {
     this.reset()
   }
 
-  public reset() {
+  public reset(fadeMode = false) {
     console.clear()
     this.driver.reset()
     this.motion.reset()
@@ -156,8 +156,9 @@ export default class GCanvas {
       this.setCtxTransform(this.matrix)
 
       // draw rect the actual size of the canvas - should fill whole screen at this stage
-      this.ctx.fillStyle = this._background
+      this.ctx.fillStyle = fadeMode ? 'rgba(255,255,255,0.01)' : this._background
       this.ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight)
+      this.ctx.fillStyle = this._background
 
       this.ctx.lineWidth = 1 / this.virtualScale
     }
