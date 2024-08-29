@@ -77,6 +77,10 @@ export default class Point extends IntPoint {
     const angle = this.angleTo(point)
     return this.moveAlongAngle(angle, distance)
   }
+  public moveAway(point: Point, distance: number) {
+    const angle = this.angleTo(point)
+    return this.moveAlongAngle(angle + Math.PI, distance)
+  }
   public rotate(angle: number) {
     const x = this.x * Math.cos(angle) - this.y * Math.sin(angle)
     const y = this.x * Math.sin(angle) + this.y * Math.cos(angle)
