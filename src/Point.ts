@@ -21,19 +21,27 @@ export default class Point extends IntPoint {
     return new Point(this.x, this.y)
   }
   public round() {
-    return new Point(Math.round(this.x), Math.round(this.y))
+    this.x = Math.round(this.x)
+    this.y = Math.round(this.y)
+    return this
   }
   public equals(point: Point) {
     return this.x === point.x && this.y === point.y
   }
   public add(point: Point) {
-    return new Point(this.x + point.x, this.y + point.y)
+    this.x += point.x
+    this.y += point.y
+    return this
   }
   public midpoint(point: Point) {
-    return new Point((this.x + point.x) / 2, (this.y + point.y) / 2)
+    this.x = (this.x + point.x) / 2
+    this.y = (this.y + point.y) / 2
+    return this
   }
   public subtract(point: Point) {
-    return new Point(this.x - point.x, this.y - point.y)
+    this.x -= point.x
+    this.y -= point.y
+    return this
   }
   public magnitude() {
     return Math.sqrt(this.x * this.x + this.y * this.y)
@@ -42,17 +50,27 @@ export default class Point extends IntPoint {
     return Math.atan2(this.y, this.x)
   }
   public multiply(point: Point | number) {
-    return typeof point === 'number'
-      ? new Point(this.x * point, this.y * point)
-      : new Point(this.x * point.x, this.y * point.y)
+    if (typeof point === 'number') {
+      this.x *= point
+      this.y *= point
+    } else {
+      this.x *= point.x
+      this.y *= point.y
+    }
+    return this
   }
   public scale(scale: number) {
     return this.multiply(scale)
   }
   public divide(point: Point | number) {
-    return typeof point === 'number'
-      ? new Point(this.x / point, this.y / point)
-      : new Point(this.x / point.x, this.y / point.y)
+    if (typeof point === 'number') {
+      this.x /= point
+      this.y /= point
+    } else {
+      this.x /= point.x
+      this.y /= point.y
+    }
+    return this
   }
   public normalize() {
     return this.multiply(1 / this.magnitude())
@@ -68,7 +86,9 @@ export default class Point extends IntPoint {
     return this.x * point.y - this.y * point.x
   }
   public translate(x: number, y: number) {
-    return new Point(this.x + x, this.y + y)
+    this.x += x
+    this.y += y
+    return this
   }
   public moveAlongAngle(angle: number, distance: number) {
     return this.translate(Math.cos(angle) * distance, Math.sin(angle) * distance)
@@ -82,9 +102,9 @@ export default class Point extends IntPoint {
     return this.moveAlongAngle(angle + Math.PI, distance)
   }
   public rotate(angle: number) {
-    const x = this.x * Math.cos(angle) - this.y * Math.sin(angle)
-    const y = this.x * Math.sin(angle) + this.y * Math.cos(angle)
-    return new Point(x, y)
+    this.x = this.x * Math.cos(angle) - this.y * Math.sin(angle)
+    this.y = this.x * Math.sin(angle) + this.y * Math.cos(angle)
+    return this
   }
   public angleTo(point: Point) {
     return Math.atan2(point.y - this.y, point.x - this.x)

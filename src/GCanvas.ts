@@ -310,8 +310,8 @@ export default class GCanvas {
     this.ensurePath(pt1.x, pt1.y)
 
     const p0 = this.path.lastPoint() || new Point()
-    const v01 = p0.subtract(pt1)
-    const v21 = pt2.subtract(pt1)
+    const v01 = p0.clone().subtract(pt1)
+    const v21 = pt2.clone().subtract(pt1)
 
     // sin(A - B) = sin(A) * cos(B) - sin(B) * cos(A)
     const cross = v01.x * v21.y - v01.y * v21.x
@@ -336,7 +336,7 @@ export default class GCanvas {
 
     const midPoint = new Point((startPoint.x + endPoint.x) / 2, (startPoint.y + endPoint.y) / 2)
 
-    const vm1 = midPoint.subtract(pt1)
+    const vm1 = midPoint.clone().subtract(pt1)
     const dm1 = vm1.magnitude()
     const d = Math.sqrt(radius * radius + span * span)
 

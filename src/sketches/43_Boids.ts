@@ -26,8 +26,8 @@ class Boid {
     ) {
       this.previousPositions = []
     }
+    if (this.previousPositions.length >= tailLength) this.previousPositions.shift()
     this.previousPositions.push(this.position.clone())
-    if (this.previousPositions.length > tailLength) this.previousPositions.shift()
   }
 }
 
@@ -158,10 +158,7 @@ export default class Boids extends Sketch {
       }
       const distance = Point.distance(boid.position, otherBoid.position)
       const attractionForce = (distance - visionRadius) / visionRadius
-      boid.velocity = boid.velocity.moveTowards(
-        otherBoid.position,
-        attractionForce * (attraction / 100)
-      )
+      boid.velocity.moveTowards(otherBoid.position, attractionForce * (attraction / 100))
     }
 
     const repulsiveBoids = filterByRadius(boid, this.boids, repulsionRadius)
@@ -176,13 +173,13 @@ export default class Boids extends Sketch {
       }
       const distance = Point.distance(boid.position, otherBoid.position)
       const repulsionForce = (repulsionRadius - distance) / repulsionRadius
-      boid.velocity = boid.velocity.moveAway(otherBoid.position, repulsionForce * repulsion)
+      boid.velocity.moveAway(otherBoid.position, repulsionForce * repulsion)
     }
 
     // enforce max speed
     const magnitude = boid.velocity.magnitude()
     if (magnitude > maxSpeed) {
-      boid.velocity = boid.velocity.multiply(maxSpeed / magnitude / 0.8)
+      boid.velocity.multiply(maxSpeed / magnitude / 0.8)
     }
 
     boid.position = boid.position.add(boid.velocity)
