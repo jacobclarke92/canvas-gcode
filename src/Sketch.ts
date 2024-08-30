@@ -30,6 +30,7 @@ export class Sketch {
   public readonly flags: { [key: string]: boolean } = {}
   static generateGCode = true
   static enableCutouts = true
+  static disableOverclock = false
 
   constructor(config: SketchConfig) {
     this.ctx = config.ctx

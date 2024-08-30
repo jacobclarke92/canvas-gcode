@@ -164,7 +164,8 @@ const initSketch = (SketchClass: typeof Sketch) => {
 }
 
 const animate = () => {
-  for (let i = 0; i < DRAW_STEPS_PER_FRAME; i++) {
+  const steps = sketches[currentSketchIndex].disableOverclock ? 1 : DRAW_STEPS_PER_FRAME
+  for (let i = 0; i < steps; i++) {
     animateIncrement++
     CurrentSketch.draw(animateIncrement)
   }
