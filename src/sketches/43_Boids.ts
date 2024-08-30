@@ -22,12 +22,13 @@ class Boid {
   public logPosition(tailLength: number) {
     if (
       this.previousPositions.length > 1 &&
-      Point.distance(this.previousPositions[this.previousPositions.length - 1], this.position) > 40
+      Point.distance(this.previousPositions[this.previousPositions.length - 1], this.position) > 10
     ) {
       this.previousPositions = []
     }
-    if (this.previousPositions.length >= tailLength) this.previousPositions.shift()
     this.previousPositions.push(this.position.clone())
+    if (this.previousPositions.length > tailLength)
+      this.previousPositions.slice(this.previousPositions.length - tailLength)
   }
 }
 
@@ -37,8 +38,18 @@ const filterByRadius = (boid: Boid, boids: Boid[], radius: number) =>
     return Point.distance(boid.position, otherBoid.position) < radius
   })
 
+const nClosest = (boid: Boid, boids: Boid[], n: number) => {
+  const distances = boids.map((otherBoid) => ({
+    boid: otherBoid,
+    distance: Point.distance(boid.position, otherBoid.position),
+  }))
+  distances.sort((a, b) => a.distance - b.distance)
+  return distances.slice(0, n).map((d) => d.boid)
+}
+
 export default class Boids extends Sketch {
   static generateGCode = false
+  static disableOverclock = true
 
   init() {
     this.addVar('seed', {
@@ -66,40 +77,40 @@ export default class Boids extends Sketch {
       step: 1,
     })
     this.addVar('maxSpeed', {
-      initialValue: 0.1,
+      initialValue: 1,
       min: 0.01,
-      max: 1,
+      max: 10,
       step: 0.01,
     })
     this.addVar('visionRadius', {
-      initialValue: 75,
+      initialValue: 30,
       min: 1,
       max: 200,
       step: 1,
     })
-    this.addVar('attraction', {
-      initialValue: 0.1,
+    this.addVar('herdAttraction', {
+      initialValue: 0.005,
       min: 0,
-      max: 1,
-      step: 0.01,
+      max: 0.1,
+      step: 0.0001,
     })
     this.addVar('repulsionRadius', {
-      initialValue: 15,
+      initialValue: 8,
       min: 1,
       max: 200,
       step: 1,
     })
     this.addVar('repulsion', {
-      initialValue: 0.1,
+      initialValue: 0.05,
       min: 0,
-      max: 1,
-      step: 0.01,
+      max: 0.1,
+      step: 0.001,
     })
     this.addVar('alignmentForce', {
-      initialValue: 0.1,
+      initialValue: 0.05,
       min: 0,
-      max: 1,
-      step: 0.01,
+      max: 0.1,
+      step: 0.001,
     })
     this.addVar('tailLength', {
       initialValue: 25,
@@ -113,7 +124,11 @@ export default class Boids extends Sketch {
     })
     this.vs.debugMode = new BooleanRange({
       disableRandomize: true,
-      initialValue: true,
+      initialValue: false,
+    })
+    this.vs.displayTrails = new BooleanRange({
+      disableRandomize: true,
+      initialValue: false,
     })
   }
 
@@ -142,13 +157,47 @@ export default class Boids extends Sketch {
 
   updateBoid(boid: Boid) {
     const debugMode = !!this.vs.debugMode.value
-    const { gutter, visionRadius, attraction, maxSpeed, repulsionRadius, repulsion } = this.vars
+    const {
+      gutter,
+      visionRadius,
+      herdAttraction,
+      maxSpeed,
+      repulsionRadius,
+      repulsion,
+      alignmentForce,
+    } = this.vars
 
-    const attractiveBoid = filterByRadius(boid, this.boids, visionRadius)
-    if (debugMode) this.ctx.strokeCircle(boid.position, visionRadius, { debug: true })
-    if (debugMode) this.ctx.strokeCircle(boid.position, repulsionRadius, { debug: true })
-    for (const otherBoid of attractiveBoid) {
-      if (debugMode) {
+    // move towards the average position of the herd
+    const herd = filterByRadius(boid, this.boids, visionRadius)
+    const herdCenter = new Point(0, 0)
+    for (const otherBoid of herd) herdCenter.add(otherBoid.position)
+    if (herd.length) {
+      herdCenter.divide(herd.length)
+      boid.velocity.x += (herdCenter.x - boid.position.x) * herdAttraction
+      boid.velocity.y += (herdCenter.y - boid.position.y) * herdAttraction
+    }
+
+    // generally align with the herd
+    const alignmentVector = new Point(0, 0)
+    for (const otherBoid of herd) alignmentVector.add(otherBoid.velocity)
+    if (herd.length > 0) {
+      alignmentVector.divide(herd.length)
+      boid.velocity.x += (alignmentVector.x - boid.velocity.x) * alignmentForce
+      boid.velocity.y += (alignmentVector.y - boid.velocity.y) * alignmentForce
+    }
+
+    // move away from personal space deniers
+    const personalSpaceDeniers = filterByRadius(boid, this.boids, repulsionRadius)
+    const repulsionResponse = new Point(0, 0)
+    for (const otherBoid of personalSpaceDeniers)
+      repulsionResponse.add(boid.position.clone().subtract(otherBoid.position))
+    boid.velocity.x += repulsionResponse.x * repulsion
+    boid.velocity.y += repulsionResponse.y * repulsion
+
+    if (debugMode) {
+      this.ctx.strokeCircle(boid.position, visionRadius, { debug: true })
+      this.ctx.strokeCircle(boid.position, repulsionRadius, { debug: true })
+      for (const otherBoid of herd) {
         this.ctx.beginPath()
         this.ctx.moveTo(...boid.position.toArray())
         this.ctx.lineTo(...otherBoid.position.toArray())
@@ -156,34 +205,19 @@ export default class Boids extends Sketch {
         this.ctx.stroke()
         this.ctx.strokeStyle = 'black'
       }
-      const distance = Point.distance(boid.position, otherBoid.position)
-      const attractionForce = (distance - visionRadius) / visionRadius
-      boid.velocity.moveTowards(otherBoid.position, attractionForce * (attraction / 100))
-    }
-
-    const repulsiveBoids = filterByRadius(boid, this.boids, repulsionRadius)
-    for (const otherBoid of repulsiveBoids) {
-      if (debugMode) {
-        this.ctx.beginPath()
-        this.ctx.moveTo(...boid.position.toArray())
-        this.ctx.lineTo(...otherBoid.position.toArray())
-        this.ctx.strokeStyle = 'magenta'
-        this.ctx.stroke()
-        this.ctx.strokeStyle = 'black'
-      }
-      const distance = Point.distance(boid.position, otherBoid.position)
-      const repulsionForce = (repulsionRadius - distance) / repulsionRadius
-      boid.velocity.moveAway(otherBoid.position, repulsionForce * repulsion)
     }
 
     // enforce max speed
     const magnitude = boid.velocity.magnitude()
     if (magnitude > maxSpeed) {
-      boid.velocity.multiply(maxSpeed / magnitude / 0.8)
+      boid.velocity.x = (boid.velocity.x / magnitude) * maxSpeed
+      boid.velocity.y = (boid.velocity.y / magnitude) * maxSpeed
     }
 
+    // move boid
     boid.position = boid.position.add(boid.velocity)
 
+    // wrap around screen
     if (this.vs.crossOver.value) {
       if (boid.position.x < gutter) boid.position.x = this.cw - gutter
       else if (boid.position.x > this.cw - gutter) boid.position.x = gutter
@@ -202,6 +236,7 @@ export default class Boids extends Sketch {
 
   draw(increment: number): void {
     const debugMode = !!this.vs.debugMode.value
+    const displayTrails = !!this.vs.displayTrails.value
     const { stopAfter, tailLength } = this.vars
 
     if (this.done) return
@@ -217,13 +252,12 @@ export default class Boids extends Sketch {
     for (const boid of this.boids) {
       // const startPos = boid.position.clone()
       this.updateBoid(boid)
+      if (!displayTrails) this.ctx.strokeRectCentered(boid.position, 1, 1)
 
       if (increment % 50 === 0) boid.logPosition(tailLength)
       // if (Point.distance(startPos, boid.position) > 40) continue
-      if (boid.previousPositions.length > 1) {
-        this.ctx.beginPath()
+      if (displayTrails && boid.previousPositions.length > 1) {
         this.ctx.strokePath(boid.previousPositions)
-        this.ctx.closePath()
 
         if (debugMode) {
           this.ctx.beginPath()
