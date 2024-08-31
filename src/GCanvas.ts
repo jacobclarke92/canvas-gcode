@@ -569,7 +569,7 @@ export default class GCanvas {
       }
     }
     this.stroke(options)
-    this.closePath()
+    // this.closePath()
   }
 
   public fillRect(

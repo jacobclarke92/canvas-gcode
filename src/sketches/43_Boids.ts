@@ -1,7 +1,7 @@
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { randFloatRange } from '../utils/numberUtils'
-import { initPen, plotBounds } from '../utils/penUtils'
+import { initPen, penUp, plotBounds } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
 import { BooleanRange } from './tools/Range'
 
@@ -11,7 +11,9 @@ class Boid {
   public position: Point
   public velocity: Point
   public readonly id: number
+  public previousPaths: Point[][] = []
   public previousPositions: Point[] = []
+  public tailPositions: Point[] = []
 
   constructor(x: number, y: number, speed = 1, angle = 0) {
     this.id = _id++
@@ -21,14 +23,18 @@ class Boid {
 
   public logPosition(tailLength: number) {
     if (
-      this.previousPositions.length > 1 &&
-      Point.distance(this.previousPositions[this.previousPositions.length - 1], this.position) > 10
+      this.previousPositions.length > 0 &&
+      Point.distance(this.previousPositions[this.previousPositions.length - 1], this.position) > 5
     ) {
+      this.previousPaths.push(this.previousPositions)
       this.previousPositions = []
+      this.tailPositions = []
     }
-    this.previousPositions.push(this.position.clone())
-    if (this.previousPositions.length > tailLength)
-      this.previousPositions.slice(this.previousPositions.length - tailLength)
+    const pos = this.position.clone()
+    this.previousPositions.push(pos)
+    this.tailPositions.push(pos)
+    if (this.tailPositions.length > tailLength)
+      this.tailPositions.slice(this.tailPositions.length - tailLength)
   }
 }
 
@@ -48,7 +54,7 @@ const nClosest = (boid: Boid, boids: Boid[], n: number) => {
 }
 
 export default class Boids extends Sketch {
-  static generateGCode = false
+  static generateGCode = true
   static disableOverclock = true
 
   init() {
@@ -58,16 +64,28 @@ export default class Boids extends Sketch {
       max: 5000,
       step: 1,
     })
-    this.addVar('stopAfter', {
-      initialValue: 69,
+    this.addVar('speedUp', {
+      initialValue: 10,
       min: 1,
       max: 200,
+      step: 1,
+    })
+    this.addVar('waitFor', {
+      initialValue: 50,
+      min: 1,
+      max: 500,
+      step: 1,
+    })
+    this.addVar('stopAfter', {
+      initialValue: 150,
+      min: 1,
+      max: 500,
       step: 1,
     })
     this.addVar('gutter', {
       initialValue: 10,
       min: 0,
-      max: 200,
+      max: 70,
       step: 1,
     })
     this.addVar('numBoids', {
@@ -87,6 +105,12 @@ export default class Boids extends Sketch {
       min: 1,
       max: 200,
       step: 1,
+    })
+    this.addVar('visionConeAngle', {
+      initialValue: Math.PI * 2,
+      min: 0.01,
+      max: Math.PI * 2,
+      step: 0.001,
     })
     this.addVar('herdAttraction', {
       initialValue: 0.005,
@@ -112,6 +136,12 @@ export default class Boids extends Sketch {
       max: 0.1,
       step: 0.001,
     })
+    this.addVar('centerPull', {
+      initialValue: 0.001,
+      min: 0,
+      max: 0.1,
+      step: 0.001,
+    })
     this.addVar('tailLength', {
       initialValue: 25,
       min: 0,
@@ -132,6 +162,7 @@ export default class Boids extends Sketch {
     })
   }
 
+  pathsCaptured = false
   done = false
   boids: Boid[] = []
 
@@ -142,6 +173,7 @@ export default class Boids extends Sketch {
     initPen(this)
     plotBounds(this)
 
+    this.pathsCaptured = false
     this.done = false
     this.boids = []
     for (let i = 0; i < numBoids; i++) {
@@ -160,15 +192,25 @@ export default class Boids extends Sketch {
     const {
       gutter,
       visionRadius,
+      visionConeAngle,
       herdAttraction,
       maxSpeed,
       repulsionRadius,
       repulsion,
       alignmentForce,
+      centerPull,
     } = this.vars
 
     // move towards the average position of the herd
-    const herd = filterByRadius(boid, this.boids, visionRadius)
+    const currentDirection = boid.velocity.clone().divide(boid.velocity.magnitude())
+    const herd = filterByRadius(boid, this.boids, visionRadius).filter((otherBoid) => {
+      const diff = otherBoid.position.clone().subtract(boid.position)
+      const diffNormalized = diff.clone().normalize()
+      const dotProduct =
+        currentDirection.x * diffNormalized.x + currentDirection.y * diffNormalized.y
+      const angle = Math.acos(dotProduct)
+      return angle < visionConeAngle
+    })
     const herdCenter = new Point(0, 0)
     for (const otherBoid of herd) herdCenter.add(otherBoid.position)
     if (herd.length) {
@@ -194,8 +236,25 @@ export default class Boids extends Sketch {
     boid.velocity.x += repulsionResponse.x * repulsion
     boid.velocity.y += repulsionResponse.y * repulsion
 
+    // add force to center of screen
+    const center = new Point(this.cx, this.cy)
+    boid.velocity.x += (center.x - boid.position.x) * (centerPull / 20)
+    boid.velocity.y += (center.y - boid.position.y) * (centerPull / 20)
+
     if (debugMode) {
-      this.ctx.strokeCircle(boid.position, visionRadius, { debug: true })
+      this.ctx.beginPath()
+      this.ctx.moveTo(...boid.position.toArray())
+      this.ctx.arc(
+        boid.position.x,
+        boid.position.y,
+        visionRadius,
+        boid.velocity.angle() - visionConeAngle / 2,
+        boid.velocity.angle() + visionConeAngle / 2,
+        false
+      )
+      this.ctx.lineTo(...boid.position.toArray())
+      this.ctx.stroke()
+      // this.ctx.strokeCircle(boid.position, visionRadius, { debug: true })
       this.ctx.strokeCircle(boid.position, repulsionRadius, { debug: true })
       for (const otherBoid of herd) {
         this.ctx.beginPath()
@@ -215,7 +274,7 @@ export default class Boids extends Sketch {
     }
 
     // move boid
-    boid.position = boid.position.add(boid.velocity)
+    boid.position.add(boid.velocity)
 
     // wrap around screen
     if (this.vs.crossOver.value) {
@@ -237,41 +296,56 @@ export default class Boids extends Sketch {
   draw(increment: number): void {
     const debugMode = !!this.vs.debugMode.value
     const displayTrails = !!this.vs.displayTrails.value
-    const { stopAfter, tailLength } = this.vars
+    const { speedUp, waitFor, stopAfter, tailLength } = this.vars
 
     if (this.done) return
 
-    // if (increment > stopAfter) {
-    //   this.done = true
-    //   penUp(this)
-    //   return
-    // }
+    if (this.pathsCaptured) {
+      this.ctx.reset()
+
+      console.log('time to draw paths')
+      for (const boid of this.boids) {
+        if (boid.previousPositions.length > 1) boid.previousPaths.push(boid.previousPositions)
+        console.log(boid.previousPaths)
+        for (const path of boid.previousPaths) this.ctx.strokePath(path)
+      }
+
+      this.done = true
+      penUp(this)
+      return
+    }
 
     this.ctx.reset()
 
-    for (const boid of this.boids) {
-      // const startPos = boid.position.clone()
-      this.updateBoid(boid)
-      if (!displayTrails) this.ctx.strokeRectCentered(boid.position, 1, 1)
+    for (let i = 0; i < speedUp; i++) {
+      const count = increment * speedUp + i
+      const isLastRenderFrame = i === speedUp - 1
 
-      if (increment % 50 === 0) boid.logPosition(tailLength)
-      // if (Point.distance(startPos, boid.position) > 40) continue
-      if (displayTrails && boid.previousPositions.length > 1) {
-        this.ctx.strokePath(boid.previousPositions)
+      for (const boid of this.boids) {
+        this.updateBoid(boid)
+        if (isLastRenderFrame && !displayTrails)
+          this.ctx.strokeRectCentered(boid.position, 1.5, 1.5)
 
-        if (debugMode) {
-          this.ctx.beginPath()
-          this.ctx.moveTo(...boid.position.toArray())
-          this.ctx.lineTo(
-            boid.position.x + boid.velocity.x * 100,
-            boid.position.y + boid.velocity.y * 100
-          )
-          this.ctx.stroke({ debug: true })
+        if (count >= waitFor) boid.logPosition(tailLength)
+
+        if (isLastRenderFrame && displayTrails && boid.tailPositions.length > 1) {
+          this.ctx.strokePath(boid.tailPositions)
+
+          if (debugMode) {
+            this.ctx.beginPath()
+            this.ctx.moveTo(...boid.position.toArray())
+            this.ctx.lineTo(
+              boid.position.x + boid.velocity.x * 100,
+              boid.position.y + boid.velocity.y * 100
+            )
+            this.ctx.stroke({ debug: true })
+          }
         }
       }
-      // this.ctx.moveTo(...startPos.toArray())
-      // this.ctx.lineTo(...boid.position.toArray())
-      // this.ctx.stroke()
+      if (count > waitFor + stopAfter) {
+        this.pathsCaptured = true
+        return
+      }
     }
   }
 }
