@@ -1,6 +1,10 @@
 G17 (select the xy plane)
 M05 (pen up)
-G4 P250 (wait 250ms)
+G4 P2000 (wait 2000ms)
+M03 (pen down)
+G4 P5000 (wait 5000ms)
+M05 (pen up)
+G4 P2000 (wait 2000ms)
 (toolDiameter=0.15)
 G93 (inverse time mode)
 G0 F89749.16162 X74.25641 Y50.40732

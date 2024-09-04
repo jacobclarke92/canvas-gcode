@@ -200,8 +200,6 @@ export default class Boids extends Sketch {
     const { seed, numBoids, gutter } = this.vars
     seedRandom(seed)
     // seedNoise(this.vs.seed.value)
-    initPen(this)
-    plotBounds(this)
 
     this.pathsCaptured = false
     this.done = false
@@ -382,6 +380,8 @@ export default class Boids extends Sketch {
 
     if (this.pathsCaptured) {
       this.ctx.reset()
+      initPen(this)
+      // plotBounds(this)
 
       console.log('time to draw paths')
       for (const boid of this.boids) {
