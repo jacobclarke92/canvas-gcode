@@ -1,5 +1,6 @@
 import Point from '../Point'
 import { Sketch } from '../Sketch'
+import { circleOverlapsCircles, pointInCircles } from '../utils/geomUtils'
 import { randFloatRange } from '../utils/numberUtils'
 import { initPen, penUp, plotBounds } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
@@ -160,11 +161,40 @@ export default class Boids extends Sketch {
       disableRandomize: true,
       initialValue: false,
     })
+    this.vs.includeHazards = new BooleanRange({
+      disableRandomize: true,
+      initialValue: false,
+    })
+    this.addVar('hazards', {
+      initialValue: 3,
+      min: 0,
+      max: 20,
+      step: 1,
+    })
+    this.addVar('hazardMinRadius', {
+      initialValue: 10,
+      min: 1,
+      max: 50,
+      step: 0.1,
+    })
+    this.addVar('hazardMaxRadius', {
+      initialValue: 15,
+      min: 1,
+      max: 100,
+      step: 0.1,
+    })
+    this.addVar('hazardRepulsion', {
+      initialValue: 0.05,
+      min: 0.001,
+      max: 1,
+      step: 0.001,
+    })
   }
 
   pathsCaptured = false
   done = false
   boids: Boid[] = []
+  hazards: [pt: Point, radius: number][] = []
 
   initDraw(): void {
     const { seed, numBoids, gutter } = this.vars
@@ -175,14 +205,35 @@ export default class Boids extends Sketch {
 
     this.pathsCaptured = false
     this.done = false
+
+    this.hazards = []
+    if (this.vs.includeHazards.value) {
+      let panik = 0
+      for (let i = 0; i < this.vars.hazards; i++) {
+        if (panik > 200) break
+        const radius = randFloatRange(this.vars.hazardMinRadius, this.vars.hazardMaxRadius)
+        const pt = new Point(
+          gutter + radius + randFloatRange(this.cw - (gutter + radius) * 2),
+          gutter + radius + randFloatRange(this.ch - (gutter + radius) * 2)
+        )
+        if (circleOverlapsCircles([pt, radius], ...this.hazards)) {
+          i--
+          panik++
+          continue
+        }
+        this.hazards.push([pt, radius])
+      }
+    }
+
     this.boids = []
     for (let i = 0; i < numBoids; i++) {
-      const boid = new Boid(
-        gutter + randFloatRange(this.cw - gutter * 2),
-        gutter + randFloatRange(this.ch - gutter * 2),
-        randFloatRange(3, 1),
-        randFloatRange(Math.PI * 2)
-      )
+      const x = gutter + randFloatRange(this.cw - gutter * 2)
+      const y = gutter + randFloatRange(this.ch - gutter * 2)
+      if (pointInCircles(new Point(x, y), ...this.hazards)) {
+        i--
+        continue
+      }
+      const boid = new Boid(x, y, randFloatRange(3, 1), randFloatRange(Math.PI * 2))
       this.boids.push(boid)
     }
   }
@@ -199,6 +250,7 @@ export default class Boids extends Sketch {
       repulsion,
       alignmentForce,
       centerPull,
+      hazardRepulsion,
     } = this.vars
 
     // move towards the average position of the herd
@@ -238,8 +290,17 @@ export default class Boids extends Sketch {
 
     // add force to center of screen
     const center = new Point(this.cx, this.cy)
-    boid.velocity.x += (center.x - boid.position.x) * (centerPull / 20)
-    boid.velocity.y += (center.y - boid.position.y) * (centerPull / 20)
+    boid.velocity.x += (center.x - boid.position.x) * centerPull
+    boid.velocity.y += (center.y - boid.position.y) * centerPull
+
+    if (this.vs.includeHazards.value) {
+      for (const [pt, radius] of this.hazards) {
+        if (Point.distance(boid.position, pt) < radius) {
+          boid.velocity.x += (boid.position.x - pt.x) * hazardRepulsion
+          boid.velocity.y += (boid.position.y - pt.y) * hazardRepulsion
+        }
+      }
+    }
 
     if (debugMode) {
       this.ctx.beginPath()
@@ -278,10 +339,29 @@ export default class Boids extends Sketch {
 
     // wrap around screen
     if (this.vs.crossOver.value) {
-      if (boid.position.x < gutter) boid.position.x = this.cw - gutter
-      else if (boid.position.x > this.cw - gutter) boid.position.x = gutter
-      if (boid.position.y < gutter) boid.position.y = this.ch - gutter
-      else if (boid.position.y > this.ch - gutter) boid.position.y = gutter
+      let moved = false
+      if (boid.position.x < gutter) {
+        boid.position.x = this.cw - gutter
+        moved = true
+      } else if (boid.position.x > this.cw - gutter) {
+        boid.position.x = gutter
+        moved = true
+      }
+      if (boid.position.y < gutter) {
+        boid.position.y = this.ch - gutter
+        moved = true
+      } else if (boid.position.y > this.ch - gutter) {
+        boid.position.y = gutter
+        moved = true
+      }
+      if (moved && this.vs.includeHazards.value) {
+        for (const [pt, radius] of this.hazards) {
+          if (Point.distance(boid.position, pt) < radius) {
+            const diff = boid.position.clone().subtract(pt)
+            boid.position.add(diff.normalize().multiply(radius))
+          }
+        }
+      }
     } else if (
       boid.position.x < gutter ||
       boid.position.x > this.cw - gutter ||
@@ -320,6 +400,12 @@ export default class Boids extends Sketch {
     for (let i = 0; i < speedUp; i++) {
       const count = increment * speedUp + i
       const isLastRenderFrame = i === speedUp - 1
+
+      if (this.vs.includeHazards.value && isLastRenderFrame) {
+        for (const [pt, radius] of this.hazards) {
+          this.ctx.strokeCircle(pt, radius, { debug: true })
+        }
+      }
 
       for (const boid of this.boids) {
         this.updateBoid(boid)
