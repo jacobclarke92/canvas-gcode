@@ -3,7 +3,7 @@ import { Sketch } from '../Sketch'
 import type { Line } from '../types'
 import { getPointsWhereLineIntersectsCircle } from '../utils/geomUtils'
 import { perlin2 } from '../utils/noise'
-import { initPen, plotBounds, stopAndWigglePen } from '../utils/penUtils'
+import { initPen, penUp, plotBounds, stopAndWigglePen } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
 import type Osc from './tools/Osc'
 import { BooleanRange } from './tools/Range'
@@ -167,6 +167,7 @@ export default class Moire extends Sketch {
         this.ctx.closePath()
       }
     }
+    penUp(this)
   }
 
   draw(increment: number): void {
