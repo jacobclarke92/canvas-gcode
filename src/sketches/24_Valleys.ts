@@ -66,14 +66,14 @@ export default class Valleys extends Sketch {
 
     for (let i = 0; i < this.vars.valleysEitherSide; i++) {
       const leftLinePts = this.generateLinePts(
-        startPt.moveAlongAngle(perpAngle, -this.vars.spaceBetween * (i + 1)),
-        endPt.moveAlongAngle(perpAngle, -this.vars.spaceBetween * (i + 1))
+        startPt.clone().moveAlongAngle(perpAngle, -this.vars.spaceBetween * (i + 1)),
+        endPt.clone().moveAlongAngle(perpAngle, -this.vars.spaceBetween * (i + 1))
       )
       this.drawLinePts(leftLinePts)
       this.lines.unshift(leftLinePts)
       const rightLinePts = this.generateLinePts(
-        startPt.moveAlongAngle(perpAngle, this.vars.spaceBetween * (i + 1)),
-        endPt.moveAlongAngle(perpAngle, this.vars.spaceBetween * (i + 1))
+        startPt.clone().moveAlongAngle(perpAngle, this.vars.spaceBetween * (i + 1)),
+        endPt.clone().moveAlongAngle(perpAngle, this.vars.spaceBetween * (i + 1))
       )
       this.drawLinePts(rightLinePts)
       this.lines.push(rightLinePts)

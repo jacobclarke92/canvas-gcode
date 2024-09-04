@@ -481,7 +481,7 @@ export default class SubPath {
       }
     }
 
-    if (this.closed) points.push(points[0])
+    // if (!this.closed) points.push(points[0])
 
     this.pointsCache[divisions] = points
     return points

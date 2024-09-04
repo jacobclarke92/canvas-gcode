@@ -116,7 +116,7 @@ export default class Rays extends Sketch {
 
   drawLines(drawingPoints: typeof this.drawingPoints) {
     for (const [pt, angle, insideShape] of drawingPoints) {
-      const line: Line = [pt, pt.moveAlongAngle(angle, 1000)]
+      const line: Line = [pt, pt.clone().moveAlongAngle(angle, 1000)]
       const intersectionPoints: [intersection: Point, circle: Point, radius: number][] = []
       for (const [pos, rad] of this.reflectiveCircles) {
         const lineAngleCirclePosDiff = angleDiff(angle, line[0].angleTo(pos))
