@@ -1,6 +1,7 @@
 import type { IBodyDefinition, IChamferableBodyDefinition } from 'matter-js'
 import { Bodies, Body, Composite, Engine, Vector } from 'matter-js'
 
+import { colors } from '../constants/colors'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { randFloat, randFloatRange } from '../utils/numberUtils'
@@ -113,7 +114,7 @@ export default class Technicolor extends Sketch {
     this.addVar('numPens', {
       initialValue: 4,
       min: 1,
-      max: this.colors.length + 1,
+      max: colors.length + 1,
       step: 1,
     })
     this.addVar('simSpeed', {
@@ -144,20 +145,6 @@ export default class Technicolor extends Sketch {
   panicCount = 0
   finalized = false
 
-  colors = [
-    '#ffd100',
-    '#2cdd0d',
-    '#ff00ff',
-    '#7de2d1',
-    '#f695c5',
-    '#8601f6',
-    '#f68b08',
-    '#1985a1',
-    '#041fb9',
-    '#6e1ced',
-    '#710280',
-    '#a4161a',
-  ] as const
   colorShapes: Record<number, (Vector[] | { pos: Vector; radius: number })[]>
 
   initDraw(): void {
@@ -284,7 +271,7 @@ export default class Technicolor extends Sketch {
   finalizeDraw(): void {
     if (this.finalized) return
     for (let i = 0; i < this.vars.numPens; i++) {
-      const color = this.colors[i]
+      const color = colors[i]
       if (i > 0) stopAndWigglePen(this, `color ${color}`)
       this.ctx.strokeStyle = color
       for (const shape of this.colorShapes[i]) {
