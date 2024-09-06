@@ -1,8 +1,9 @@
+import { colors } from '../constants/colors'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { circleOverlapsCircles, pointInCircles } from '../utils/geomUtils'
 import { randFloatRange } from '../utils/numberUtils'
-import { initPen, penUp, plotBounds } from '../utils/penUtils'
+import { initPen, penUp, plotBounds, stopAndWigglePen } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
 import { BooleanRange } from './tools/Range'
 
@@ -147,6 +148,12 @@ export default class Boids extends Sketch {
       initialValue: 25,
       min: 0,
       max: 500,
+      step: 1,
+    })
+    this.addVar('numPens', {
+      initialValue: 4,
+      min: 1,
+      max: colors.length + 1,
       step: 1,
     })
     this.vs.crossOver = new BooleanRange({
@@ -374,7 +381,7 @@ export default class Boids extends Sketch {
   draw(increment: number): void {
     const debugMode = !!this.vs.debugMode.value
     const displayTrails = !!this.vs.displayTrails.value
-    const { speedUp, waitFor, stopAfter, tailLength } = this.vars
+    const { speedUp, waitFor, stopAfter, tailLength, numPens } = this.vars
 
     if (this.done) return
 
@@ -384,10 +391,23 @@ export default class Boids extends Sketch {
       // plotBounds(this)
 
       console.log('time to draw paths')
+
+      let i = 0
+      const colorPaths: Point[][][] = []
       for (const boid of this.boids) {
+        const colorIndex = i % numPens
         if (boid.previousPositions.length > 1) boid.previousPaths.push(boid.previousPositions)
-        console.log(boid.previousPaths)
-        for (const path of boid.previousPaths) this.ctx.strokePath(path)
+        if (!colorPaths[colorIndex]) colorPaths[colorIndex] = []
+        for (const path of boid.previousPaths) colorPaths[colorIndex].push(path)
+        i++
+      }
+      for (let i = 0; i < numPens; i++) {
+        const color = colors[i]
+        this.ctx.strokeStyle = color
+        for (const path of colorPaths[i]) {
+          this.ctx.strokePath(path)
+        }
+        if (i < numPens - 1) stopAndWigglePen(this)
       }
 
       this.done = true
