@@ -1,12 +1,13 @@
 import Point from '../Point'
 import { Sketch } from '../Sketch'
+import { getPointsWhereLineIntersectsCircle, pointInCircle } from '../utils/geomUtils'
 import { randFloat } from '../utils/numberUtils'
 import { seedRandom } from '../utils/random'
 
 type Pos = [number, number]
 
 export default class Valleys extends Sketch {
-  static generateGCode = false
+  // static generateGCode = false
 
   init() {
     this.addVar('speedUp', { initialValue: 1, min: 1, max: 100, step: 1, disableRandomize: true })
@@ -25,6 +26,7 @@ export default class Valleys extends Sketch {
     this.addVar('lineConformance', { initialValue: 0.75, min: 0, max: 1, step: 0.001 })
     this.addVar('jointSpace', { initialValue: 1.25, min: 0.5, max: 5, step: 0.01 })
     this.addVar('mountainJointsHeight', { initialValue: 10, min: 0, max: 20, step: 1 })
+    this.addVar('circleRadius', { initialValue: 40, min: 5, max: this.ch / 2, step: 1 })
 
     this.addVar('spaceBetween', { initialValue: 15, min: 1, max: 200, step: 1 })
     this.addVar('valleysEitherSide', { initialValue: 4, min: 1, max: 10, step: 1 })
@@ -78,6 +80,8 @@ export default class Valleys extends Sketch {
       this.drawLinePts(rightLinePts)
       this.lines.push(rightLinePts)
     }
+
+    // this.ctx.strokeCircle(this.cp, this.vars.circleRadius)
   }
 
   generateLinePts(startPt: Point, endPt: Point) {
@@ -109,16 +113,27 @@ export default class Valleys extends Sketch {
 
   drawLinePts(pts: Point[]) {
     this.ctx.beginPath()
+    let started = false
     pts.forEach((pt, i) => {
       if (i < 1) return
-      if (i === 1) this.ctx.moveTo(pts[i - 1].x, pts[i - 1].y)
-      else this.ctx.lineTo(pt.x, pt.y)
+      if (
+        pointInCircle(pts[i - 1], this.cp, this.vars.circleRadius) &&
+        pointInCircle(pt, this.cp, this.vars.circleRadius)
+      ) {
+        if (!started) {
+          this.ctx.moveTo(pts[i - 1].x, pts[i - 1].y)
+          started = true
+        } else {
+          this.ctx.lineTo(pt.x, pt.y)
+        }
+      }
     })
     this.ctx.stroke()
   }
 
   draw(increment: number): void {
     if (this.stopDrawing) return
+    const { circleRadius } = this.vars
     this.increment++
 
     const line1 =
@@ -130,11 +145,27 @@ export default class Valleys extends Sketch {
     const pt1 = line1[this.lineSegIndex]
     const pt2 = line2[this.lineSegIndex + this.vars.mountainJointsHeight]
     if (pt1 && pt2) {
-      this.ctx.beginPath()
-      this.ctx.moveTo(pt1.x, pt1.y)
-      this.ctx.lineTo(pt2.x, pt2.y)
-      this.ctx.stroke()
-      this.ctx.closePath()
+      // const intersectionPoints = getPointsWhereLineIntersectsCircle(
+      //   [pt1, pt2],
+      //   this.cp,
+      //   circleRadius
+      // )
+
+      if (pointInCircle(pt1, this.cp, circleRadius) && pointInCircle(pt2, this.cp, circleRadius)) {
+        this.ctx.beginPath()
+        this.ctx.moveTo(pt1.x, pt1.y)
+        this.ctx.lineTo(pt2.x, pt2.y)
+        this.ctx.stroke()
+      }
+
+      // if (intersectionPoints.length === 0) {
+      //   // this.ctx.closePath()
+      // } else if (intersectionPoints.length === 2) {
+      //   this.ctx.beginPath()
+      //   this.ctx.moveTo(intersectionPoints[0].x, intersectionPoints[0].y)
+      //   this.ctx.lineTo(intersectionPoints[1].x, intersectionPoints[1].y)
+      //   this.ctx.stroke()
+      // }
     }
 
     this.lineSegIndex++
