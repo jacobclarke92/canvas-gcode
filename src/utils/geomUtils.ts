@@ -6,6 +6,9 @@ import { sign } from './numberUtils'
 export type Circle = [point: Point, radius: number]
 export type Bounds = [top: number, right: number, bottom: number, left: number]
 
+export const radToDeg = (rad: number): number => (rad * 180) / Math.PI
+export const degToRad = (deg: number): number => (deg * Math.PI) / 180
+
 export const linesIntersect = (line1: LooseLine, line2: LooseLine): boolean => {
   const [a1, a2] = line1
   const [b1, b2] = line2
@@ -203,4 +206,47 @@ export const trimLineToIntersectionPoints = (line: Line, lines: Line[]): Line =>
   if (intersectionPoints.length > 2) console.log('more than 2 intersection points')
   else if (intersectionPoints.length < 2) return line
   return [intersectionPoints[0][0], intersectionPoints[1][0]]
+}
+
+export const getBezierPoint = (
+  start: Point,
+  control1: Point,
+  control2: Point,
+  end: Point,
+  t: number
+): Point => {
+  const oneMinusT = 1 - t
+  const oneMinusTSquared = oneMinusT * oneMinusT
+  const oneMinusTCubed = oneMinusTSquared * oneMinusT
+  const tSquared = t * t
+  const tCubed = tSquared * t
+
+  const x =
+    oneMinusTCubed * start.x +
+    3 * oneMinusTSquared * t * control1.x +
+    3 * oneMinusT * tSquared * control2.x +
+    tCubed * end.x
+
+  const y =
+    oneMinusTCubed * start.y +
+    3 * oneMinusTSquared * t * control1.y +
+    3 * oneMinusT * tSquared * control2.y +
+    tCubed * end.y
+
+  return new Point(x, y)
+}
+
+export const getBezierPoints = (
+  start: Point,
+  control1: Point,
+  control2: Point,
+  end: Point,
+  numPoints: number
+): Point[] => {
+  const points: Point[] = []
+  for (let i = 0; i < numPoints; i++) {
+    const t = i / numPoints
+    points.push(getBezierPoint(start, control1, control2, end, t))
+  }
+  return points
 }

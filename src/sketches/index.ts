@@ -42,4 +42,5 @@ export default [
   require('./40_SpiralBasic').default,
   require('./41_Comb').default,
   require('./43_Boids').default,
+  require('./44_BoaF').default,
 ]
