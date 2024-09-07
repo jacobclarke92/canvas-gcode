@@ -9,7 +9,7 @@ import {
   pointInCircles,
 } from '../utils/geomUtils'
 import { seedNoise } from '../utils/noise'
-import { degToRad, randFloatRange } from '../utils/numberUtils'
+import { degToRad, randFloat, randFloatRange } from '../utils/numberUtils'
 import { initPen, penUp, plotBounds, stopAndWigglePen } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
 import { BooleanRange } from './tools/Range'
@@ -31,26 +31,38 @@ export default class BoaF extends Sketch {
       max: 200,
       step: 1,
     })
-    this.addVar('maxBowDeg', {
+    this.addVar('maxSpineBowDeg', {
+      initialValue: 15,
+      min: 0,
+      max: 180,
+      step: 0.1,
+    })
+    this.addVar('spineThickness', {
+      initialValue: 0.05,
+      min: 0,
+      max: 0.5,
+      step: 0.001,
+    })
+    this.addVar('spineNodes', {
+      initialValue: 180,
+      min: 4,
+      max: 250,
+      step: 1,
+    })
+    this.addVar('stemLengthPercent', {
+      initialValue: 0.3,
+      min: 0,
+      max: 0.95,
+      step: 0.001,
+    })
+    this.addVar('maxStrandBowDeg', {
       initialValue: 15,
       min: 0,
       max: 90,
       step: 0.1,
     })
-    this.addVar('spineNodes', {
-      initialValue: 50,
-      min: 4,
-      max: 200,
-      step: 1,
-    })
-    this.addVar('stemLengthPercent', {
-      initialValue: 0.2,
-      min: 0,
-      max: 0.95,
-      step: 0.001,
-    })
     this.addVar('strandBreadthRatio', {
-      initialValue: 0.2,
+      initialValue: 0.13,
       min: 0,
       max: 0.95,
       step: 0.001,
@@ -69,18 +81,34 @@ export default class BoaF extends Sketch {
   }
 
   createFeather(startPt: Point, endPt: Point, depth = 0) {
-    const { maxBowDeg, spineNodes, stemLengthPercent, strandBreadthRatio } = this.vars
+    const {
+      maxSpineBowDeg,
+      spineThickness,
+      spineNodes,
+      stemLengthPercent,
+      strandBreadthRatio,
+      maxStrandBowDeg,
+    } = this.vars
     const angle = startPt.angleTo(endPt)
     const dist = startPt.distanceTo(endPt)
-    const skew1 = randFloatRange(degToRad(maxBowDeg))
-    const skew2 = randFloatRange(degToRad(maxBowDeg))
-    const ctrl1 = new Point(
-      Math.cos(angle - skew1) * dist * 0.2,
-      Math.sin(angle - skew1) * dist * 0.2
+    const skew1 = randFloatRange(degToRad(depth === 0 ? maxSpineBowDeg : maxStrandBowDeg))
+    const skew2 = randFloatRange(degToRad(depth === 0 ? maxSpineBowDeg : maxStrandBowDeg))
+    const flip = randFloatRange(1) > 0.5 ? 1 : -1
+    const leftCtrl1 = new Point(
+      Math.cos(angle - skew1 * flip) * dist * 0.2,
+      Math.sin(angle - skew1 * flip) * dist * 0.2
     ).add(startPt)
-    const ctrl2 = new Point(
-      Math.cos(angle + Math.PI - skew2) * dist * 0.5,
-      Math.sin(angle + Math.PI - skew2) * dist * 0.5
+    const leftCtrl2 = new Point(
+      Math.cos(angle + Math.PI - skew2 * flip) * dist * 0.5,
+      Math.sin(angle + Math.PI - skew2 * flip) * dist * 0.5
+    ).add(endPt)
+    const rightCtrl1 = new Point(
+      Math.cos(angle - (skew1 - spineThickness) * flip) * dist * 0.2,
+      Math.sin(angle - (skew1 - spineThickness) * flip) * dist * 0.2
+    ).add(startPt)
+    const rightCtrl2 = new Point(
+      Math.cos(angle + Math.PI - (skew2 + spineThickness) * flip) * dist * 0.5,
+      Math.sin(angle + Math.PI - (skew2 + spineThickness) * flip) * dist * 0.5
     ).add(endPt)
     // debugDot(this.ctx, ctrl1)
     // debugDot(this.ctx, ctrl2)
@@ -90,35 +118,51 @@ export default class BoaF extends Sketch {
     // this.ctx.lineTo(endPt.x, endPt.y)
     // this.ctx.stroke()
     this.ctx.moveTo(startPt.x, startPt.y)
-    this.ctx.bezierCurveTo(ctrl1.x, ctrl1.y, ctrl2.x, ctrl2.y, endPt.x, endPt.y)
+    this.ctx.bezierCurveTo(leftCtrl1.x, leftCtrl1.y, leftCtrl2.x, leftCtrl2.y, endPt.x, endPt.y)
     this.ctx.stroke()
+    if (depth === 0) {
+      this.ctx.moveTo(startPt.x, startPt.y)
+      this.ctx.bezierCurveTo(
+        rightCtrl1.x,
+        rightCtrl1.y,
+        rightCtrl2.x,
+        rightCtrl2.y,
+        endPt.x,
+        endPt.y
+      )
+      this.ctx.stroke()
+    }
 
     if (depth === 0) {
-      const bezierPts = getBezierPoints(startPt, ctrl1, ctrl2, endPt, spineNodes)
+      const leftBezierPts = getBezierPoints(startPt, leftCtrl1, leftCtrl2, endPt, spineNodes)
+      const rightBezierPts = getBezierPoints(startPt, rightCtrl1, rightCtrl2, endPt, spineNodes)
       const spineStartIdx = Math.floor(spineNodes * stemLengthPercent)
-      for (let i = 1; i < bezierPts.length; i++) {
+      for (let i = 1; i < leftBezierPts.length; i++) {
         if (i < spineStartIdx) continue
         const spineT = (i - spineStartIdx) / (spineNodes - spineStartIdx)
-        const pt = bezierPts[i]
-        const prevPt = bezierPts[i - 1]
-        const angle = prevPt.angleTo(pt)
+        const leftPt = leftBezierPts[i]
+        const leftPrevPt = leftBezierPts[i - 1]
+        const leftAngle = leftPrevPt.angleTo(leftPt)
+        const rightPt = rightBezierPts[i]
+        const rightPrevPt = rightBezierPts[i - 1]
+        const rightAngle = rightPrevPt.angleTo(rightPt)
         // debugDot(this.ctx, pt)
 
         const strandLength = dist * strandBreadthRatio * Math.sin(spineT * Math.PI)
         this.createFeather(
-          pt,
+          leftPt,
           new Point(
-            Math.cos(angle - Math.PI / 2) * strandLength,
-            Math.sin(angle - Math.PI / 2) * strandLength
-          ).add(pt),
+            Math.cos(leftAngle - (Math.PI / 2) * flip) * strandLength,
+            Math.sin(leftAngle - (Math.PI / 2) * flip) * strandLength
+          ).add(leftPt),
           depth + 1
         )
         this.createFeather(
-          pt,
+          rightPt,
           new Point(
-            Math.cos(angle + Math.PI / 2) * strandLength,
-            Math.sin(angle + Math.PI / 2) * strandLength
-          ).add(pt),
+            Math.cos(rightAngle + (Math.PI / 2) * flip) * strandLength,
+            Math.sin(rightAngle + (Math.PI / 2) * flip) * strandLength
+          ).add(rightPt),
           depth + 1
         )
       }
