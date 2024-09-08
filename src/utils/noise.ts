@@ -16,6 +16,8 @@
  *
  */
 
+import { fade, lerp } from './geomUtils'
+
 class Grad {
   x: number
   y: number
@@ -253,9 +255,6 @@ export const simplex2 = (xIn: number, yIn: number) => {
   */
 
 // ##### Perlin noise stuff
-
-const fade = (t: number) => t * t * t * (t * (t * 6 - 15) + 10)
-const lerp = (a: number, b: number, t: number) => (1 - t) * a + t * b
 
 // 2D Perlin Noise
 export const perlin2 = (x: number, y: number) => {

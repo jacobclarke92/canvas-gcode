@@ -9,6 +9,9 @@ export type Bounds = [top: number, right: number, bottom: number, left: number]
 export const radToDeg = (rad: number): number => (rad * 180) / Math.PI
 export const degToRad = (deg: number): number => (deg * Math.PI) / 180
 
+export const fade = (t: number) => t * t * t * (t * (t * 6 - 15) + 10)
+export const lerp = (a: number, b: number, t: number) => (1 - t) * a + t * b
+
 export const linesIntersect = (line1: LooseLine, line2: LooseLine): boolean => {
   const [a1, a2] = line1
   const [b1, b2] = line2
