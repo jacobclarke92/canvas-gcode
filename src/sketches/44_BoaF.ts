@@ -43,7 +43,7 @@ export default class BoaF extends Sketch {
     this.addVar('amount', {
       initialValue: 3,
       min: 1,
-      max: 40,
+      max: 80,
       step: 1,
       disableRandomize: true,
     })
@@ -92,7 +92,7 @@ export default class BoaF extends Sketch {
     this.addVar('strandBreadthRatio', {
       initialValue: 0.13,
       min: 0,
-      max: 0.95,
+      max: 0.6,
       step: 0.001,
     })
     this.addVar('strandArcAmount', {
@@ -113,46 +113,36 @@ export default class BoaF extends Sketch {
       max: 1.001,
       step: 0.001,
     })
+    this.addVar('scraggliness', {
+      initialValue: 0.008,
+      min: 0,
+      max: 0.1,
+      step: 0.001,
+    })
   }
+
+  unresolvedCount = 0
+  finished = false
+  linesToAvoid: Line[] = []
 
   initDraw(): void {
     const { seed, gutter, amount, maxLength, spineNodes } = this.vars
     const minLength = Math.min(this.vars.minLength, maxLength - 1)
     seedRandom(seed)
     seedNoise(this.vs.seed.value)
+    initPen(this)
 
-    if (amount > 1) {
-      const lines: Line[] = []
-      let panik = 0
-      let i = 0
-      while (i < amount && panik < 10000) {
-        const start = new Point(
-          randFloatRange(this.cw - gutter, gutter),
-          randFloatRange(this.ch - gutter, gutter)
-        )
-        const end = new Point(
-          randFloatRange(this.cw - gutter, gutter),
-          randFloatRange(this.ch - gutter, gutter)
-        )
-        const line: Line = [start, end]
-        const length = start.distanceTo(end)
-        if (length > maxLength || length < minLength) continue
-        if (lineIntersectsWithAny(line, ...lines)) continue
+    this.unresolvedCount = 0
+    this.finished = false
+    this.linesToAvoid = []
 
-        this.createFeather(line[0], line[1], 0, {
-          spineNodes: Math.ceil(spineNodes * Math.min(1, length / maxLength)),
-        })
-
-        lines.push(line)
-        i++
-        panik++
-      }
-    } else {
+    if (amount === 1) {
       this.createFeather(
         new Point(this.cw * 0.35, this.ch * 0.8),
         new Point(this.cw * 0.6, this.ch * 0.2),
         0
       )
+      penUp(this)
     }
   }
 
@@ -168,6 +158,7 @@ export default class BoaF extends Sketch {
       strandUplift,
       strandUprightTrend,
       strandArcAmount,
+      scraggliness,
     } = opts
     const featherAngle = startPt.angleTo(endPt)
     const dist = startPt.distanceTo(endPt)
@@ -229,12 +220,14 @@ export default class BoaF extends Sketch {
         const rightAngle = rightPrevPt.angleTo(rightPt)
         // debugDot(this.ctx, pt)
 
-        const strandLength =
+        const strandLength = Math.max(
+          0,
           dist *
-          strandBreadthRatio *
-          (1 - strandArcAmount + Math.sin(spineT * Math.PI) * strandArcAmount)
+            strandBreadthRatio *
+            (1 - strandArcAmount + Math.sin(spineT * Math.PI) * strandArcAmount) +
+            randFloat(scraggliness * dist)
+        )
 
-        // strandUprightTrend
         const leftOuterPtPerpAngle = leftAngle - (Math.PI / 2 - strandUplift) * flip
         const rightOuterPtPerpAngle = rightAngle + (Math.PI / 2 - strandUplift) * flip
 
@@ -267,6 +260,53 @@ export default class BoaF extends Sketch {
   }
 
   draw(increment: number): void {
-    //
+    const { amount, gutter, minLength: _minLength, maxLength, spineNodes } = this.vars
+    const minLength = _minLength > maxLength ? maxLength - 1 : _minLength
+
+    if (amount === 1) return
+
+    if (this.linesToAvoid.length >= amount || this.unresolvedCount >= 12) {
+      if (!this.finished) {
+        penUp(this)
+        this.finished = true
+      }
+      return
+    }
+
+    // const lines: Line[] = []
+    let panik = 0
+    while (panik < 500) {
+      const start = new Point(
+        randFloatRange(this.cw - gutter, gutter),
+        randFloatRange(this.ch - gutter, gutter)
+      )
+      const end = new Point(
+        randFloatRange(this.cw - gutter, gutter),
+        randFloatRange(this.ch - gutter, gutter)
+      )
+      const angle = start.angleTo(end)
+      const line: Line = [
+        start.clone().moveAlongAngle(angle + Math.PI, maxLength * 0.35),
+        end.clone().moveAlongAngle(angle, maxLength * 0.35),
+      ]
+      // this.ctx.strokeLine(...line)
+      const length = start.distanceTo(end)
+      if (length > maxLength || length < minLength) {
+        panik++
+        continue
+      }
+      if (this.linesToAvoid.length > 0 && lineIntersectsWithAny(line, ...this.linesToAvoid)) {
+        panik++
+        continue
+      }
+
+      this.createFeather(start, end, 0, {
+        spineNodes: Math.ceil(spineNodes * Math.min(1, length / maxLength)),
+      })
+
+      this.linesToAvoid.push(line)
+      break
+    }
+    if (panik >= 500) this.unresolvedCount++
   }
 }
