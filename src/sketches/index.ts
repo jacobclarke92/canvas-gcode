@@ -43,4 +43,5 @@ export default [
   require('./41_Comb').default,
   require('./43_Boids').default,
   require('./44_BoaF').default,
+  require('./45_Bulge').default,
 ]
