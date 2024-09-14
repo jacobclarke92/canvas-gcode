@@ -180,6 +180,7 @@ export default class Motion {
 
     if (!params.f) {
       let f = dist / (1 / this.ctx.feed)
+      f = Math.max(f, this.ctx.minFeed)
       f = Math.round(f * 1000000) / 1000000
       if (f) params.f = Math.abs(f)
     }

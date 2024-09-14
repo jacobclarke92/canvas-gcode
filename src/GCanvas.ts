@@ -102,7 +102,8 @@ export default class GCanvas {
   public depthOfCut = 0
   public retract = 0
   public speed = 50 // not used i don't think
-  public feed = 1000 // defs used
+  public feed = 2000 // is actually used to calculate the F value in Motion.postProcess
+  public minFeed = 1000
   public act = 0
   public unit: Unit = 'mm'
   public top = 0
