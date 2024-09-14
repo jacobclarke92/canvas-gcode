@@ -39,6 +39,7 @@ export default class BoaF extends Sketch {
       min: 0,
       max: 70,
       step: 1,
+      disableRandomize: true,
     })
     this.addVar('amount', {
       initialValue: 3,
@@ -138,8 +139,8 @@ export default class BoaF extends Sketch {
 
     if (amount === 1) {
       this.createFeather(
-        new Point(this.cw * 0.35, this.ch * 0.8),
-        new Point(this.cw * 0.6, this.ch * 0.2),
+        new Point(this.cw * 0.25, this.ch - gutter),
+        new Point(this.cw * 0.75, gutter),
         0
       )
       penUp(this)
