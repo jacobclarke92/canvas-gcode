@@ -3,7 +3,7 @@ import { Sketch } from '../Sketch'
 import { debugDot } from '../utils/debugUtils'
 import { perlin2, seedNoise } from '../utils/noise'
 import { randFloatRange } from '../utils/numberUtils'
-import { initPen, penUp } from '../utils/penUtils'
+import { initPen, penUp, plotBounds } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
 import Range, { BooleanRange } from './tools/Range'
 
@@ -49,6 +49,12 @@ export default class Bulge extends Sketch {
     this.vs.square = new BooleanRange({
       disableRandomize: true,
       initialValue: true,
+    })
+    this.addVar('skipChance', {
+      initialValue: 0,
+      min: 0,
+      max: 1,
+      step: 0.001,
     })
     this.addVar('bulgeX', {
       initialValue: this.cw / 2,
@@ -103,6 +109,7 @@ export default class Bulge extends Sketch {
     seedRandom(this.vs.seed.value)
     seedNoise(this.vs.seed.value)
     initPen(this)
+    plotBounds(this)
     const isSquare = !!this.vs.square.value
     const { cols: _cols, rows, outerGap, bulgeX, bulgeY } = this.vars
     const cols = isSquare ? rows : _cols
@@ -129,6 +136,7 @@ export default class Bulge extends Sketch {
       cols: _cols,
       rows,
       outerGap,
+      skipChance,
       bulgeSize,
       maxHeight,
       distribution,
@@ -144,6 +152,7 @@ export default class Bulge extends Sketch {
       const y = Math.floor(realCount / cols)
 
       if (x % 2 === 0 || y % 2) continue
+      if (randFloatRange(1) < skipChance) continue
 
       const xPos = this.startX + x * this.boxSize
       const yPos = outerGap + y * this.boxSize
