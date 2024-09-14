@@ -413,6 +413,10 @@ export default class SubPath {
             }
           }
 
+          // augment divisions based on actual distance so as to not over-complicate small curves
+          const dist = new Point(cpx0, cpy0).distanceTo(new Point(aX, aY))
+          divisions = Math.min(divisions, Math.ceil(dist / 10))
+
           for (let j = 1; j <= divisions; j++) {
             const t = j / divisions
 
@@ -448,6 +452,10 @@ export default class SubPath {
               cpy0 = lastAction.args[1]
             }
           }
+
+          // augment divisions based on actual distance so as to not over-complicate small curves
+          const dist = new Point(cpx0, cpy0).distanceTo(new Point(aX, aY))
+          divisions = Math.min(divisions, Math.ceil(dist))
 
           for (let j = 1; j <= divisions; j++) {
             const t = j / divisions
