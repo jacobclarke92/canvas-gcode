@@ -253,3 +253,23 @@ export const getBezierPoints = (
   }
   return points
 }
+
+export const getTangentsToCircle = (pt: Point, circlePt: Point, radius: number): [Point, Point] => {
+  const relativePt = circlePt.clone().subtract(pt)
+  const distance = relativePt.magnitude()
+  const angle = Math.asin(radius / distance)
+  const angleToPt = Math.atan2(relativePt.y, relativePt.x)
+
+  const tangentAngle1 = angleToPt - angle
+  const tangentAngle2 = angleToPt + angle
+
+  const tangent1 = new Point(
+    radius * Math.sin(tangentAngle1),
+    radius * -Math.cos(tangentAngle1)
+  ).add(circlePt)
+  const tangent2 = new Point(
+    radius * -Math.sin(tangentAngle2),
+    radius * Math.cos(tangentAngle2)
+  ).add(circlePt)
+  return [tangent1, tangent2]
+}
