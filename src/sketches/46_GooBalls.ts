@@ -63,7 +63,7 @@ export default class GooBalls extends Sketch {
       step: 1,
     })
     this.addVar('maxSegments', {
-      initialValue: 4,
+      initialValue: 5,
       min: 2,
       max: 12,
       step: 1,
@@ -95,7 +95,7 @@ class Segment {
   prev?: Segment
 
   constructor(sketch: Sketch, notFirst?: { prev: Segment; allPrev: Segment[] }) {
-    const { gutter, minRadius, maxRadius, minGap, maxGap, minSegments, maxSegments } = sketch.vars
+    const { gutter, minRadius, maxRadius, minGap, maxGap } = sketch.vars
     this.radius = randFloatRange(minRadius, maxRadius)
     if (notFirst) {
       const { prev, allPrev } = notFirst
@@ -122,6 +122,20 @@ class Segment {
         gutter + this.radius + randFloatRange(sketch.cw - (gutter + this.radius) * 2),
         gutter + this.radius + randFloatRange(sketch.ch - (gutter + this.radius) * 2)
       )
+    }
+  }
+
+  getJointInfo(otherSeg: Segment) {
+    const gapDist = this.pt.distanceTo(otherSeg.pt) - (this.radius + otherSeg.radius)
+    const midPt = this.pt.clone().moveTowards(otherSeg.pt, this.radius + gapDist / 2)
+
+    const tangentPts1 = getTangentsToCircle(midPt, this.pt, this.radius)
+    const tangentPts2 = getTangentsToCircle(midPt, otherSeg.pt, otherSeg.radius)
+
+    return {
+      midPt,
+      tangentPts1,
+      tangentPts2,
     }
   }
 }
@@ -152,12 +166,35 @@ class Creature {
     for (let i = 1; i < this.segments.length; i++) {
       const seg1 = this.segments[i - 1]
       const seg2 = this.segments[i]
+      const seg3 = this.segments[i + 1]
 
-      const gapDist = seg1.pt.distanceTo(seg2.pt) - (seg1.radius + seg2.radius)
-      const midPt = seg1.pt.clone().moveTowards(seg2.pt, seg1.radius + gapDist / 2)
+      const { midPt, tangentPts1, tangentPts2 } = seg1.getJointInfo(seg2)
 
-      const tangentPts1 = getTangentsToCircle(midPt, seg1.pt, seg1.radius)
-      const tangentPts2 = getTangentsToCircle(midPt, seg2.pt, seg2.radius)
+      const tan1overlaps = false
+      let tan2overlaps = false
+      if (seg3) {
+        const jointInfo = seg2.getJointInfo(seg3)
+        // TODO: detect if joints would overlap and adjust bezier accordingly to skip the midpoint of seg 1 and 2 and find a better midpoint between seg 0 and 2
+        const seg2tan2angle1 = seg2.pt.angleTo(tangentPts2[0])
+        const seg2tan2angle2 = seg2.pt.angleTo(jointInfo.tangentPts1[1])
+
+        if (seg2tan2angle2 < seg2tan2angle1) {
+          tan2overlaps = true
+        }
+
+        if (debug) {
+          this.sketch.ctx.beginPath()
+          this.sketch.ctx.moveTo(...seg2.pt.toArray())
+          this.sketch.ctx.lineTo(
+            ...seg2.pt.clone().moveAlongAngle(seg2tan2angle1, seg2.radius).toArray()
+          )
+          this.sketch.ctx.moveTo(...seg2.pt.toArray())
+          this.sketch.ctx.lineTo(
+            ...seg2.pt.clone().moveAlongAngle(seg2tan2angle2, seg2.radius).toArray()
+          )
+          this.sketch.ctx.stroke({ debug: true })
+        }
+      }
 
       this.ctx.beginPath()
       this.ctx.arc(
@@ -184,11 +221,11 @@ class Creature {
       if (debug) {
         this.ctx.strokeCircle(seg1.pt, seg1.radius, { debug: true })
         this.ctx.strokeCircle(seg2.pt, seg2.radius, { debug: true })
-        debugDot(this.ctx, midPt, 'red')
-        debugDot(this.ctx, tangentPts1[0], 'blue')
-        debugDot(this.ctx, tangentPts1[1], 'blue')
-        debugDot(this.ctx, tangentPts2[0], 'green')
-        debugDot(this.ctx, tangentPts2[1], 'green')
+        debugDot(this.ctx, midPt, 'green')
+        debugDot(this.ctx, tangentPts1[0], 'pink')
+        debugDot(this.ctx, tangentPts1[1], tan2overlaps ? 'red' : 'aqua')
+        debugDot(this.ctx, tangentPts2[0], tan2overlaps ? 'red' : 'blue')
+        debugDot(this.ctx, tangentPts2[1], 'purple')
         this.ctx.beginPath()
         this.ctx.moveTo(...midPt.toArray())
         this.ctx.lineTo(...tangentPts1[0].toArray())
@@ -198,6 +235,13 @@ class Creature {
         this.ctx.lineTo(...tangentPts2[0].toArray())
         this.ctx.moveTo(...midPt.toArray())
         this.ctx.lineTo(...tangentPts2[1].toArray())
+        this.ctx.moveTo(...seg1.pt.toArray())
+        this.ctx.lineTo(
+          ...seg1.pt
+            .clone()
+            .moveTowards(seg2.pt, seg1.radius / 2)
+            .toArray()
+        )
         this.ctx.stroke({ debug: true })
       }
 
