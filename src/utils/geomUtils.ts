@@ -193,6 +193,14 @@ export const boundsOverlapAny = (bound: Bounds, ...bounds: Bounds[]): boolean =>
   return false
 }
 
+export const isInBounds = (pt: Point, bounds: Bounds, gutter = 0): boolean => {
+  const top = bounds[0] + gutter
+  const right = bounds[1] - gutter
+  const bottom = bounds[2] - gutter
+  const left = bounds[3] + gutter
+  return pt.x >= left && pt.x <= right && pt.y >= top && pt.y <= bottom
+}
+
 export const pointsToLines = (points: Point[], unclosed = false): Line[] => {
   const lines: Line[] = []
   for (let i = 0; i < points.length - 1; i++) {
