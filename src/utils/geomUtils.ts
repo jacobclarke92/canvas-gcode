@@ -12,6 +12,22 @@ export const degToRad = (deg: number): number => (deg * Math.PI) / 180
 export const fade = (t: number) => t * t * t * (t * (t * 6 - 15) + 10)
 export const lerp = (a: number, b: number, t: number) => (1 - t) * a + t * b
 
+export const mod = (a: number, n: number) => a - Math.floor(a / n) * n
+
+// https://stackoverflow.com/a/1878936/13326984
+// export const smallestSignedAngleDiff = (angle1: number, angle2: number): number => {
+//   const TAU = Math.PI * 2
+//   const a = mod(angle1 - angle2, TAU)
+//   const b = mod(angle2 - angle1, TAU)
+//   return a < b ? -a : b
+// }
+
+export const smallestSignedAngleDiff = (angle1: number, angle2: number): number => {
+  let diff = Math.abs(angle1 - angle2) % (Math.PI * 2)
+  if (diff > Math.PI) diff = Math.PI * 2 - diff
+  return diff
+}
+
 export const linesIntersect = (line1: LooseLine, line2: LooseLine): boolean => {
   const [a1, a2] = line1
   const [b1, b2] = line2
@@ -281,3 +297,6 @@ export const getTangentsToCircle = (pt: Point, circlePt: Point, radius: number):
   ).add(circlePt)
   return [tangent1, tangent2]
 }
+
+export const getMidPt = (...pts: Point[]): Point =>
+  pts.reduce((acc, pt) => acc.add(pt), new Point(0, 0)).divide(pts.length)
