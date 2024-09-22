@@ -3,14 +3,12 @@ import { Sketch } from '../Sketch'
 import type { Line } from '../types'
 import { debugDot, debugText } from '../utils/debugUtils'
 import {
+  arcsOverlap,
   circleOverlapsCircles,
-  getMidPt,
   getTangentsToCircle,
   isInBounds,
   lineIntersectsWithAny,
   pointInCircle,
-  pointInCircles,
-  radToDeg,
   smallestSignedAngleDiff,
 } from '../utils/geomUtils'
 import { seedNoise } from '../utils/noise'
@@ -32,13 +30,13 @@ export default class GooBalls2 extends Sketch {
       disableRandomize: true,
     })
     this.addVar('seed', {
-      initialValue: 1620, // 1728, // 2586, // 2286, //1193,
+      initialValue: 2242, //1754, // 1620, // 1728, // 2586, // 2286, //1193,
       min: 1000,
       max: 5000,
       step: 1,
     })
     this.addVar('gutter', {
-      initialValue: 12,
+      initialValue: 8,
       min: 0,
       max: 25,
       step: 1,
@@ -69,19 +67,19 @@ export default class GooBalls2 extends Sketch {
       step: 1,
     })
     this.addVar('adhesion', {
-      initialValue: 10,
+      initialValue: 1.8,
       min: 0,
       max: 25,
       step: 0.1,
     })
     this.addVar('minSegments', {
-      initialValue: 3,
+      initialValue: 6,
       min: 2,
       max: 12,
       step: 1,
     })
     this.addVar('maxSegments', {
-      initialValue: 4,
+      initialValue: 6,
       min: 2,
       max: 12,
       step: 1,
@@ -123,10 +121,10 @@ class Segment {
   radius: number
   prev?: Segment
   prevJointInfo?: ReturnType<Segment['getJointInfo']>
-  jointMidPtL?: Point
-  jointMidPtR?: Point
-  overlappedCW = false
-  overlappedCCW = false
+  // jointMidPtL?: Point
+  // jointMidPtR?: Point
+  overlappedR = false
+  overlappedL = false
 
   constructor(sketch: Sketch, notFirst?: { index: number; prev: Segment; allPrev: Segment[] }) {
     const { gutter, minRadius, maxRadius, minGap, maxGap, maxAngleDiff } = sketch.vars
@@ -199,25 +197,6 @@ class Segment {
           suitableFound = true
         }
       }
-
-      // const angleDiff = Math.abs(smallestSignedAngleDiff(prevPrevAngle, prev.pt.angleTo(pt)))
-      // if (sketch.vs.showDebug.value)
-      //   debugText(
-      //     sketch.ctx,
-      //     [
-      //       `#${index}`,
-      //       ...(hasPrevPrev
-      //         ? [
-      //             `pp∠: ${radToDeg(prevPrevAngle).toFixed(2)}°`,
-      //             `p∠: ${radToDeg(prev.pt.angleTo(pt)).toFixed()}°`,
-      //             `diff: ${radToDeg(angleDiff).toFixed(2)}°`,
-      //             // `minDiff: ${radToDeg(maxAngleDiff).toFixed(2)}°`,
-      //           ]
-      //         : []),
-      //     ].join('\n'),
-      //     this.pt,
-      //     { size: 3 }
-      //   )
     } else {
       this.pt = new Point(
         gutter + this.radius + randFloatRange(sketch.cw - (gutter + this.radius) * 2),
@@ -292,121 +271,55 @@ class Creature {
 
         const nextSegJointInfo = seg.getJointInfo(nextSeg, this.vars.adhesion)
 
-        // const seg2tan2angle1 = seg.pt.angleTo(prevSegJointInfo.tangentPtsR[0])
-        // const seg2tan2angle2 = seg.pt.angleTo(nextSegJointInfo.tangentPtsL[1])
-
         const prevJointAngleL = seg.pt.angleTo(prevSegJointInfo.tangentPtsL[1])
         const nextJointAngleL = seg.pt.angleTo(nextSegJointInfo.tangentPtsL[0])
-        const angleDiffL = prevJointAngleL - nextJointAngleL // smallestSignedAngleDiff(prevJointAngleL, nextJointAngleL)
 
         const prevJointAngleR = seg.pt.angleTo(prevSegJointInfo.tangentPtsR[1])
         const nextJointAngleR = seg.pt.angleTo(nextSegJointInfo.tangentPtsR[0])
-        const angleDiffR = prevJointAngleR - nextJointAngleR // smallestSignedAngleDiff(prevJointAngleR, nextJointAngleR)
 
-        this.sketch.ctx.beginPath()
-        this.sketch.ctx.moveTo(...seg.pt.toArray())
-        this.sketch.ctx.lineTo(...prevSegJointInfo.tangentPtsL[1].toArray())
-        this.sketch.ctx.stroke({ debug: true, debugColor: 'blue' })
-        this.sketch.ctx.beginPath()
-        this.sketch.ctx.moveTo(...seg.pt.toArray())
-        this.sketch.ctx.lineTo(...nextSegJointInfo.tangentPtsL[0].toArray())
-        this.sketch.ctx.stroke({ debug: true, debugColor: 'aqua' })
-        this.sketch.ctx.beginPath()
-        this.sketch.ctx.moveTo(...seg.pt.toArray())
-        this.sketch.ctx.lineTo(...prevSegJointInfo.tangentPtsR[1].toArray())
-        this.sketch.ctx.stroke({ debug: true, debugColor: 'purple' })
-        this.sketch.ctx.beginPath()
-        this.sketch.ctx.moveTo(...seg.pt.toArray())
-        this.sketch.ctx.lineTo(...nextSegJointInfo.tangentPtsR[0].toArray())
-        this.sketch.ctx.stroke({ debug: true, debugColor: 'pink' })
+        const overlapResult = arcsOverlap(
+          [prevJointAngleR, prevJointAngleL],
+          [nextJointAngleL, nextJointAngleR]
+        )
 
-        const H = (x: number) => (x < 0 ? -1 : 1)
-
-        const prevRange = [prevJointAngleL, prevJointAngleR]
-        const nextRange = [nextJointAngleL, nextJointAngleR]
-
-        // https://stackoverflow.com/a/20881364/13326984
-        const S =
-          (nextRange[0] - prevRange[1]) *
-          (nextRange[1] - prevRange[0]) *
-          H(prevRange[1] - prevRange[0]) *
-          H(nextRange[1] - nextRange[0])
-        const leftOverlaps = S > 0
-        // S = (b0 - a1) * (b1 - a0)
-        // S = (b0-a1)*(b1-a0)*H(a1-a0)*H(b1-b0)
-
-        const pointsL = [
-          prevSegJointInfo.midPtL,
-          nextSegJointInfo.midPtL,
-          prevSegJointInfo.tangentPtsL[0],
-          nextSegJointInfo.tangentPtsL[1],
-        ]
-        const pointsR = [
-          prevSegJointInfo.midPt,
-          nextSegJointInfo.midPt,
-          prevSegJointInfo.tangentPtsR[0],
-          nextSegJointInfo.tangentPtsR[1],
-        ]
-        seg.jointMidPtL = getMidPt(...pointsL)
-        seg.jointMidPtR = getMidPt(...pointsR)
-
-        // if combined joint average sits outside the current segment, we have a problem
-        // it means the joins between prev and next segment overlap in some way
-        if (/*!pointInCircle(seg.jointMidPtL, seg.pt, seg.radius)*/ angleDiffL > 0) {
-          debugDot(this.ctx, seg.jointMidPtL, 'magenta')
-          seg.overlappedCW = true
-
-          // if (debug) {
-          //   this.ctx.beginPath()
-          //   pointsL.forEach((pt) => {
-          //     this.ctx.moveTo(...seg.jointMidPtL.toArray())
-          //     this.ctx.lineTo(...pt.toArray())
-          //   })
-          //   this.ctx.stroke({ debug: true, debugColor: 'magenta' })
-          // }
+        if (overlapResult.overlaps && overlapResult.skew === 'right') {
+          // debugDot(this.ctx, seg.jointMidPtL, 'magenta')
+          seg.overlappedR = true
         }
-
-        // now we do the above but in reverse
-        // if combined joint average sits outside the current segment, we have a problem
-        // it means the joins between prev and next segment overlap in some way
-        if (/*!pointInCircle(seg.jointMidPtR, seg.pt, seg.radius)*/ angleDiffR > 0) {
-          debugDot(this.ctx, seg.jointMidPtR, 'lime')
-          seg.overlappedCCW = true
-
-          // if (debug) {
-          //   this.ctx.beginPath()
-          //   pointsR.forEach((pt) => {
-          //     this.ctx.moveTo(...seg.jointMidPtR.toArray())
-          //     this.ctx.lineTo(...pt.toArray())
-          //   })
-          //   this.ctx.stroke({ debug: true, debugColor: 'lime' })
-          // }
+        if (overlapResult.overlaps && overlapResult.skew === 'left') {
+          // debugDot(this.ctx, seg.jointMidPtR, 'lime')
+          seg.overlappedL = true
         }
 
         if (debug) {
-          // this.sketch.ctx.beginPath()
-          // this.sketch.ctx.moveTo(...seg.pt.toArray())
-          // this.sketch.ctx.lineTo(
-          //   ...seg.pt.clone().moveAlongAngle(seg2tan2angle1, seg.radius).toArray()
-          // )
-          // this.sketch.ctx.moveTo(...seg.pt.toArray())
-          // this.sketch.ctx.lineTo(
-          //   ...seg.pt.clone().moveAlongAngle(seg2tan2angle2, seg.radius).toArray()
-          // )
-          // this.sketch.ctx.stroke({ debug: true })
+          this.sketch.ctx.beginPath()
+          this.sketch.ctx.moveTo(...seg.pt.toArray())
+          this.sketch.ctx.lineTo(...prevSegJointInfo.tangentPtsL[1].toArray())
+          this.sketch.ctx.stroke({ debug: true, debugColor: 'blue' })
+          this.sketch.ctx.beginPath()
+          this.sketch.ctx.moveTo(...seg.pt.toArray())
+          this.sketch.ctx.lineTo(...nextSegJointInfo.tangentPtsL[0].toArray())
+          this.sketch.ctx.stroke({ debug: true, debugColor: 'aqua' })
+          this.sketch.ctx.beginPath()
+          this.sketch.ctx.moveTo(...seg.pt.toArray())
+          this.sketch.ctx.lineTo(...prevSegJointInfo.tangentPtsR[1].toArray())
+          this.sketch.ctx.stroke({ debug: true, debugColor: 'purple' })
+          this.sketch.ctx.beginPath()
+          this.sketch.ctx.moveTo(...seg.pt.toArray())
+          this.sketch.ctx.lineTo(...nextSegJointInfo.tangentPtsR[0].toArray())
+          this.sketch.ctx.stroke({ debug: true, debugColor: 'pink' })
 
           debugText(
             this.ctx,
             [
               //
               `#${i}`,
-              `S: ${S}`,
-              // `prevJointAngleL: ${radToDeg(prevJointAngleL).toFixed(2)}°`,
-              // `nextJointAngleL: ${radToDeg(nextJointAngleL).toFixed(2)}°`,
-              // `angleDiffL: ${radToDeg(angleDiffL).toFixed(2)}°`,
-              // `prevJointAngleR: ${radToDeg(prevJointAngleR).toFixed(2)}°`,
-              // `nextJointAngleR: ${radToDeg(nextJointAngleR).toFixed(2)}°`,
-              // `angleDiffR: ${radToDeg(angleDiffR).toFixed(2)}°`,
+              `overlaps: ${overlapResult.overlaps ? 'yes' : 'no'}`,
+              overlapResult.skew && `overlapSkew: ${overlapResult.skew}`,
+              // `prevJointAngleL: ${prevJointAngleL.toFixed(2)}°`,
+              // `prevJointAngleR: ${prevJointAngleR.toFixed(2)}°`,
+              // `nextJointAngleL: ${nextJointAngleL.toFixed(2)}°`,
+              // `nextJointAngleR: ${nextJointAngleR.toFixed(2)}°`,
             ]
               .filter(Boolean)
               .join('\n'),
@@ -455,23 +368,106 @@ class Creature {
   }
 
   draw(debug = false): void {
-    for (let i = this.segments.length - 1; i >= 0; i--) {
-      const seg = this.segments[i]
-      const prevSeg = seg.prev
+    // eslint-disable-next-line prefer-const
+    let dir: 'L' | 'R' = 'R'
+    // eslint-disable-next-line prefer-const
+    let bezierStartPt: Point | false = false
+    // eslint-disable-next-line prefer-const
+    let bezierCtrlPt1: Point | false = false
+    // eslint-disable-next-line prefer-const
+    let bezierCtrlPt2: Point | false = false
 
-      // debugText(
-      //   this.ctx,
-      //   [
-      //     //
-      //     `#${i}`,
-      //     seg.overlappedCW && 'overlappedCW',
-      //     seg.overlappedCCW && 'overlappedCCW',
-      //   ]
-      //     .filter(Boolean)
-      //     .join('\n'),
-      //   seg.pt,
-      //   { size: 3 }
-      // )
+    this.ctx.beginPath()
+    for (let i = 1; dir === 'R' ? i < this.segments.length : i > 0; dir === 'R' ? i++ : i--) {
+      const seg = this.segments[i]
+      const next = this.segments[i + 1]
+      if (dir === 'R' && i === 1) {
+        this.ctx.arc(
+          ...seg.prev.pt.toArray(),
+          seg.prev.radius,
+          seg.prev.pt.angleTo(seg.prevJointInfo.tangentPtsL[1]),
+          seg.prev.pt.angleTo(seg.prevJointInfo.tangentPtsR[1]),
+          false
+        )
+        // this.ctx.moveTo(...seg.prevJointInfo.tangentPtsR[1].toArray())
+      }
+
+      if (!bezierStartPt) {
+        if (dir === 'R' && !seg.prev[`overlapped${dir}`]) {
+          bezierStartPt = seg.prevJointInfo[`tangentPts${dir}`][dir === 'R' ? 1 : 0]
+          // debugDot(this.ctx, bezierStartPt, 'black')
+          bezierCtrlPt1 = seg.prevJointInfo[`midPt${dir}`]
+        } else if (dir === 'L' && (!next || !seg[`overlapped${dir}`])) {
+          bezierStartPt = seg.prevJointInfo[`tangentPts${dir}`][0]
+          // debugDot(this.ctx, bezierStartPt, 'black')
+          bezierCtrlPt1 = seg.prevJointInfo[`midPt${dir}`]
+        }
+      } else {
+        bezierCtrlPt2 = seg.prevJointInfo[`midPt${dir}`]
+      }
+
+      if ((!next || !seg[`overlapped${dir}`]) && bezierStartPt) {
+        const bezierEndPt = seg.prevJointInfo[`tangentPts${dir}`][dir === 'R' ? 0 : 1]
+        if (!bezierCtrlPt2) bezierCtrlPt2 = bezierCtrlPt1
+
+        // this.ctx.moveTo(...bezierStartPt.toArray())
+        // this.ctx.lineTo(...(bezierCtrlPt1 as Point).toArray())
+        // this.ctx.lineTo(...bezierCtrlPt2.toArray())
+        // this.ctx.lineTo(...bezierEndPt.toArray())
+        // this.ctx.stroke({ debug: true })
+
+        this.ctx.moveTo(...bezierStartPt.toArray())
+        this.ctx.bezierCurveTo(
+          ...(bezierCtrlPt1 as Point).toArray(),
+          ...(bezierCtrlPt2 as Point).toArray(),
+          ...bezierEndPt.toArray()
+        )
+        bezierStartPt = false
+        bezierCtrlPt1 = false
+        bezierCtrlPt2 = false
+      }
+
+      if (next) {
+        if (dir === 'R') {
+          if (!seg[`overlapped${dir}`] /*&& !seg.prev[`overlapped${dir}`]*/) {
+            this.ctx.moveTo(...seg.prevJointInfo[`tangentPts${dir}`][0].toArray())
+            this.ctx.arc(
+              ...seg.pt.toArray(),
+              seg.radius,
+              seg.pt.angleTo(seg.prevJointInfo[`tangentPts${dir}`][0]),
+              seg.pt.angleTo(next.prevJointInfo[`tangentPts${dir}`][1]),
+              false
+            )
+          }
+        } else {
+          if (!seg[`overlapped${dir}`] /* && !next[`overlapped${dir}`]*/) {
+            this.ctx.moveTo(...next.prevJointInfo[`tangentPts${dir}`][1].toArray())
+            this.ctx.arc(
+              ...seg.pt.toArray(),
+              seg.radius,
+              seg.pt.angleTo(next.prevJointInfo[`tangentPts${dir}`][1]),
+              seg.pt.angleTo(seg.prevJointInfo[`tangentPts${dir}`][0]),
+              false
+            )
+          }
+        }
+      }
+
+      // close last one before turning around
+      if (!next && dir === 'R') {
+        this.ctx.arc(
+          ...seg.pt.toArray(),
+          seg.radius,
+          seg.pt.angleTo(seg.prevJointInfo.tangentPtsR[0]),
+          seg.pt.angleTo(seg.prevJointInfo.tangentPtsL[0]),
+          false
+        )
+        i++
+        dir = 'L'
+      }
+
+      //
     }
+    this.ctx.stroke()
   }
 }

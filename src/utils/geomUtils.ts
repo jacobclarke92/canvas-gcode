@@ -300,3 +300,81 @@ export const getTangentsToCircle = (pt: Point, circlePt: Point, radius: number):
 
 export const getMidPt = (...pts: Point[]): Point =>
   pts.reduce((acc, pt) => acc.add(pt), new Point(0, 0)).divide(pts.length)
+
+function normalizeAngle(angle: number) {
+  while (angle > Math.PI) angle -= 2 * Math.PI
+  while (angle < -Math.PI) angle += 2 * Math.PI
+  return angle
+}
+
+function getArcRange(arc: [start: number, end: number]) {
+  const start = normalizeAngle(arc[0])
+  const end = normalizeAngle(arc[1])
+
+  if (start > end) {
+    // Arc wraps around the -π to π transition
+    return [
+      { angle: start, type: 'start' },
+      { angle: Math.PI, type: 'end' },
+      { angle: -Math.PI, type: 'start' },
+      { angle: end, type: 'end' },
+    ]
+  } else {
+    return [
+      { angle: start, type: 'start' },
+      { angle: end, type: 'end' },
+    ]
+  }
+}
+
+/**
+ * Ensure the arc start and end points are the right way around!
+ */
+export function arcsOverlap(
+  arc1: [start: number, end: number],
+  arc2: [start: number, end: number]
+): { overlaps: boolean; skew: 'left' | 'right' | null } {
+  const arc1Ranges = getArcRange(arc1)
+  const arc2Ranges = getArcRange(arc2)
+
+  let overlapFound = false
+  let leftOverlap = false
+  let rightOverlap = false
+
+  for (let i = 0; i < arc1Ranges.length; i++) {
+    const aStart = arc1Ranges[i]
+    for (let j = 0; j < arc2Ranges.length; j++) {
+      const bStart = arc2Ranges[j]
+
+      if (aStart.type === 'start' && bStart.type === 'start') continue // Ignore start vs start
+      if (aStart.type === 'end' && bStart.type === 'end') continue // Ignore end vs end
+
+      const nextA = arc1Ranges[i + 1] || arc1Ranges[i]
+      const nextB = arc2Ranges[j + 1] || arc2Ranges[j]
+
+      if (
+        (aStart.angle <= bStart.angle && nextA.angle >= bStart.angle) ||
+        (bStart.angle <= aStart.angle && nextB.angle >= aStart.angle)
+      ) {
+        overlapFound = true
+        if (aStart.angle < bStart.angle) {
+          leftOverlap = true // Arc1 starts before Arc2
+        } else {
+          rightOverlap = true // Arc2 starts before Arc1
+        }
+      }
+    }
+  }
+
+  if (!overlapFound) {
+    return { overlaps: false, skew: null }
+  }
+
+  if (leftOverlap && rightOverlap) {
+    return { overlaps: true, skew: null }
+  } else if (leftOverlap) {
+    return { overlaps: true, skew: 'left' }
+  } else if (rightOverlap) {
+    return { overlaps: true, skew: 'right' }
+  }
+}
