@@ -45,4 +45,5 @@ export default [
   require('./44_BoaF').default,
   require('./45_Bulge').default,
   require('./46_GooBalls').default,
+  require('./47_GooBalls2').default,
 ]

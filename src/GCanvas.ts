@@ -67,6 +67,7 @@ export type StrokeOptions = {
   depth?: number
   cutout?: boolean | clipperLib.ClipType
   debug?: boolean
+  debugColor?: string
 }
 
 export let clipper: clipperLib.ClipperLibWrapper
@@ -742,12 +743,18 @@ export default class GCanvas {
     return true
   }
 
-  public stroke({ align = this.align, depth = this.depth, cutout, debug }: StrokeOptions = {}) {
+  public stroke({
+    align = this.align,
+    depth = this.depth,
+    cutout,
+    debug,
+    debugColor,
+  }: StrokeOptions = {}) {
     if (!this.isOpaque(this.strokeStyle)) return
 
     const origStrokeStyle = this.ctx.strokeStyle
     if (debug) {
-      this.ctx.strokeStyle = 'rgba(255,0,0,0.5)'
+      this.ctx.strokeStyle = debugColor || 'rgba(255,0,0,0.5)'
     } else {
       let path = this.path
 
