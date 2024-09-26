@@ -30,7 +30,7 @@ export default class GooBalls2 extends Sketch {
       disableRandomize: true,
     })
     this.addVar('seed', {
-      initialValue: 2242, //1754, // 1620, // 1728, // 2586, // 2286, //1193,
+      initialValue: 2735, //1754, // 1620, // 1728, // 2586, // 2286, //1193,
       min: 1000,
       max: 5000,
       step: 1,
@@ -72,24 +72,66 @@ export default class GooBalls2 extends Sketch {
       max: 25,
       step: 0.1,
     })
-    this.addVar('minSegments', {
-      initialValue: 6,
+    // this.addVar('minSegments', {
+    //   initialValue: 6,
+    //   min: 2,
+    //   max: 12,
+    //   step: 1,
+    // })
+    // this.addVar('maxSegments', {
+    //   initialValue: 6,
+    //   min: 2,
+    //   max: 12,
+    //   step: 1,
+    // })
+    this.addVar('numSegments', {
+      initialValue: 4,
       min: 2,
       max: 12,
       step: 1,
-    })
-    this.addVar('maxSegments', {
-      initialValue: 6,
-      min: 2,
-      max: 12,
-      step: 1,
+      disableRandomize: true,
     })
     this.addVar('maxAngleDiff', {
-      initialValue: Math.PI,
+      initialValue: 0.8, //Math.PI,
       min: 0,
       max: Math.PI,
       step: 0.01,
+      disableRandomize: true,
     })
+
+    this.addVar('hairDensity', {
+      initialValue: 0.15,
+      min: 0.035,
+      max: 0.5,
+      step: 0.001,
+      disableRandomize: true,
+    })
+    this.addVar('hairInverseSpace', {
+      initialValue: 140,
+      min: 10,
+      max: 250,
+      step: 1,
+      disableRandomize: true,
+    })
+    this.addVar('maxHairLength', {
+      initialValue: 0.15,
+      min: 0,
+      max: 0.6,
+      step: 0.01,
+    })
+    this.addVar('hairSway', {
+      initialValue: 0.25,
+      min: 0,
+      max: 1.5,
+      step: 0.001,
+    })
+    this.addVar('hairLoss', {
+      initialValue: 0,
+      min: 0,
+      max: 1,
+      step: 0.001,
+    })
+
     this.vs.showDebug = new BooleanRange({
       disableRandomize: true,
       initialValue: true,
@@ -121,8 +163,6 @@ class Segment {
   radius: number
   prev?: Segment
   prevJointInfo?: ReturnType<Segment['getJointInfo']>
-  // jointMidPtL?: Point
-  // jointMidPtR?: Point
   overlappedR = false
   overlappedL = false
 
@@ -243,10 +283,19 @@ class Creature {
     this.ctx = sketch.ctx
     this.vars = sketch.vars
     //
-    const { gutter, minRadius, maxRadius, minGap, maxGap, adhesion, minSegments, maxSegments } =
-      this.vars
+    const {
+      gutter,
+      minRadius,
+      maxRadius,
+      minGap,
+      maxGap,
+      adhesion,
+      numSegments,
+      minSegments,
+      maxSegments,
+    } = this.vars
 
-    const numSegments = randIntRange(maxSegments, minSegments)
+    // const numSegments = randIntRange(maxSegments, minSegments)
     this.segments = [new Segment(sketch)]
     for (let i = 1; i < numSegments; i++) {
       this.segments.push(
@@ -469,5 +518,89 @@ class Creature {
       //
     }
     this.ctx.stroke()
+
+    // draw eyes
+    const firstJointAngle = this.segments[1].pt.angleTo(this.segments[0].pt)
+    const eyeSize = this.segments[0].radius * 0.2
+    const eyeGap = Math.PI / 8
+    const eyePos1 = this.segments[0].pt
+      .clone()
+      .moveAlongAngle(firstJointAngle + eyeGap, this.segments[0].radius * 0.7)
+    const eyePos2 = this.segments[0].pt
+      .clone()
+      .moveAlongAngle(firstJointAngle - eyeGap, this.segments[0].radius * 0.7)
+    const pupilPos1 = eyePos1
+      .clone()
+      .moveAlongAngle(randFloatRange(Math.PI * 2), randFloatRange(eyeSize / 2))
+    const pupilPos2 = eyePos2
+      .clone()
+      .moveAlongAngle(randFloatRange(Math.PI * 2), randFloatRange(eyeSize / 2))
+
+    this.ctx.strokeCircle(eyePos1, eyeSize)
+    this.ctx.strokeCircle(eyePos2, eyeSize)
+    for (let i = 4; i <= 10; i += 2) {
+      this.ctx.strokeCircle(pupilPos1, eyeSize / i)
+      this.ctx.strokeCircle(pupilPos2, eyeSize / i)
+    }
+
+    // draw hairs
+    for (let i = 1; i < this.segments.length; i++) {
+      const seg = this.segments[i]
+
+      if (i === this.segments.length - 1) {
+        const startAnglePt = seg.prevJointInfo.tangentPtsR[0]
+        const endAnglePt = seg.prevJointInfo.tangentPtsL[0]
+        this.drawHairs(seg, seg.pt.angleTo(startAnglePt), seg.pt.angleTo(endAnglePt), {
+          useLargerAngle: true,
+        })
+      } else {
+        const next = this.segments[i + 1]
+        if (!seg.overlappedL) {
+          const startAnglePt = seg.prevJointInfo.tangentPtsL[0]
+          const endAnglePt = next.prevJointInfo.tangentPtsL[1]
+          this.drawHairs(seg, seg.pt.angleTo(startAnglePt), seg.pt.angleTo(endAnglePt), {
+            reverseDirection: true,
+          })
+        }
+        if (!seg.overlappedR) {
+          const startAnglePt = seg.prevJointInfo.tangentPtsR[0]
+          const endAnglePt = next.prevJointInfo.tangentPtsR[1]
+          this.drawHairs(seg, seg.pt.angleTo(startAnglePt), seg.pt.angleTo(endAnglePt))
+        }
+      }
+    }
+  }
+
+  drawHairs(
+    seg: Segment,
+    startAngle: number,
+    endAngle: number,
+    opts?: { useLargerAngle?: boolean; reverseDirection?: boolean }
+  ) {
+    const { hairDensity, hairInverseSpace, maxHairLength, hairSway, hairLoss } = this.vars
+
+    let angleRange = Math.abs(smallestSignedAngleDiff(startAngle, endAngle))
+    if (opts?.useLargerAngle) angleRange = Math.PI * 2 - angleRange
+    const hairCount = Math.ceil(
+      ((angleRange / hairDensity) * (hairInverseSpace - seg.radius)) / hairInverseSpace
+    )
+    const angleSegment = angleRange / hairCount
+
+    for (let h = 0; h < hairCount + 1; h++) {
+      if (randFloatRange(1) < hairLoss) continue
+      const hairLength =
+        seg.radius * maxHairLength +
+        randFloatRange((seg.radius * maxHairLength) / 2, (-seg.radius * maxHairLength) / 2)
+      const angle = startAngle + h * angleSegment * (opts?.reverseDirection ? -1 : 1)
+      const hairPos = seg.pt.clone().moveAlongAngle(angle, seg.radius)
+      this.ctx.moveTo(...hairPos.toArray())
+      this.ctx.lineTo(
+        ...hairPos
+          .clone()
+          .moveAlongAngle(angle + randFloatRange(hairSway, -hairSway), hairLength)
+          .toArray()
+      )
+      this.ctx.stroke()
+    }
   }
 }
