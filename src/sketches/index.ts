@@ -46,4 +46,5 @@ export default [
   require('./45_Bulge').default,
   require('./46_GooBalls').default,
   require('./47_GooBalls2').default,
+  require('./48_CircleInterference').default,
 ]

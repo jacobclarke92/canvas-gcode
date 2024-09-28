@@ -180,6 +180,27 @@ export const circleOverlapsCircles = (
   return false
 }
 
+export const getCircleCircleIntersectionPoints = (
+  [circle1Pos, circle1Rad]: [Point, number],
+  [circle2Pos, circle2Rad]: [Point, number]
+): Point[] | [] => {
+  const d = circle1Pos.distanceTo(circle2Pos)
+  if (d > circle1Rad + circle2Rad || d < Math.abs(circle1Rad - circle2Rad)) return []
+
+  const a = (circle1Rad * circle1Rad - circle2Rad * circle2Rad + d * d) / (2 * d)
+  const h = Math.sqrt(circle1Rad * circle1Rad - a * a)
+
+  const p2 = circle1Pos
+    .clone()
+    .subtract(circle2Pos)
+    .multiply(a / d)
+    .add(circle2Pos)
+  const x3 = (h * (circle2Pos.y - circle1Pos.y)) / d
+  const y3 = (h * (circle2Pos.x - circle1Pos.x)) / d
+
+  return [new Point(p2.x + x3, p2.y - y3), new Point(p2.x - x3, p2.y + y3)]
+}
+
 export const getBoundsFromCircles = (
   ...circles: [pos: Point, rad: number][]
 ): [top: number, right: number, bottom: number, left: number] => {
