@@ -1,5 +1,5 @@
 import type GCanvas from '../GCanvas'
-import type Point from '../Point'
+import Point from '../Point'
 import type { OverloadedFunctionWithOptionals } from '../types'
 
 export const debugDot: OverloadedFunctionWithOptionals<
@@ -17,11 +17,39 @@ export const debugDot: OverloadedFunctionWithOptionals<
       : (args[2] as number)
   const color = args.length === 3 && typeof args[2] === 'string' ? args[2] : args[3] || '#ff0000'
 
-  ctx.beginPath()
-  ctx.fillStyle = color
-  ctx.circle(x, y, 0.75)
-  ctx.fill()
-  ctx.closePath()
+  const prevFillStyle = ctx.ctx.fillStyle
+  ctx.ctx.beginPath()
+  ctx.ctx.fillStyle = color
+  ctx.ctx.arc(x, y, 0.75, 0, Math.PI * 2)
+  ctx.ctx.fill()
+  ctx.ctx.closePath()
+  ctx.ctx.fillStyle = prevFillStyle
+}
+
+export const debugLine: OverloadedFunctionWithOptionals<
+  | [ctx: GCanvas, start: Point, end: Point]
+  | [ctx: GCanvas, x1: number, y1: number, x2: number, y2: number],
+  [color: string]
+> = (...args) => {
+  const ctx = args[0]
+  const start =
+    args.length === 3 || args.length === 4
+      ? (args[1] as Point)
+      : new Point(args[1] as number, args[2] as number)
+  const end =
+    args.length === 3 || args.length === 4
+      ? (args[2] as Point)
+      : new Point(args[3] as number, args[4] as number)
+  const color = args.length === 4 ? args[3] : args.length === 6 ? args[5] : '#ff0000'
+
+  const prevStrokeStyle = ctx.ctx.strokeStyle
+  ctx.ctx.beginPath()
+  ctx.ctx.strokeStyle = color
+  ctx.ctx.moveTo(start.x, start.y)
+  ctx.ctx.lineTo(end.x, end.y)
+  ctx.ctx.stroke()
+  ctx.ctx.closePath()
+  ctx.ctx.strokeStyle = prevStrokeStyle
 }
 
 type DebugOptions = { stroke?: string; fill?: string; size?: number; decimals?: number }

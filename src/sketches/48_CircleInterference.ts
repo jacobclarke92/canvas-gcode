@@ -1,7 +1,7 @@
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import type { Line } from '../types'
-import { debugDot, debugText } from '../utils/debugUtils'
+import { debugDot, debugLine, debugText } from '../utils/debugUtils'
 import {
   arcsOverlap,
   circleOverlapsCircles,
@@ -30,7 +30,7 @@ export default class CircleInterference extends Sketch {
       step: 1,
     })
     this.addVar('sources', {
-      initialValue: 2,
+      initialValue: 3,
       min: 1,
       max: 5,
       step: 1,
@@ -60,7 +60,7 @@ export default class CircleInterference extends Sketch {
 
     this.addVar('wavesApartY', {
       initialValue: 0,
-      min: 0,
+      min: -200,
       max: 200,
       step: 1,
     })
@@ -91,7 +91,7 @@ export default class CircleInterference extends Sketch {
     const startY =
       wavesApartY === 0 ? this.ch / 2 : this.ch / 2 - (distYBetweenSources * (sources - 1)) / 2
 
-    const circleSets: [pt: Point, radius: number][][] = []
+    const circleSets: { pt: Point; radius: number }[][] = []
 
     for (let i = 0; i < sources; i++) {
       circleSets[i] = []
@@ -99,25 +99,92 @@ export default class CircleInterference extends Sketch {
         wavesApartX === 0 ? startX : startX + i * distXBetweenSources,
         wavesApartY === 0 ? startY : startY + i * distYBetweenSources
       )
-      for (let j = i; j < waves; j++) {
-        const r = waveDist * j
-        if (!!this.vs.showCircles.value) this.ctx.strokeCircle(pt, r)
-        circleSets[i].push([pt, r])
+      for (let j = 0; j < waves; j++) {
+        const radius = waveDist * (j + 1)
+        // if (!!this.vs.showCircles.value) this.ctx.strokeCircle(pt, r)
+        circleSets[i].push({ pt, radius })
       }
     }
 
-    for (let i = 1; i < circleSets.length; i++) {
-      const circleSet1 = circleSets[i - 1]
-      const circleSet2 = circleSets[i]
+    const arcSets: { pt: Point; radius: number; startPt: Point; endPt: Point; rev: boolean }[] = []
 
-      for (let c = 0; c < circleSet1.length - 1; c++) {
-        const [pt1, r1] = circleSet1[c]
-        for (let d = 0; d < circleSet2.length - 1; d++) {
-          const [pt2, r2] = circleSet2[d]
-          const pts = getCircleCircleIntersectionPoints([pt1, r1], [pt2, r2])
-          for (const pt of pts) debugDot(this.ctx, pt, 'red')
+    for (let sourceIdx = 1; sourceIdx < sources; sourceIdx++) {
+      const prevCircleSet = circleSets[sourceIdx - 1]
+      const circleSet = circleSets[sourceIdx]
+      const nextCircleSet = circleSets[sourceIdx + 1]
+
+      for (let c = 0; c < waves; c++) {
+        const { pt: prevPt, radius: prevR } = prevCircleSet[c]
+        const { pt: pt, radius: r } = circleSet[waves - 1 - c]
+
+        const prevInterPts = getCircleCircleIntersectionPoints([prevPt, prevR], [pt, r])
+        let nextInterPts: typeof prevInterPts = []
+        let nextR = 0
+        let nextPt: Point = new Point(0, 0)
+        if (nextCircleSet) {
+          // const { pt: nextPt, radius: nextR } = nextCircleSet[c]
+          nextR = nextCircleSet[c].radius
+          nextPt = nextCircleSet[c].pt
+
+          nextInterPts = getCircleCircleIntersectionPoints([pt, r], [nextPt, nextR])
         }
+        if (prevInterPts.length) {
+          if (this.vs.showDebug.value) for (const pt of prevInterPts) debugDot(this.ctx, pt, 'red')
+          if (sourceIdx === 1) {
+            arcSets.push({
+              pt: prevPt,
+              radius: r,
+              startPt: prevInterPts[0],
+              endPt: prevInterPts[1],
+              rev: true,
+            })
+          }
+          if (nextCircleSet && nextInterPts.length) {
+            // debugLine(this.ctx, prevInterPts[0], nextInterPts[0], 'red')
+            // debugLine(this.ctx, prevInterPts[1], nextInterPts[1], 'red')
+            arcSets.push({
+              pt: pt,
+              radius: nextR,
+              startPt: prevInterPts[0],
+              endPt: nextInterPts[0],
+              rev: prevInterPts[0].x > nextInterPts[0].x,
+            })
+            arcSets.push({
+              pt: pt,
+              radius: nextR,
+              startPt: prevInterPts[1],
+              endPt: nextInterPts[1],
+              rev: prevInterPts[0].x < nextInterPts[0].x,
+            })
+          } else {
+            arcSets.push({
+              pt: pt,
+              radius: prevR,
+              startPt: prevInterPts[0],
+              endPt: prevInterPts[1],
+              rev: false,
+            })
+          }
+        }
+
+        // for (let d = 0; d < circleSet.length - 1; d++) {
+        //   const [pt2, r] = circleSet[d]
+        //   const pts = getCircleCircleIntersectionPoints([prevPt, prevR], [pt2, r])
+        //   for (const pt of pts) debugDot(this.ctx, pt, 'red')
+        // }
       }
+    }
+
+    for (const { pt, radius, startPt, endPt, rev } of arcSets) {
+      // this.ctx.beginPath()
+      // this.ctx.moveTo(startPt.x, startPt.y)
+      // this.ctx.lineTo(endPt.x, endPt.y)
+      // this.ctx.stroke()
+      this.ctx.beginPath()
+      this.ctx.arc(pt.x, pt.y, radius, pt.angleTo(startPt), pt.angleTo(endPt), rev)
+      this.ctx.stroke()
+      // this.ctx.strokeCircle(pt, radius)
+      // this.ctx.strokeLine(startPt, endPt)
     }
 
     // const pt1 = new Point(100, 100)
