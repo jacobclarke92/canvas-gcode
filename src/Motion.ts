@@ -272,7 +272,15 @@ export default class Motion {
       const func = path[name]
       if (typeof func === 'function') func.apply(path, args)
 
-      const pts = path.getPoints(40)
+      let numInterpolationPts = 40
+      if (name === 'ellipse') {
+        // const [x, y, rx, ry, aStart, aEnd, ccw] = args
+        const radiusX = args[2] as number
+        const radiusY = args[3] as number
+        numInterpolationPts = 8 + Math.ceil(((radiusX + radiusY) / 2) * 4)
+      }
+
+      const pts = path.getPoints(numInterpolationPts)
       for (let i = 0, l = pts.length; i < l; ++i) {
         const p = pts[i]
         motion.linear({ x: p.x, y: p.y, z: helix() })
