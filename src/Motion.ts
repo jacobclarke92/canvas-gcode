@@ -309,21 +309,22 @@ export default class Motion {
       },
       ['ELLIPSE' as EllipseAction['type']]: (...args: EllipseAction['args']) => {
         // console.log('[motion] ellipse', args)
-        const [x, y, rx, ry, aStart, aEnd, ccw] = args
+        /** Note: I commented all this out because vigotech does not handle native arc gcode properly */
         // Detect plain arc
-        if (!path.hasBeenCutInto && sameFloat(rx, ry)) {
-          const points = arcToPoints(x, y, aStart, aEnd, rx, ry)
-          const params: EllipseParams = {
-            x: points.end.x,
-            y: points.end.y,
-            i: x - points.start.x,
-            j: y - points.start.y,
-            z: helix(),
-          }
-          this.arc(params, ccw)
-        } else {
-          interpolate(this, 'ellipse', args)
-        }
+        // const [x, y, rx, ry, aStart, aEnd, ccw] = args
+        // if (!path.hasBeenCutInto && sameFloat(rx, ry)) {
+        //   const points = arcToPoints(x, y, aStart, aEnd, rx, ry)
+        //   const params: EllipseParams = {
+        //     x: points.end.x,
+        //     y: points.end.y,
+        //     i: x - points.start.x,
+        //     j: y - points.start.y,
+        //     z: helix(),
+        //   }
+        //   this.arc(params, ccw)
+        // } else {
+        interpolate(this, 'ellipse', args)
+        // }
       },
       ['BEZIER_CURVE_TO' as BezierCurveToAction['type']]: (
         ...args: BezierCurveToAction['args']
