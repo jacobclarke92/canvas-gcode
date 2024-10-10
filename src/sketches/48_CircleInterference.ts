@@ -32,7 +32,7 @@ export default class CircleInterference extends Sketch {
     this.addVar('sources', {
       initialValue: 3,
       min: 1,
-      max: 5,
+      max: 6,
       step: 1,
       disableRandomize: true,
     })
