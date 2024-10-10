@@ -277,7 +277,7 @@ export default class Motion {
         // const [x, y, rx, ry, aStart, aEnd, ccw] = args
         const radiusX = args[2] as number
         const radiusY = args[3] as number
-        numInterpolationPts = 8 + Math.ceil(((radiusX + radiusY) / 2) * 4)
+        numInterpolationPts = 8 + Math.ceil(((radiusX + radiusY) / 2) * 2.5)
       }
 
       const pts = path.getPoints(numInterpolationPts)
