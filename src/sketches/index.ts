@@ -47,4 +47,5 @@ export default [
   require('./46_GooBalls').default,
   require('./47_GooBalls2').default,
   require('./48_CircleInterference').default,
+  require('./49_SemiCircRing').default,
 ]
