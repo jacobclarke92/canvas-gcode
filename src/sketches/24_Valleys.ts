@@ -2,6 +2,7 @@ import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { getPointsWhereLineIntersectsCircle, pointInCircle } from '../utils/geomUtils'
 import { randFloat } from '../utils/numberUtils'
+import { initPen, penUp, plotBounds } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
 
 type Pos = [number, number]
@@ -41,6 +42,9 @@ export default class Valleys extends Sketch {
 
   initDraw(): void {
     seedRandom(this.vars.randSeed)
+    initPen(this)
+    plotBounds(this)
+
     this.lines = []
     this.drawingLineIndex = 1
     this.lineSegIndex = 0
@@ -172,7 +176,10 @@ export default class Valleys extends Sketch {
     if (this.lineSegIndex >= maxLineSegments) {
       this.lineSegIndex = 0
       this.drawingLineIndex++
-      if (this.drawingLineIndex >= this.lines.length) this.stopDrawing = true
+      if (this.drawingLineIndex >= this.lines.length) {
+        this.stopDrawing = true
+        penUp(this)
+      }
     }
   }
 }
