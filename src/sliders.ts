@@ -81,6 +81,7 @@ export const renderSketchSliders = (sketch: Sketch, onUpdate?: () => void) => {
     sliderArea.appendChild(label)
     valueRange.inputElem = slider
     valueRange.container = label
+    if (valueRange.presentation) label.style.opacity = '0.5'
 
     sliders[key] = { slider, labelSpan: span, valueSpan: value }
   })

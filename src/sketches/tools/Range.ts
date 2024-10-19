@@ -11,6 +11,7 @@ export interface RangeOptions {
   step?: number
   disableRandomize?: boolean
   requires?: string
+  presentation?: boolean
 }
 
 export default class Range {
@@ -21,6 +22,7 @@ export default class Range {
   public inputElem: HTMLInputElement
   public container: HTMLElement
   public requires?: string
+  public presentation?: boolean
   protected _value: number
   protected _disableRandomize: boolean
   protected _sketch: Sketch
@@ -31,6 +33,7 @@ export default class Range {
     this.max = options.max
     this.step = options.step || 0.01
     this.requires = options.requires
+    this.presentation = options.presentation
     this._value = options.initialValue || options.min
     this._disableRandomize = options.disableRandomize || false
     this._sketch = sketch
