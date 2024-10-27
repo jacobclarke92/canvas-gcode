@@ -640,6 +640,7 @@ export default class GCanvas {
     const radius = args.length === 2 ? args[1] : args[2]
     this.beginPath()
     this.circle(x, y, radius)
+    // TODO: spiral inwards instead?
     this.fill()
     this.closePath()
   }
