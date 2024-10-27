@@ -43,10 +43,10 @@ export default class SemiCircRing extends Sketch {
       step: Math.PI / 64,
     })
     this.addVar('arcRadiusModifier', {
-      initialValue: 0.001,
-      min: -150,
-      max: 150,
-      step: 0.5,
+      initialValue: 0.01,
+      min: 0,
+      max: 2.001,
+      step: 0.01,
     })
   }
 
@@ -87,7 +87,7 @@ export default class SemiCircRing extends Sketch {
         this.ctx.arc(
           x,
           y,
-          Math.max(0, circleRadius / 2 + arcRadiusModifier),
+          Math.max(0, (circleRadius / 2) * arcRadiusModifier),
           arcAngleStart + (t === 0 ? 0 : Math.PI),
           arcAngleEnd,
           !clockwise
