@@ -1,5 +1,6 @@
 import Point from '../Point'
 import { Sketch } from '../Sketch'
+import { circleOverlapsCircles } from '../utils/geomUtils'
 import { randFloat, randFloatRange, randIntRange } from '../utils/numberUtils'
 import { initPen, penUp, plotBounds } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
@@ -48,6 +49,8 @@ export default class Tattoo extends Sketch {
     this.addVar('maxShapeSize', { requires: 'showShapes', initialValue: 5, min: 1, max: 20, step: 0.01 }) // prettier-ignore
   }
 
+  prevShapes: [pos: Point, rad: number][] = []
+
   initDraw(): void {
     // seedRandom(this.vs.seed.value)
     // seedNoise(this.vs.seed.value)
@@ -66,7 +69,7 @@ export default class Tattoo extends Sketch {
     const startPt = new Point(this.cw * (gutter / 2), this.ch / 2)
     const endPt = new Point(this.cw * (1 - gutter / 2), this.ch / 2)
 
-    this.ctx.ctx.lineWidth *= 2.5
+    this.ctx.ctx.lineWidth *= 2 // 2.5
     for (let i = startWave; i < waves; i++) {
       this.ctx.beginPath()
       this.ctx.moveTo(startPt.x, startPt.y)
@@ -96,6 +99,8 @@ export default class Tattoo extends Sketch {
     if (!!this.vs.triangles.value) shapes.push('triangle')
     if (!!this.vs.lines.value) shapes.push('line')
     if (!!this.vs.rects.value) shapes.push('rect')
+
+    this.prevShapes = []
 
     const { shapeInterval, shapeChance, maxShapeDrift, chainChance, minShapeSize, maxShapeSize } =
       this.vars
@@ -138,6 +143,13 @@ export default class Tattoo extends Sketch {
 
           const shapePos = startPt.clone().add(new Point(x, y)).add(new Point(offsetX, offsetY))
           const shapeRotation = randFloat(Math.PI)
+
+          if (circleOverlapsCircles([shapePos, shapeSize * 0.9], ...this.prevShapes)) {
+            drewLastTick = false
+            continue
+          }
+
+          this.prevShapes.push([shapePos, shapeSize * 0.9])
 
           // this.ctx.ctx.fillStyle =
           this.ctx.fillStyle = randFloatRange(1) > 0.5 ? '#000000' : '#ffffff'
