@@ -13,6 +13,7 @@ export default class Tattoo extends Sketch {
     this.addVar('seed', { initialValue: 1234, min: 1000, max: 5000, step: 1 })
     this.addVar('rez', { presentation: true, initialValue: 1, min: 0, max: 1.5, step: 0.01 })
     this.addVar('gutter', { presentation: true, initialValue: 0.1, min: 0, max: 0.4, step: 0.001 })
+    this.addVar('lineWidth', { presentation: true, initialValue: 2, min: 0.5, max: 5, step: 0.01 })
     this.addVar('wavePeriod', { initialValue: 1, min: 0.5, max: 4.5, step: 0.5 })
     this.addVar('startWave', { initialValue: 2, min: 1, max: 4, step: 1 })
     this.addVar('waves', { initialValue: 9, min: 1, max: 64, step: 1 })
@@ -61,15 +62,24 @@ export default class Tattoo extends Sketch {
      * Draw the waves
      */
 
-    const { startWave, waves, gutter, wavePeriod, rez, maxAmplitude, steepness, fatness } =
-      this.vars
+    const {
+      lineWidth,
+      startWave,
+      waves,
+      gutter,
+      wavePeriod,
+      rez,
+      maxAmplitude,
+      steepness,
+      fatness,
+    } = this.vars
 
     const waveLength = this.cw * (1 - gutter)
     const detail = Math.max(0.1, (waveLength / 2) * (1 - rez))
     const startPt = new Point(this.cw * (gutter / 2), this.ch / 2)
     const endPt = new Point(this.cw * (1 - gutter / 2), this.ch / 2)
 
-    this.ctx.ctx.lineWidth *= 2 // 2.5
+    this.ctx.ctx.lineWidth *= lineWidth // 2.5
     for (let i = startWave; i < waves; i++) {
       this.ctx.beginPath()
       this.ctx.moveTo(startPt.x, startPt.y)
