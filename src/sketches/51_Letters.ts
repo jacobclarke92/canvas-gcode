@@ -15,6 +15,7 @@ export default class Letters extends Sketch {
   init() {
     this.addVar('seed', { initialValue: 1234, min: 1000, max: 5000, step: 1 })
     this.addVar('gutter', { presentation: true, initialValue: 0.1, min: 0, max: 0.4, step: 0.001 })
+    this.addVar('divisionSpan', { initialValue: 5, min: 0.5, max: 50, step: 0.5 })
     this.addVar('wonkMinX', { initialValue: 0.01, min: -20, max: 0, step: 0.01 })
     this.addVar('wonkMaxX', { initialValue: 0, min: 0, max: 20, step: 0.01 })
     this.addVar('wonkMinY', { initialValue: 0.01, min: -20, max: 0, step: 0.01 })
@@ -37,7 +38,7 @@ export default class Letters extends Sketch {
   }
 
   actualInit() {
-    const { wonkMinX, wonkMaxX, wonkMinY, wonkMaxY } = this.vars
+    const { wonkMinX, wonkMaxX, wonkMinY, wonkMaxY, divisionSpan } = this.vars
 
     const text = 'JOURNEY'
     const fontSize = 50
@@ -66,7 +67,7 @@ export default class Letters extends Sketch {
       // this.ctx.translate(offsetX, 0)
 
       const shape = svgPathToShape(pathCommands)
-      const ptGroups = shape.getPointGroups({ divisions: 5, interpolateLines: true })
+      const ptGroups = shape.getPointGroups({ divisions: divisionSpan, interpolateLines: true })
 
       console.log(letterChars[l], ptGroups)
 
