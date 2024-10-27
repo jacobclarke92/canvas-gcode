@@ -385,6 +385,7 @@ export default class SubPath {
           break
 
         case 'LINE_TO':
+          // TODO: might need to add an optional func arg to interpolate between moveTo and lineTo calls
           points.push(new Point(action.args[0], action.args[1]))
           break
 
