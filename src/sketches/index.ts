@@ -49,4 +49,5 @@ export default [
   require('./48_CircleInterference').default,
   require('./49_SemiCircRing').default,
   require('./50_Tattoo').default,
+  require('./51_Letters').default,
 ]
