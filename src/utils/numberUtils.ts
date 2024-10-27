@@ -22,7 +22,8 @@ export const sign = (x: number): -1 | 1 => (x < 0.0 ? -1 : 1)
 /** wraps value around within range, e.g. val: -2, range: 0 - 5, return: 3 */
 export const wrap = (value: number, max: number, min = 0): number => {
   const range = max - min
-  return ((value - min) % range) + min
+  const val = ((value - min) % range) + min
+  return val === min && value > min ? min + range : val
 }
 
 /** if splitting a total into segments, this offers a quick way to get the value at a certain index */
