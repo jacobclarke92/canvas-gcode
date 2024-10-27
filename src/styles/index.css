@@ -28,6 +28,7 @@ a {
   display: flex;
   & > .left-area {
     flex: none;
+    position: relative;
   }
   & > .right-area {
     flex: 1 1 auto;
