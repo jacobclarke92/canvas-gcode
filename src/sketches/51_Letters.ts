@@ -66,7 +66,7 @@ export default class Letters extends Sketch {
       // this.ctx.translate(offsetX, 0)
 
       const shape = svgPathToShape(pathCommands)
-      const ptGroups = shape.getPointGroups(20)
+      const ptGroups = shape.getPointGroups({ divisions: 5, interpolateLines: true })
 
       console.log(letterChars[l], ptGroups)
 
@@ -82,6 +82,7 @@ export default class Letters extends Sketch {
             offsetX + pts[i].x + randFloatRange(wonkMaxX, wonkMinX),
             pts[i].y + randFloatRange(wonkMaxY, wonkMinY)
           )
+          // debugDot(this.ctx, offsetX + pts[i].x, pts[i].y)
         }
         this.ctx.stroke()
       }
