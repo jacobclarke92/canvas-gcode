@@ -458,6 +458,14 @@ export default class Path extends ClipperPath {
     return pts
   }
 
+  public getPointGroups(divisions?: number): Point[][] {
+    const ptGroups: Point[][] = []
+    this.subPaths.forEach((sp) => {
+      ptGroups.push(sp.getPoints(divisions))
+    })
+    return ptGroups
+  }
+
   public getBounds(): Bounds {
     const pts = this.getPoints()
     const p0 = this.firstPoint() || new Point()
