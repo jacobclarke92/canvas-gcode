@@ -488,7 +488,11 @@ export default class SubPath {
           }
 
           // augment divisions based on actual distance so as to not over-complicate small curves
-          const dist = new Point(cpx0, cpy0).distanceTo(new Point(aX, aY))
+          const dists: number[] = []
+          dists.push(new Point(cpx0, cpy0).distanceTo(new Point(aCP1x, aCP1y)))
+          dists.push(new Point(aCP1x, aCP1y).distanceTo(new Point(aCP2x, aCP2y)))
+          dists.push(new Point(aCP2x, aCP2y).distanceTo(new Point(aX, aY)))
+          const dist = dists.reduce((a, b) => a + b, 0)
           const actualDivisions = Math.max(1, Math.ceil(dist / (divisions / 15)))
           // Math.min(divisions, Math.ceil(dist * 2.5))
 
