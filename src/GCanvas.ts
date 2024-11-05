@@ -757,7 +757,6 @@ export default class GCanvas {
         this.lineTo(commands[0].values[0], commands[0].values[1])
       }
     }
-    this.closePath()
     this.stroke()
   }
 
