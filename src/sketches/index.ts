@@ -50,4 +50,5 @@ export default [
   require('./49_SemiCircRing').default,
   require('./50_Tattoo').default,
   require('./51_Letters').default,
+  require('./52_ApartmentBlocks').default,
 ]
