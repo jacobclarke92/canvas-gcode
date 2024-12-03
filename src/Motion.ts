@@ -1,3 +1,4 @@
+import { PEN_DOWN_TIME, PEN_UP_TIME } from './constants/plotterConfig'
 import type {
   AllCommandParams,
   ArcParams,
@@ -44,16 +45,16 @@ export default class Motion {
     this.position = new Point()
   }
 
-  public retract(timeMs = 250) {
+  public retract(timeMs = PEN_UP_TIME) {
     if (this.penState === 'up') return
     this.ctx.driver.send('M05 (pen up)')
-    this.ctx.driver.wait(timeMs)
+    if (timeMs !== 0) this.ctx.driver.wait(timeMs)
     this.penState = 'up'
   }
-  public plunge(timeMs = 500) {
+  public plunge(timeMs = PEN_DOWN_TIME) {
     if (this.penState === 'down') return
     this.ctx.driver.send('M03 (pen down)')
-    this.ctx.driver.wait(timeMs)
+    if (timeMs !== 0) this.ctx.driver.wait(timeMs)
     this.penState = 'down'
   }
   public zero(params: ZeroParams) {

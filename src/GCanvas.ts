@@ -303,6 +303,13 @@ export default class GCanvas {
     this.lineTo(lastPoint.x + x, lastPoint.y + y)
   }
 
+  public lineToRelativeAngle(angle: number, dist: number) {
+    const lastPoint = this.path.lastPoint()
+    if (!lastPoint) return
+    const { x, y } = lastPoint.moveAlongAngle(angle, dist)
+    this.lineTo(x, y)
+  }
+
   public arcTo(_x1: number, _y1: number, _x2: number, _y2: number, radius: number) {
     // console.log(this.constructor.name, 'arcTo')
     // TODO: this doesn't mutate the arguments array yet
@@ -757,7 +764,6 @@ export default class GCanvas {
         this.lineTo(commands[0].values[0], commands[0].values[1])
       }
     }
-    this.closePath()
     this.stroke()
   }
 

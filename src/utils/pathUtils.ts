@@ -184,8 +184,7 @@ export const svgPathToShape = (path: string | SimplifiedSvgPathSegment[]) => {
   if (!commands.length) throw new Error('No commands found for path')
 
   const shape = new Path()
-  shape.moveTo(commands[0].values[0], commands[0].values[1])
-  for (let i = 1; i < commands.length; i++) {
+  for (let i = 0; i < commands.length; i++) {
     const command = commands[i]
     if (command.type === 'M') {
       shape.moveTo(command.values[0], command.values[1])

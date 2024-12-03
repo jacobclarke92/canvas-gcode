@@ -82,7 +82,7 @@ export default class GCode extends Driver {
   }
   public rapid(params: RapidParams, comment?: string) {
     this.send('G0', params, comment)
-    if (params.f) this.wait(Math.ceil(params.f / 1000)) // this is to compensate for Vigo dogness
+    // if (params.f) this.wait(Math.ceil(params.f / 1000)) // this is to compensate for Vigo dogness
   }
   public linear(params: LinearParams, comment?: string) {
     this.send('G1', params, comment)

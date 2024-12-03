@@ -27,7 +27,7 @@ export default class Valleys extends Sketch {
     this.addVar('lineConformance', { initialValue: 0.75, min: 0, max: 1, step: 0.001 })
     this.addVar('jointSpace', { initialValue: 1.25, min: 0.5, max: 5, step: 0.01 })
     this.addVar('mountainJointsHeight', { initialValue: 10, min: 0, max: 20, step: 1 })
-    this.addVar('circleRadius', { initialValue: 40, min: 5, max: this.ch / 2, step: 1 })
+    this.addVar('circleRadius', { initialValue: 40, min: 5, max: this.ch / 1.333, step: 1 })
 
     this.addVar('spaceBetween', { initialValue: 15, min: 1, max: 200, step: 1 })
     this.addVar('valleysEitherSide', { initialValue: 4, min: 1, max: 10, step: 1 })

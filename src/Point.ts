@@ -28,9 +28,9 @@ export default class Point extends IntPoint {
   public equals(point: Point) {
     return this.x === point.x && this.y === point.y
   }
-  public add(point: Point) {
-    this.x += point.x
-    this.y += point.y
+  public add(point: Point | number, y?: number) {
+    this.x += typeof point === 'number' ? point : point.x
+    this.y += typeof point === 'number' ? y! : point.y
     return this
   }
   public midpoint(point: Point) {

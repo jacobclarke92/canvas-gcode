@@ -71,6 +71,11 @@ export const actions = {
 
 export const DEFAULT_DIVISIONS = 128
 
+export type GetPointsOpts = {
+  divisions?: number
+  interpolateLines?: boolean
+}
+
 export default class SubPath {
   public actions: Action[] = []
   public pointsCache: Record<number, Point[]> = {}
@@ -371,7 +376,16 @@ export default class SubPath {
     this.addAction({ type: 'ELLIPSE', args })
   }
 
-  public getPoints(divisions = DEFAULT_DIVISIONS): Point[] {
+  public getPoints(
+    optsOrDivisions: number | GetPointsOpts = {
+      divisions: DEFAULT_DIVISIONS,
+      interpolateLines: false,
+    }
+  ): Point[] {
+    const divisions =
+      typeof optsOrDivisions === 'number' ? optsOrDivisions : optsOrDivisions.divisions
+    const interpolateLines =
+      typeof optsOrDivisions === 'number' ? false : optsOrDivisions.interpolateLines
     if (this.pointsCache[divisions]) return this.pointsCache[divisions]
 
     const points: Point[] = []
@@ -385,7 +399,26 @@ export default class SubPath {
           break
 
         case 'LINE_TO':
-          points.push(new Point(action.args[0], action.args[1]))
+          if (interpolateLines) {
+            const startPt = points[points.length - 1]
+            const endPt = new Point(action.args[0], action.args[1])
+            const dist = startPt.distanceTo(endPt)
+
+            if (dist < 0.2) {
+              points.push(endPt)
+              break
+            }
+
+            // augment divisions based on actual distance so as to not over-complicate small curves
+            const actualDivisions = Math.max(1, Math.ceil(dist / (divisions / 15)))
+
+            const spacing = dist / actualDivisions
+            for (let j = 1; j <= actualDivisions; j++) {
+              points.push(startPt.clone().moveTowards(endPt, j * spacing))
+            }
+          } else {
+            points.push(new Point(action.args[0], action.args[1]))
+          }
           break
 
         case 'QUADRATIC_CURVE_TO': {
@@ -414,11 +447,14 @@ export default class SubPath {
           }
 
           // augment divisions based on actual distance so as to not over-complicate small curves
-          const dist = new Point(cpx0, cpy0).distanceTo(new Point(aX, aY))
-          divisions = Math.min(divisions, Math.ceil(dist * 2.5))
+          const dist =
+            new Point(cpx0, cpy0).distanceTo(new Point(aCPx, aCPy)) +
+            new Point(aCPx, aCPy).distanceTo(new Point(aX, aY))
+          const actualDivisions = Math.max(2, Math.ceil(dist / (divisions / 30)))
+          // Math.min(divisions, Math.ceil(dist * 2.5))
 
-          for (let j = 1; j <= divisions; j++) {
-            const t = j / divisions
+          for (let j = 1; j <= actualDivisions; j++) {
+            const t = j / actualDivisions
 
             const tx = b2(t, cpx0, aCPx, aX)
             const ty = b2(t, cpy0, aCPy, aY)
@@ -454,11 +490,16 @@ export default class SubPath {
           }
 
           // augment divisions based on actual distance so as to not over-complicate small curves
-          const dist = new Point(cpx0, cpy0).distanceTo(new Point(aX, aY))
-          divisions = Math.min(divisions, Math.ceil(dist * 2.5))
+          const dists: number[] = []
+          dists.push(new Point(cpx0, cpy0).distanceTo(new Point(aCP1x, aCP1y)))
+          dists.push(new Point(aCP1x, aCP1y).distanceTo(new Point(aCP2x, aCP2y)))
+          dists.push(new Point(aCP2x, aCP2y).distanceTo(new Point(aX, aY)))
+          const dist = dists.reduce((a, b) => a + b, 0)
+          const actualDivisions = Math.max(2, Math.ceil(dist / (divisions / 30)))
+          // Math.min(divisions, Math.ceil(dist * 2.5))
 
-          for (let j = 1; j <= divisions; j++) {
-            const t = j / divisions
+          for (let j = 1; j <= actualDivisions; j++) {
+            const t = j / actualDivisions
 
             const tx = b3(t, cpx0, aCP1x, aCP2x, aX)
             const ty = b3(t, cpy0, aCP1y, aCP2y, aY)

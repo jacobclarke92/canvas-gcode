@@ -34,14 +34,27 @@ const init = () => {
   canvas.height = CANVAS_HEIGHT * VIRTUAL_SCALE * window.devicePixelRatio
   canvas.style.width = `${CANVAS_WIDTH * VIRTUAL_SCALE}px`
   canvas.style.height = `${CANVAS_HEIGHT * VIRTUAL_SCALE}px`
+
+  let downloadLink: HTMLAnchorElement | null = null
   if (canvasArea) {
     canvasArea.appendChild(canvas)
 
-    const button = document.createElement('button')
-    button.type = 'button'
-    button.textContent = 'Download Image'
-    button.onclick = () => {
-      const downloadLink = document.createElement('a')
+    const canvasOverlay = document.createElement('div')
+    canvasOverlay.style.position = 'absolute'
+    canvasOverlay.style.top = '0'
+    canvasOverlay.style.left = '0'
+    canvasOverlay.style.width = canvas.style.width
+    canvasOverlay.style.height = canvas.style.height
+    canvasOverlay.style.pointerEvents = 'none'
+    canvasOverlay.style.backgroundSize = 'cover'
+    canvasOverlay.style.mixBlendMode = 'multiply'
+    canvasArea.appendChild(canvasOverlay)
+
+    const downloadButton = document.createElement('button')
+    downloadButton.type = 'button'
+    downloadButton.textContent = 'Download Image'
+    downloadButton.onclick = () => {
+      downloadLink = document.createElement('a')
       downloadLink.setAttribute('download', 'CanvasAsImage.png')
       canvas.toBlob((blob) => {
         const url = URL.createObjectURL(blob)
@@ -49,7 +62,34 @@ const init = () => {
         downloadLink.click()
       })
     }
-    canvasArea.appendChild(button)
+    canvasArea.appendChild(downloadButton)
+
+    const clearOverlayButton = document.createElement('button')
+    clearOverlayButton.type = 'button'
+    clearOverlayButton.textContent = 'Clear Overlay'
+    clearOverlayButton.style.display = 'none'
+    clearOverlayButton.onclick = () => {
+      canvasOverlay.style.backgroundImage = ''
+      clearOverlayButton.style.display = 'none'
+    }
+    const overlayImageButton = document.createElement('button')
+    overlayImageButton.type = 'button'
+    overlayImageButton.textContent = 'Overlay Image'
+    overlayImageButton.onclick = () => {
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.accept = 'image/*'
+      input.onchange = () => {
+        const file = input.files?.[0]
+        if (!file) return
+        clearOverlayButton.style.display = ''
+        const url = URL.createObjectURL(file)
+        canvasOverlay.style.backgroundImage = `url(${url})`
+      }
+      input.click()
+    }
+    canvasArea.appendChild(overlayImageButton)
+    canvasArea.appendChild(clearOverlayButton)
   } else document.body.appendChild(canvas)
 
   // create buttons for all sketches
@@ -57,6 +97,7 @@ const init = () => {
     const button = document.createElement('button')
     button.type = 'button'
     button.innerText = `${index + 1} ${sketch.name}`
+    if (downloadLink) downloadLink.setAttribute('download', `${sketch.name}.png`)
     if (currentSketchIndex === index) button.classList.add('active')
     button.addEventListener('click', () => {
       const allButtons = sketchButtonsArea.getElementsByTagName('button')
@@ -76,7 +117,9 @@ const init = () => {
     if (index !== -1) currentSketchIndex = index
   }
 
-  initSketch(sketches[currentSketchIndex])
+  const initialLoadSketch = sketches[currentSketchIndex]
+  if (downloadLink) downloadLink.setAttribute('download', `${initialLoadSketch.name}.png`)
+  initSketch(initialLoadSketch)
 
   // bind main function buttons
   resetButton.addEventListener('click', () => {

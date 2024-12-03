@@ -13,7 +13,7 @@ export default class AgeRings extends Sketch {
   init() {
     this.vs.speedUp = new Range({ name: 'speedUp', initialValue: 10, min: 1, max: 100, step: 1, disableRandomize: true }, this) // prettier-ignore
     this.vs.seed = new Range({ name: 'seed', initialValue: 1000, min: 1000, max: 5000, step: 1 }, this) // prettier-ignore
-    this.vs.rings = new Range({ name: 'rings', initialValue: 24, min: 3, max: 80, step: 1 }, this) // prettier-ignore
+    this.vs.rings = new Range({ name: 'rings', initialValue: 24, min: 3, max: 120, step: 1 }, this) // prettier-ignore
     this.vs.complexityReduction = new Range({ name: 'complexityReduction', initialValue: 4, min: 0, max: 12, step: 0.05 }, this) // prettier-ignore
     this.vs.minCircleRes = new Range({ name: 'minCircleRes', initialValue: 8, min: 3, max: 256, step: 1, disableRandomize: true }, this) // prettier-ignore
     this.vs.maxCircleRes = new Range({ name: 'maxCircleRes', initialValue: 1000, min: 3, max: 1000, step: 1, disableRandomize: true }, this) // prettier-ignore

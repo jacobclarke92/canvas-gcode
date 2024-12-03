@@ -8,6 +8,7 @@ import type {
   ArcAction,
   BezierCurveToAction,
   EllipseAction,
+  GetPointsOpts,
   LineToAction,
   QuadraticCurveToAction,
 } from './SubPath'
@@ -450,12 +451,20 @@ export default class Path extends ClipperPath {
     return this.subPaths[this.subPaths.length - 1].lastPoint()
   }
 
-  public getPoints(divisions?: number): Point[] {
+  public getPoints(divisionsOrOpts?: number | GetPointsOpts): Point[] {
     const pts: Point[] = []
     this.subPaths.forEach((sp) => {
-      pts.push(...sp.getPoints(divisions))
+      pts.push(...sp.getPoints(divisionsOrOpts))
     })
     return pts
+  }
+
+  public getPointGroups(divisionsOrOpts?: number | GetPointsOpts): Point[][] {
+    const ptGroups: Point[][] = []
+    this.subPaths.forEach((sp) => {
+      ptGroups.push(sp.getPoints(divisionsOrOpts))
+    })
+    return ptGroups
   }
 
   public getBounds(): Bounds {
