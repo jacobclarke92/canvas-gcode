@@ -31,4 +31,6 @@ Copyright (C) 2010-2013 Raymond Hill: https://github.com/gorhill/Javascript-Voro
 MIT License: See https://github.com/gorhill/Javascript-Voronoi/LICENSE.md
 */
 
+/*! https://mths.be/codepointat v0.2.0 by @mathias */
+
 /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/facebook/regenerator/blob/main/LICENSE */
