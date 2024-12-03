@@ -20,6 +20,8 @@ export default class StringArt extends Sketch {
     this.addVar('gutter', { presentation: true, initialValue: 0.05, min: 0, max: 0.4, step: 0.001 })
     this.addVar('points', { initialValue: 32, min: 5, max: 128, step: 1 })
     this.addVar('avoidUntil', { initialValue: 6, min: 0, max: 32, step: 1 })
+    this.addVar('curveDistance', { initialValue: 0.01, min: -100, max: 100, step: 0.1 })
+    this.addVar('curveLean', { initialValue: 1, min: -1, max: 32, step: 0.01 })
     this.vs.debug = new BooleanRange({ disableRandomize: true, initialValue: false })
   }
 
@@ -31,6 +33,8 @@ export default class StringArt extends Sketch {
   drawnLines: Set<string>
   currentRadialIndex = 0
   currentTestIndex = 0
+
+  cPt = new Point(this.cx, this.cy)
 
   hasDrawn = (i1: number, i2: number) => this.drawnLines.has(makeKey(i1, i2))
 
@@ -69,7 +73,7 @@ export default class StringArt extends Sketch {
     // artificially slow down the drawing
     // if (increment % 500 !== 0) return
 
-    const { speedUp, points, avoidUntil } = this.vars
+    const { speedUp, points, avoidUntil, curveDistance, curveLean } = this.vars
 
     if (this.done) return
 
@@ -109,15 +113,27 @@ export default class StringArt extends Sketch {
       const startAng = this.segAng * this.currentRadialIndex
       const endAng = this.segAng * this.currentTestIndex
 
-      this.ctx.beginPath()
-      this.ctx.moveTo(
+      const startPt = new Point(
         this.cx + Math.cos(startAng) * this.radius,
         this.cy + Math.sin(startAng) * this.radius
       )
-      this.ctx.lineTo(
+      const endPt = new Point(
         this.cx + Math.cos(endAng) * this.radius,
         this.cy + Math.sin(endAng) * this.radius
       )
+      const midPt = new Point((startPt.x + endPt.x) / 2, (startPt.y + endPt.y) / 2)
+      const midPtDist = midPt.distanceTo(this.cPt)
+      const proximityToCenterPercent = midPtDist / this.radius
+
+      if (midPt.distanceTo(new Point(this.cx, this.cy)) > 0.01) {
+        const midPtAngle = Math.atan2(midPt.y - this.cy, midPt.x - this.cx)
+        midPt.moveAlongAngle(midPtAngle, curveDistance * (proximityToCenterPercent * curveLean))
+      }
+
+      this.ctx.beginPath()
+      this.ctx.moveTo(...startPt.toArray())
+      this.ctx.quadraticCurveTo(...midPt.toArray(), ...endPt.toArray())
+      // this.ctx.lineTo(...endPt.toArray())
       this.ctx.stroke()
       if (this.vs.debug.value) {
         this.ctx.strokeTriangle(
