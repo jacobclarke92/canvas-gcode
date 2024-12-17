@@ -52,4 +52,5 @@ export default [
   require('./51_Letters').default,
   require('./52_ApartmentBlocks').default,
   require('./53_StringArt').default,
+  require('./54_WaveCollapse').default,
 ]
