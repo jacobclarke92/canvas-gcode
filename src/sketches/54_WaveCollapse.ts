@@ -10,6 +10,7 @@ import { BooleanRange } from './tools/Range'
 interface Cell {
   x: number
   y: number
+  drawn: boolean
   connectTop: boolean
   connectRight: boolean
   connectBottom: boolean
@@ -57,8 +58,12 @@ const createCell = (
     // connectLeft = false
   }
 
-  return { x, y, connectTop, connectRight, connectBottom, connectLeft }
+  return { x, y, connectTop, connectRight, connectBottom, connectLeft, drawn: false }
 }
+
+const isDeadEnd = (cell: Cell): boolean =>
+  [cell.connectTop, cell.connectRight, cell.connectBottom, cell.connectLeft].filter(Boolean)
+    .length === 1
 
 const getCellAscii = (cell: Cell): string => {
   const { connectTop: t, connectRight: r, connectBottom: b, connectLeft: l } = cell
@@ -93,7 +98,7 @@ export default class WaveCollapse extends Sketch {
     this.addVar('seed', { initialValue: 3994, min: 1000, max: 5000, step: 1 })
     this.addVar('speedUp', { initialValue: 32, min: 1, max: 50, step: 1 })
     this.addVar('gutter', { presentation: true, initialValue: 5, min: 0, max: 50, step: 0.2 })
-    this.addVar('gridSize', { initialValue: 32, min: 2, max: 128, step: 1 })
+    this.addVar('gridSize', { initialValue: 20, min: 2, max: 128, step: 1 })
 
     this.vs.displayGrid = new BooleanRange({ disableRandomize: true, initialValue: true })
   }
@@ -109,6 +114,7 @@ export default class WaveCollapse extends Sketch {
   placedCellCount = 0
   cells: Cell[][] = []
   lastPlacedCell: Cell | null = null
+  drawingCell: Cell | null = null
 
   nextCellQueue: [number, number][] = []
 
@@ -127,6 +133,8 @@ export default class WaveCollapse extends Sketch {
     this.offsetX = (this.cw - (gutter * 2 + this.cols * gridSize)) / 2
     this.offsetY = (this.ch - (gutter * 2 + this.rows * gridSize)) / 2
 
+    this.lastPlacedCell = null
+    this.drawingCell = null
     this.placedCellCount = 0
     this.cells = []
     this.nextCellQueue = []
@@ -199,7 +207,23 @@ export default class WaveCollapse extends Sketch {
       }
     }
     if (!blankSpaces.length) return
-    this.nextCellQueue.push(blankSpaces[randIntRange(blankSpaces.length)])
+    this.nextCellQueue.push(blankSpaces[randIntRange(blankSpaces.length - 1)])
+  }
+
+  findEndpoint = (): Cell => {
+    const endpoints: Cell[] = []
+    for (let y = 0; y < this.rows; y++) {
+      for (let x = 0; x < this.cols; x++) {
+        const cell = this.cells[y]?.[x]
+        if (!cell) continue
+        if (isDeadEnd(cell)) endpoints.push(cell)
+      }
+    }
+    if (!endpoints.length) {
+      console.log('no endpoints found')
+      return this.cells[0][0]
+    }
+    return endpoints[randIntRange(endpoints.length - 1)]
   }
 
   logState = () => {
@@ -213,6 +237,13 @@ export default class WaveCollapse extends Sketch {
       }
       console.log(rowStr)
     }
+  }
+
+  drawCell = (cell: Cell) => {
+    // TODO:
+
+    cell.drawn = true
+    this.drawingCell = null // TODO: make next connection otherwise pick another one
   }
 
   draw(increment: number): void {
@@ -263,12 +294,19 @@ export default class WaveCollapse extends Sketch {
     if (this.mode === 'draw') {
       console.log('drawing')
       this.logState()
-      // this.ctx.strokeStyle = '#222222'
-      // // this.ctx.lineWidth = 1
-      // this.ctx.beginPath()
 
-      // this.ctx.stroke()
-      // this.ctx.closePath()
+      if (!this.drawingCell) {
+        this.drawingCell = this.findEndpoint()
+      }
+
+      if (!this.drawingCell) {
+        console.log('no drawing cell')
+        this.done = true
+        return
+      }
+
+      this.drawCell(this.drawingCell)
+
       this.done = true
     }
   }
