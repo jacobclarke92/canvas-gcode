@@ -16,14 +16,77 @@ interface Cell {
   connectLeft: boolean
 }
 
-const createCell = (x: number, y: number): Cell => ({
-  x,
-  y,
-  connectTop: !!randIntRange(1),
-  connectRight: !!randIntRange(1),
-  connectBottom: !!randIntRange(1),
-  connectLeft: !!randIntRange(1),
-})
+const createCell = (
+  x: number,
+  y: number,
+  limits?: {
+    connectTop?: boolean
+    connectRight?: boolean
+    connectBottom?: boolean
+    connectLeft?: boolean
+    preventOverflow?: { cols: number; rows: number }
+  }
+): Cell => {
+  let { connectTop, connectRight, connectBottom, connectLeft } = limits ?? {}
+  if (limits?.preventOverflow) {
+    if (y === 0) connectTop = false
+    if (x === 0) connectLeft = false
+    if (y === limits.preventOverflow.rows) connectBottom = false
+    if (x === limits.preventOverflow.cols) connectRight = false
+  }
+  const randomizeUnset = () => {
+    if (connectTop === undefined) connectTop = !!randIntRange(1)
+    if (connectRight === undefined) connectRight = !!randIntRange(1)
+    if (connectBottom === undefined) connectBottom = !!randIntRange(1)
+    if (connectLeft === undefined) connectLeft = !!randIntRange(1)
+  }
+  randomizeUnset()
+  let panic = 0
+  while (
+    [connectTop, connectRight, connectBottom, connectLeft].filter(Boolean).length < 2 &&
+    panic < 100
+  ) {
+    randomizeUnset()
+    panic++
+  }
+  if (panic >= 100) {
+    console.log('PANIC', x, y, connectTop, connectRight, connectBottom, connectLeft)
+    // connectTop = false
+    // connectRight = false
+    // connectBottom = false
+    // connectLeft = false
+  }
+
+  return { x, y, connectTop, connectRight, connectBottom, connectLeft }
+}
+
+const getCellAscii = (cell: Cell): string => {
+  const { connectTop: t, connectRight: r, connectBottom: b, connectLeft: l } = cell
+
+  if (t && r && b && l) return '╋' // All directions
+
+  // Three connections
+  if (t && r && b) return '┣' // Missing left
+  if (t && r && l) return '┻' // Missing bottom
+  if (t && b && l) return '┫' // Missing right
+  if (r && b && l) return '┳' // Missing top
+
+  // Two connections
+  if (t && b) return '┃' // Vertical
+  if (r && l) return '━' // Horizontal
+  if (t && r) return '┗' // Up + right
+  if (t && l) return '┛' // Up + left
+  if (b && r) return '┏' // Down + right
+  if (b && l) return '┓' // Down + left
+
+  // One or no connections
+  if (l) return '⇥' // Left
+  if (r) return '⇤' // Right
+  if (t) return '⇩' // Up
+  if (b) return '⇧' // Down
+
+  return ' ' // Invalid state
+}
 
 export default class WaveCollapse extends Sketch {
   init() {
@@ -36,10 +99,18 @@ export default class WaveCollapse extends Sketch {
   }
 
   done = false
+  mode: 'plan' | 'draw' = 'plan'
+
   cols = 0
   rows = 0
   offsetX = 0
   offsetY = 0
+
+  placedCellCount = 0
+  cells: Cell[][] = []
+  lastPlacedCell: Cell | null = null
+
+  nextCellQueue: [number, number][] = []
 
   initDraw(): void {
     seedRandom(this.vars.seed)
@@ -50,8 +121,15 @@ export default class WaveCollapse extends Sketch {
     this.cols = Math.floor((this.cw - gutter * 2) / gridSize)
     this.rows = Math.floor((this.ch - gutter * 2) / gridSize)
 
+    this.done = false
+    this.mode = 'plan'
+
     this.offsetX = (this.cw - (gutter * 2 + this.cols * gridSize)) / 2
     this.offsetY = (this.ch - (gutter * 2 + this.rows * gridSize)) / 2
+
+    this.placedCellCount = 0
+    this.cells = []
+    this.nextCellQueue = []
 
     if (this.vs.displayGrid.value) {
       // Start drawing debug grid
@@ -71,11 +149,127 @@ export default class WaveCollapse extends Sketch {
       }
       this.ctx.closePath()
       // Finish drawing debug grid
+
+      const x = Math.floor(this.cols / 2)
+      const y = Math.floor(this.rows / 2)
+      const startingCell = createCell(x, y)
+      console.log(x, y, 'starting cell', getCellAscii(startingCell))
+      this.registerCell(startingCell)
+      this.addSurroundingBlankSpacesToQueue(startingCell)
+    }
+  }
+
+  registerCell = (cell: Cell) => {
+    const { x, y } = cell
+    if (!this.cells[y]) this.cells[y] = []
+    this.cells[y][x] = cell
+    this.placedCellCount++
+    this.lastPlacedCell = cell
+  }
+
+  addSurroundingBlankSpacesToQueue = (cell: Cell) => {
+    const { x, y } = cell
+    if (cell.connectLeft && x > 0 && !this.cells[y]?.[x - 1]) this.nextCellQueue.push([x - 1, y])
+    if (cell.connectRight && x < this.cols - 1 && !this.cells[y]?.[x + 1])
+      this.nextCellQueue.push([x + 1, y])
+    if (cell.connectTop && y > 0 && !this.cells[y - 1]?.[x]) this.nextCellQueue.push([x, y - 1])
+    if (cell.connectBottom && y < this.rows - 1 && !this.cells[y + 1]?.[x])
+      this.nextCellQueue.push([x, y + 1])
+  }
+
+  getNeighboringCells = ([x, y]: [number, number]) => {
+    const neighbors: {
+      top?: Cell
+      right?: Cell
+      bottom?: Cell
+      left?: Cell
+    } = {}
+    if (x > 0) neighbors.left = this.cells[y]?.[x - 1]
+    if (x < this.cols - 1) neighbors.right = this.cells[y]?.[x + 1]
+    if (y > 0) neighbors.top = this.cells[y - 1]?.[x]
+    if (y < this.rows - 1) neighbors.bottom = this.cells[y + 1]?.[x]
+    return neighbors
+  }
+
+  addRandomBlankSpaceToQueue = () => {
+    const blankSpaces: [number, number][] = []
+    for (let y = 0; y < this.rows; y++) {
+      for (let x = 0; x < this.cols; x++) {
+        if (!this.cells[y]?.[x]) blankSpaces.push([x, y])
+      }
+    }
+    if (!blankSpaces.length) return
+    this.nextCellQueue.push(blankSpaces[randIntRange(blankSpaces.length)])
+  }
+
+  logState = () => {
+    for (let y = 0; y < this.rows; y++) {
+      let rowStr = ''
+
+      for (let x = 0; x < this.cols; x++) {
+        const cell = this.cells[y]?.[x]
+        const pad = this.lastPlacedCell && cell === this.lastPlacedCell ? '*' : ' '
+        rowStr += cell ? pad + getCellAscii(cell) + pad : '   '
+      }
+      console.log(rowStr)
     }
   }
 
   draw(increment: number): void {
     // artificially slow down the drawing
     // if (increment % 500 !== 0) return
+    if (this.done) return
+
+    if (this.mode === 'plan') {
+      if (!this.nextCellQueue.length) {
+        this.addRandomBlankSpaceToQueue()
+        if (!this.nextCellQueue.length) {
+          console.log('no blank spaces left')
+          this.mode = 'draw'
+          this.lastPlacedCell = null
+          return
+        }
+        return
+      }
+
+      console.log(JSON.stringify(this.nextCellQueue))
+      const queuedCell = this.nextCellQueue.shift()
+      if (!queuedCell) return
+
+      const [x, y] = queuedCell
+
+      if (this.cells[y]?.[x]) return console.log('cell already exists for some reason')
+
+      const neighbors = this.getNeighboringCells(queuedCell)
+      if (!Object.keys(neighbors).length) return console.log('no neighbors for some reason')
+
+      console.log(x, y, neighbors)
+      const newCell = createCell(x, y, {
+        connectTop: neighbors.top?.connectBottom,
+        connectRight: neighbors.right?.connectLeft,
+        connectBottom: neighbors.bottom?.connectTop,
+        connectLeft: neighbors.left?.connectRight,
+        preventOverflow: { cols: this.cols - 1, rows: this.rows - 1 },
+      })
+      console.log('new cell', getCellAscii(newCell), newCell)
+
+      this.registerCell(newCell)
+
+      this.logState()
+
+      this.addSurroundingBlankSpacesToQueue(newCell)
+    }
+
+    if (this.mode === 'draw') {
+      console.log('drawing')
+      this.logState()
+      // this.ctx.strokeStyle = '#222222'
+      // // this.ctx.lineWidth = 1
+      // this.ctx.beginPath()
+
+      // this.ctx.stroke()
+      // this.ctx.closePath()
+      this.done = true
+    }
   }
 }
