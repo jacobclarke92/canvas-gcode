@@ -1,6 +1,6 @@
 import Point from '../Point'
 import { Sketch } from '../Sketch'
-import { debugDot, debugText } from '../utils/debugUtils'
+import { debugDot } from '../utils/debugUtils'
 import { getBezierPoints } from '../utils/geomUtils'
 import { randFloatRange, randIntRange } from '../utils/numberUtils'
 import { initPen, plotBounds } from '../utils/penUtils'
@@ -11,34 +11,20 @@ interface Cell {
   x: number
   y: number
   drawn: boolean
-  drawnTop: boolean
-  drawnRight: boolean
-  drawnBottom: boolean
-  drawnLeft: boolean
-  connectTop: CellIO | false
-  connectRight: CellIO | false
-  connectBottom: CellIO | false
-  connectLeft: CellIO | false
+  connectTop: boolean
+  connectRight: boolean
+  connectBottom: boolean
+  connectLeft: boolean
 }
-
-interface CellIO {
-  spread: number
-  ports: number
-}
-
-const randCellIO = (): CellIO => ({
-  spread: randFloatRange(0.8, 0.2),
-  ports: randIntRange(1, 8),
-})
 
 const createCell = (
   x: number,
   y: number,
   limits?: {
-    connectTop?: CellIO | false
-    connectRight?: CellIO | false
-    connectBottom?: CellIO | false
-    connectLeft?: CellIO | false
+    connectTop?: boolean
+    connectRight?: boolean
+    connectBottom?: boolean
+    connectLeft?: boolean
     preventOverflow?: { cols: number; rows: number }
   }
 ): Cell => {
@@ -50,10 +36,10 @@ const createCell = (
     if (x === limits.preventOverflow.cols) connectRight = false
   }
   const randomizeUnset = () => {
-    if (connectTop === undefined) connectTop = !!randIntRange(1) ? randCellIO() : false
-    if (connectRight === undefined) connectRight = !!randIntRange(1) ? randCellIO() : false
-    if (connectBottom === undefined) connectBottom = !!randIntRange(1) ? randCellIO() : false
-    if (connectLeft === undefined) connectLeft = !!randIntRange(1) ? randCellIO() : false
+    if (connectTop === undefined) connectTop = !!randIntRange(1)
+    if (connectRight === undefined) connectRight = !!randIntRange(1)
+    if (connectBottom === undefined) connectBottom = !!randIntRange(1)
+    if (connectLeft === undefined) connectLeft = !!randIntRange(1)
   }
   randomizeUnset()
   let panic = 0
@@ -72,19 +58,7 @@ const createCell = (
     // connectLeft = false
   }
 
-  return {
-    x,
-    y,
-    connectTop,
-    connectRight,
-    connectBottom,
-    connectLeft,
-    drawn: false,
-    drawnTop: false,
-    drawnRight: false,
-    drawnBottom: false,
-    drawnLeft: false,
-  }
+  return { x, y, connectTop, connectRight, connectBottom, connectLeft, drawn: false }
 }
 
 const isDeadEnd = (cell: Cell): boolean =>
@@ -225,20 +199,6 @@ export default class WaveCollapse extends Sketch {
     return neighbors
   }
 
-  getOrphanedCells = ({ excludeDrawn }: { excludeDrawn: boolean } = { excludeDrawn: false }) => {
-    const orphans: Cell[] = []
-    for (let y = 0; y < this.rows; y++) {
-      for (let x = 0; x < this.cols; x++) {
-        const cell = this.cells[y]?.[x]
-        if (!cell) continue
-        if (excludeDrawn && cell.drawn) continue
-        if (!cell.connectTop && !cell.connectRight && !cell.connectBottom && !cell.connectLeft)
-          orphans.push(cell)
-      }
-    }
-    return orphans
-  }
-
   addRandomBlankSpaceToQueue = () => {
     const blankSpaces: [number, number][] = []
     for (let y = 0; y < this.rows; y++) {
@@ -250,21 +210,18 @@ export default class WaveCollapse extends Sketch {
     this.nextCellQueue.push(blankSpaces[randIntRange(blankSpaces.length - 1)])
   }
 
-  findEndpoint = (
-    { excludeDrawn }: { excludeDrawn: boolean } = { excludeDrawn: false }
-  ): Cell | null => {
+  findEndpoint = (): Cell => {
     const endpoints: Cell[] = []
     for (let y = 0; y < this.rows; y++) {
       for (let x = 0; x < this.cols; x++) {
         const cell = this.cells[y]?.[x]
         if (!cell) continue
-        if (excludeDrawn && cell.drawn) continue
         if (isDeadEnd(cell)) endpoints.push(cell)
       }
     }
     if (!endpoints.length) {
       console.log('no endpoints found')
-      return null // this.cells[0][0]
+      return this.cells[0][0]
     }
     return endpoints[randIntRange(endpoints.length - 1)]
   }
@@ -283,116 +240,15 @@ export default class WaveCollapse extends Sketch {
   }
 
   drawCell = (cell: Cell) => {
-    const { x, y } = cell
-    const { gutter, gridSize } = this.vars
-
-    const pt = new Point(this.offsetX + gutter + x * gridSize, this.offsetY + gutter + y * gridSize)
-    const centerPt = pt.clone().add(gridSize / 2, gridSize / 2)
-
-    if (!cell.drawnTop && !cell.drawnRight && !cell.drawnBottom && !cell.drawnLeft) {
-      console.log('drawing symbol', x, y, centerPt.x, centerPt.y, getCellAscii(cell))
-      debugText(this.ctx, getCellAscii(cell), centerPt, {
-        fill: 'black',
-        stroke: 'black',
-        size: 2,
-      })
-    }
-
-    if (!cell.connectTop && !cell.connectRight && !cell.connectBottom && !cell.connectLeft) {
-      console.log('drawing orphan cell', x, y)
-      const circles = 4
-      for (let i = 0; i < circles; i++) {
-        this.ctx.beginPath()
-        this.ctx.strokeCircle(centerPt, (gridSize / 2 / circles) * i)
-        this.ctx.stroke()
-        this.ctx.closePath()
-      }
-
-      cell.drawn = true
-
-      this.drawingCell = this.findEndpoint({ excludeDrawn: true })
-
-      return
-    }
-
-    console.log('drawing cell', x, y)
-
-    const neighbors = this.getNeighboringCells([x, y])
-    const possibleNextCells: Cell[] = []
-
-    if (cell.connectTop && !cell.drawnTop) {
-      if (neighbors.top) possibleNextCells.push(neighbors.top)
-      const { ports, spread } = cell.connectTop
-      const edgeGutter = ((1 - spread) / 2) * gridSize
-      const increment = (gridSize * spread) / (ports - 1)
-      let connectPt = pt.clone().add(edgeGutter, 1)
-      for (let n = 0; n < ports; n++) {
-        debugDot(this.ctx, connectPt, 'red')
-        connectPt = connectPt.add(increment)
-      }
-      cell.drawnTop = true
-      this.drawingCell = neighbors.top
-      return
-    }
-
-    if (cell.connectRight && !cell.drawnRight) {
-      if (neighbors.right) possibleNextCells.push(neighbors.right)
-      const { ports, spread } = cell.connectRight
-      const edgeGutter = ((1 - spread) / 2) * gridSize
-      const increment = (gridSize * spread) / (ports - 1)
-      let connectPt = pt.clone().add(gridSize - 1, edgeGutter)
-      for (let n = 0; n < ports; n++) {
-        debugDot(this.ctx, connectPt, 'green')
-        connectPt = connectPt.add(0, increment)
-      }
-      cell.drawnRight = true
-      this.drawingCell = neighbors.right
-      return
-    }
-
-    if (cell.connectBottom && !cell.drawnBottom) {
-      if (neighbors.bottom) possibleNextCells.push(neighbors.bottom)
-      const { ports, spread } = cell.connectBottom
-      const edgeGutter = ((1 - spread) / 2) * gridSize
-      const increment = (gridSize * spread) / (ports - 1)
-      let connectPt = pt.clone().add(edgeGutter, gridSize - 1)
-      for (let n = 0; n < ports; n++) {
-        debugDot(this.ctx, connectPt, 'blue')
-        connectPt = connectPt.add(increment, 0)
-      }
-      cell.drawnBottom = true
-      this.drawingCell = neighbors.bottom
-      return
-    }
-
-    if (cell.connectLeft && !cell.drawnLeft) {
-      if (neighbors.left) possibleNextCells.push(neighbors.left)
-      const { ports, spread } = cell.connectLeft
-      const edgeGutter = ((1 - spread) / 2) * gridSize
-      const increment = (gridSize * spread) / (ports - 1)
-      let connectPt = pt.clone().add(1, edgeGutter)
-      for (let n = 0; n < ports; n++) {
-        debugDot(this.ctx, connectPt, 'yellow')
-        connectPt = connectPt.add(0, increment)
-      }
-      cell.drawnLeft = true
-      this.drawingCell = neighbors.left
-      return
-    }
+    // TODO:
 
     cell.drawn = true
-
-    // if (!possibleNextCells.length) {
-    this.drawingCell = this.findEndpoint({ excludeDrawn: true })
-    // } else {
-    //   this.drawingCell = possibleNextCells[0]
-    // }
-    // this.drawingCell = this.findEndpoint
+    this.drawingCell = null // TODO: make next connection otherwise pick another one
   }
 
   draw(increment: number): void {
     // artificially slow down the drawing
-    if (increment % 100 !== 0) return
+    // if (increment % 500 !== 0) return
     if (this.done) return
 
     if (this.mode === 'plan') {
@@ -436,18 +292,11 @@ export default class WaveCollapse extends Sketch {
     }
 
     if (this.mode === 'draw') {
-      if (!this.drawingCell) {
-        console.log('drawing')
-        this.logState()
-        let orphans = this.getOrphanedCells({ excludeDrawn: true })
-        while (orphans.length > 0) {
-          this.drawingCell = orphans[randIntRange(orphans.length - 1)]
-          this.drawCell(this.drawingCell)
-          orphans = this.getOrphanedCells({ excludeDrawn: true })
-        }
+      console.log('drawing')
+      this.logState()
 
-        this.drawingCell = this.findEndpoint({ excludeDrawn: true })
-        if (!this.drawingCell) this.drawingCell = this.cells[0][0]
+      if (!this.drawingCell) {
+        this.drawingCell = this.findEndpoint()
       }
 
       if (!this.drawingCell) {
@@ -458,9 +307,7 @@ export default class WaveCollapse extends Sketch {
 
       this.drawCell(this.drawingCell)
 
-      if (!this.drawingCell) {
-        this.done = true
-      }
+      this.done = true
     }
   }
 }
