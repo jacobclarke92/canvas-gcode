@@ -1,11 +1,13 @@
 import Point from '../Point'
 import { Sketch } from '../Sketch'
-import { debugDot, debugText } from '../utils/debugUtils'
+import { debugArrow, debugDot, debugText } from '../utils/debugUtils'
 import { getBezierPoints } from '../utils/geomUtils'
 import { randFloatRange, randIntRange } from '../utils/numberUtils'
 import { initPen, plotBounds } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
 import { BooleanRange } from './tools/Range'
+
+type Side = 'top' | 'right' | 'bottom' | 'left'
 
 interface Cell {
   x: number
@@ -27,7 +29,7 @@ interface CellIO {
 }
 
 const randCellIO = (): CellIO => ({
-  spread: randFloatRange(0.8, 0.2),
+  spread: randFloatRange(0.8, 0.4),
   ports: randIntRange(1, 8),
 })
 
@@ -119,6 +121,12 @@ const getCellAscii = (cell: Cell): string => {
   return ' ' // Invalid state
 }
 
+const isCellCompletelyDrawn = (cell: Cell): boolean =>
+  (cell.connectTop ? cell.drawnTop : true) &&
+  (cell.connectRight ? cell.drawnRight : true) &&
+  (cell.connectBottom ? cell.drawnBottom : true) &&
+  (cell.connectLeft ? cell.drawnLeft : true)
+
 export default class WaveCollapse extends Sketch {
   init() {
     this.addVar('seed', { initialValue: 3994, min: 1000, max: 5000, step: 1 })
@@ -127,6 +135,7 @@ export default class WaveCollapse extends Sketch {
     this.addVar('gridSize', { initialValue: 20, min: 2, max: 128, step: 1 })
 
     this.vs.displayGrid = new BooleanRange({ disableRandomize: true, initialValue: true })
+    this.vs.showDebug = new BooleanRange({ disableRandomize: true, initialValue: true })
   }
 
   done = false
@@ -269,6 +278,17 @@ export default class WaveCollapse extends Sketch {
     return endpoints[randIntRange(endpoints.length - 1)]
   }
 
+  findUndrawnCell = (): Cell | null => {
+    for (let y = 0; y < this.rows; y++) {
+      for (let x = 0; x < this.cols; x++) {
+        const cell = this.cells[y]?.[x]
+        if (!cell) continue
+        if (!cell.drawn) return cell
+      }
+    }
+    return null
+  }
+
   logState = () => {
     for (let y = 0; y < this.rows; y++) {
       let rowStr = ''
@@ -282,20 +302,99 @@ export default class WaveCollapse extends Sketch {
     }
   }
 
+  getCellPoint = (cell: Cell): Point => {
+    const { gutter, gridSize } = this.vars
+    return new Point(
+      this.offsetX + gutter + cell.x * gridSize,
+      this.offsetY + gutter + cell.y * gridSize
+    )
+  }
+
+  getCellCenter = (cell: Cell, topLeftPt: Point = this.getCellPoint(cell)): Point =>
+    topLeftPt.clone().add(this.vars.gridSize / 2, this.vars.gridSize / 2)
+
+  getCellIO = (cell: Cell, side: Side): Point[] => {
+    const { x, y } = cell
+    const { gridSize } = this.vars
+    const pt = this.getCellPoint(cell)
+    const centerPt = this.getCellCenter(cell, pt)
+
+    const { ports, spread } = cell[
+      side === 'top'
+        ? 'connectTop'
+        : side === 'right'
+        ? 'connectRight'
+        : side === 'bottom'
+        ? 'connectBottom'
+        : 'connectLeft'
+    ] as CellIO
+
+    const edgeGutter = ((1 - spread) / 2) * gridSize
+    const increment = (gridSize * spread) / (ports - 1)
+    const points: Point[] = []
+    let connectPt: Point
+    switch (side) {
+      case 'top':
+        connectPt = pt.clone().add(edgeGutter, 1)
+        for (let n = 0; n < ports; n++) {
+          points.push(connectPt)
+          connectPt = connectPt.add(increment)
+        }
+        break
+      case 'right':
+        connectPt = pt.clone().add(gridSize - 1, edgeGutter)
+        for (let n = 0; n < ports; n++) {
+          points.push(connectPt)
+          connectPt = connectPt.add(0, increment)
+        }
+        break
+      case 'bottom':
+        connectPt = pt.clone().add(edgeGutter, gridSize - 1)
+        for (let n = 0; n < ports; n++) {
+          points.push(connectPt)
+          connectPt = connectPt.add(increment, 0)
+        }
+        break
+      case 'left':
+        connectPt = pt.clone().add(1, edgeGutter)
+        for (let n = 0; n < ports; n++) {
+          points.push(connectPt)
+          connectPt = connectPt.add(0, increment)
+        }
+        break
+    }
+
+    return points
+  }
+
+  isCellPartOfPair = (cell: Cell) => {
+    const { x, y } = cell
+    if (!isDeadEnd(cell)) return false
+    const neighbors = this.getNeighboringCells([x, y])
+    return (
+      (cell.connectTop && isDeadEnd(neighbors.top)) ||
+      (cell.connectRight && isDeadEnd(neighbors.right)) ||
+      (cell.connectBottom && isDeadEnd(neighbors.bottom)) ||
+      (cell.connectLeft && isDeadEnd(neighbors.left))
+    )
+  }
+
   drawCell = (cell: Cell) => {
     const { x, y } = cell
-    const { gutter, gridSize } = this.vars
+    const { gridSize } = this.vars
 
-    const pt = new Point(this.offsetX + gutter + x * gridSize, this.offsetY + gutter + y * gridSize)
-    const centerPt = pt.clone().add(gridSize / 2, gridSize / 2)
+    const pt = this.getCellPoint(cell)
+    const centerPt = this.getCellCenter(cell, pt)
 
-    if (!cell.drawnTop && !cell.drawnRight && !cell.drawnBottom && !cell.drawnLeft) {
-      console.log('drawing symbol', x, y, centerPt.x, centerPt.y, getCellAscii(cell))
-      debugText(this.ctx, getCellAscii(cell), centerPt, {
-        fill: 'black',
-        stroke: 'black',
-        size: 2,
-      })
+    if (this.vs.showDebug.value) {
+      if (!cell.drawnTop && !cell.drawnRight && !cell.drawnBottom && !cell.drawnLeft) {
+        console.log('drawing symbol', x, y, centerPt.x, centerPt.y, getCellAscii(cell))
+        debugText(this.ctx, getCellAscii(cell), centerPt, {
+          fill: 'black',
+          stroke: 'black',
+          size: 2,
+        })
+      }
     }
 
     if (!cell.connectTop && !cell.connectRight && !cell.connectBottom && !cell.connectLeft) {
@@ -315,13 +414,55 @@ export default class WaveCollapse extends Sketch {
       return
     }
 
+    if (this.isCellPartOfPair(cell)) {
+      console.log('drawing pair', x, y)
+      const neighbors = this.getNeighboringCells([x, y])
+      const neighbor = Object.values(neighbors).find(isDeadEnd)
+      if (!neighbor) return console.log('no neighbor found for pair')
+      const neighborCenter = this.getCellCenter(neighbor)
+
+      // make an infinity orbit shape around the center of the pair
+      const orbitRadius = gridSize / 3
+      const angle = centerPt.angleTo(neighborCenter)
+      this.ctx.strokeCircle(centerPt, orbitRadius)
+      this.ctx.strokeCircle(neighborCenter, orbitRadius)
+      const offsetL = new Point(
+        Math.cos(angle - Math.PI / 2) * orbitRadius,
+        Math.sin(angle - Math.PI / 2) * orbitRadius
+      )
+      const offsetR = new Point(
+        Math.cos(angle + Math.PI / 2) * orbitRadius,
+        Math.sin(angle + Math.PI / 2) * orbitRadius
+      )
+      this.ctx.moveTo(centerPt.x + offsetL.x, centerPt.y + offsetL.y)
+      this.ctx.lineTo(neighborCenter.x + offsetL.x, neighborCenter.y + offsetL.y)
+      this.ctx.moveTo(centerPt.x + offsetR.x, centerPt.y + offsetR.y)
+      this.ctx.lineTo(neighborCenter.x + offsetR.x, neighborCenter.y + offsetR.y)
+      this.ctx.stroke()
+      this.ctx.closePath()
+
+      neighbor.drawn = true
+      cell.drawn = true
+      this.drawingCell = this.findEndpoint({ excludeDrawn: true })
+      return
+    }
+
     console.log('drawing cell', x, y)
 
     const neighbors = this.getNeighboringCells([x, y])
     const possibleNextCells: Cell[] = []
 
     if (cell.connectTop && !cell.drawnTop) {
-      if (neighbors.top) possibleNextCells.push(neighbors.top)
+      if (neighbors.top) {
+        possibleNextCells.push(neighbors.top)
+        if (!neighbors.top.drawnBottom)
+          if (this.vs.showDebug.value)
+            debugArrow(
+              this.ctx,
+              centerPt.clone().subtract(0, gridSize / 4),
+              this.getCellCenter(neighbors.top).add(0, gridSize / 4)
+            )
+      }
       const { ports, spread } = cell.connectTop
       const edgeGutter = ((1 - spread) / 2) * gridSize
       const increment = (gridSize * spread) / (ports - 1)
@@ -331,27 +472,47 @@ export default class WaveCollapse extends Sketch {
         connectPt = connectPt.add(increment)
       }
       cell.drawnTop = true
+      cell.drawn = isCellCompletelyDrawn(cell)
       this.drawingCell = neighbors.top
       return
     }
 
     if (cell.connectRight && !cell.drawnRight) {
-      if (neighbors.right) possibleNextCells.push(neighbors.right)
+      if (neighbors.right) {
+        possibleNextCells.push(neighbors.right)
+        if (!neighbors.right.drawnLeft)
+          if (this.vs.showDebug.value)
+            debugArrow(
+              this.ctx,
+              centerPt.clone().add(gridSize / 4, 0),
+              this.getCellCenter(neighbors.right).subtract(gridSize / 4, 0)
+            )
+      }
       const { ports, spread } = cell.connectRight
       const edgeGutter = ((1 - spread) / 2) * gridSize
       const increment = (gridSize * spread) / (ports - 1)
       let connectPt = pt.clone().add(gridSize - 1, edgeGutter)
       for (let n = 0; n < ports; n++) {
-        debugDot(this.ctx, connectPt, 'green')
+        debugDot(this.ctx, connectPt, 'magenta')
         connectPt = connectPt.add(0, increment)
       }
       cell.drawnRight = true
+      cell.drawn = isCellCompletelyDrawn(cell)
       this.drawingCell = neighbors.right
       return
     }
 
     if (cell.connectBottom && !cell.drawnBottom) {
-      if (neighbors.bottom) possibleNextCells.push(neighbors.bottom)
+      if (neighbors.bottom) {
+        possibleNextCells.push(neighbors.bottom)
+        if (!neighbors.bottom.drawnTop)
+          if (this.vs.showDebug.value)
+            debugArrow(
+              this.ctx,
+              centerPt.clone().add(0, gridSize / 4),
+              this.getCellCenter(neighbors.bottom).subtract(0, gridSize / 4)
+            )
+      }
       const { ports, spread } = cell.connectBottom
       const edgeGutter = ((1 - spread) / 2) * gridSize
       const increment = (gridSize * spread) / (ports - 1)
@@ -361,21 +522,32 @@ export default class WaveCollapse extends Sketch {
         connectPt = connectPt.add(increment, 0)
       }
       cell.drawnBottom = true
+      cell.drawn = isCellCompletelyDrawn(cell)
       this.drawingCell = neighbors.bottom
       return
     }
 
     if (cell.connectLeft && !cell.drawnLeft) {
-      if (neighbors.left) possibleNextCells.push(neighbors.left)
+      if (neighbors.left) {
+        possibleNextCells.push(neighbors.left)
+        if (!neighbors.left.drawnRight)
+          if (this.vs.showDebug.value)
+            debugArrow(
+              this.ctx,
+              centerPt.clone().subtract(gridSize / 4, 0),
+              this.getCellCenter(neighbors.left).add(gridSize / 4, 0)
+            )
+      }
       const { ports, spread } = cell.connectLeft
       const edgeGutter = ((1 - spread) / 2) * gridSize
       const increment = (gridSize * spread) / (ports - 1)
       let connectPt = pt.clone().add(1, edgeGutter)
       for (let n = 0; n < ports; n++) {
-        debugDot(this.ctx, connectPt, 'yellow')
+        debugDot(this.ctx, connectPt, 'aqua')
         connectPt = connectPt.add(0, increment)
       }
       cell.drawnLeft = true
+      cell.drawn = isCellCompletelyDrawn(cell)
       this.drawingCell = neighbors.left
       return
     }
@@ -384,6 +556,8 @@ export default class WaveCollapse extends Sketch {
 
     // if (!possibleNextCells.length) {
     this.drawingCell = this.findEndpoint({ excludeDrawn: true })
+    if (!this.drawingCell) this.drawingCell = this.findUndrawnCell()
+
     // } else {
     //   this.drawingCell = possibleNextCells[0]
     // }
@@ -392,7 +566,7 @@ export default class WaveCollapse extends Sketch {
 
   draw(increment: number): void {
     // artificially slow down the drawing
-    if (increment % 100 !== 0) return
+    if (this.mode === 'draw' && increment % 100 !== 0) return
     if (this.done) return
 
     if (this.mode === 'plan') {
