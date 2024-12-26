@@ -91,3 +91,29 @@ export const debugText = (
   ctx.ctx.strokeStyle = prevStrokeStyle
   ctx.ctx.fillStyle = prevFillStyle
 }
+
+export const debugArrow = (
+  ctx: GCanvas,
+  start: Point,
+  end: Point,
+  options?: { stroke?: string; fill?: string }
+) => {
+  const { stroke, fill } = { stroke: 'black', fill: 'white', ...options }
+  const headLen = 2.5
+  const angle = Math.atan2(end.y - start.y, end.x - start.x)
+  ctx.ctx.beginPath()
+  ctx.ctx.strokeStyle = stroke
+  ctx.ctx.moveTo(start.x, start.y)
+  ctx.ctx.lineTo(end.x, end.y)
+  ctx.ctx.lineTo(
+    end.x - headLen * Math.cos(angle - Math.PI / 6),
+    end.y - headLen * Math.sin(angle - Math.PI / 6)
+  )
+  ctx.ctx.moveTo(end.x, end.y)
+  ctx.ctx.lineTo(
+    end.x - headLen * Math.cos(angle + Math.PI / 6),
+    end.y - headLen * Math.sin(angle + Math.PI / 6)
+  )
+  ctx.ctx.stroke()
+  ctx.ctx.closePath()
+}

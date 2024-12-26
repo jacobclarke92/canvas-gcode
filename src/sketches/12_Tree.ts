@@ -26,13 +26,13 @@ export default class Tree extends Sketch {
     this.vs.initBranchLength = new Range({
       initialValue: 8,
       min: 5,
-      max: 10,
+      max: 25,
       step: 0.1,
     })
     this.vs.branchLengthFalloff = new Range({
       initialValue: 0.83,
       min: 0.4,
-      max: 0.9,
+      max: 0.995,
       step: 0.005,
     })
     this.vs.splitProbability = new Range({

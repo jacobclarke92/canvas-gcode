@@ -30,7 +30,7 @@ export default class Point extends IntPoint {
   }
   public add(point: Point | number, y?: number) {
     this.x += typeof point === 'number' ? point : point.x
-    this.y += typeof point === 'number' ? y! : point.y
+    this.y += typeof point === 'number' ? y || 0 : point.y
     return this
   }
   public midpoint(point: Point) {
@@ -38,9 +38,9 @@ export default class Point extends IntPoint {
     this.y = (this.y + point.y) / 2
     return this
   }
-  public subtract(point: Point) {
-    this.x -= point.x
-    this.y -= point.y
+  public subtract(point: Point | number, y?: number) {
+    this.x -= typeof point === 'number' ? point : point.x
+    this.y -= typeof point === 'number' ? y || 0 : point.y
     return this
   }
   public magnitude() {
