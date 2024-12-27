@@ -1,5 +1,6 @@
 import Point from '../Point'
 import { Sketch } from '../Sketch'
+import { shuffle } from '../utils/arrayUtils'
 import { debugArrow, debugDot, debugText } from '../utils/debugUtils'
 import { getBezierPoints } from '../utils/geomUtils'
 import { randFloatRange, randIntRange } from '../utils/numberUtils'
@@ -26,6 +27,7 @@ interface Cell {
 interface CellIO {
   spread: number
   ports: number
+  pts?: Point[]
 }
 
 const randCellIO = (): CellIO => ({
@@ -408,6 +410,7 @@ export default class WaveCollapse extends Sketch {
       }
 
       cell.drawn = true
+      this.drawCellInnerConnections(cell)
 
       this.drawingCell = this.findEndpoint({ excludeDrawn: true })
 
@@ -443,11 +446,12 @@ export default class WaveCollapse extends Sketch {
 
       neighbor.drawn = true
       cell.drawn = true
+      this.drawCellInnerConnections(cell)
       this.drawingCell = this.findEndpoint({ excludeDrawn: true })
       return
     }
 
-    console.log('drawing cell', x, y)
+    // console.log('drawing cell', x, y)
 
     const neighbors = this.getNeighboringCells([x, y])
     const possibleNextCells: Cell[] = []
@@ -466,13 +470,16 @@ export default class WaveCollapse extends Sketch {
       const { ports, spread } = cell.connectTop
       const edgeGutter = ((1 - spread) / 2) * gridSize
       const increment = (gridSize * spread) / (ports - 1)
-      let connectPt = pt.clone().add(edgeGutter, 1)
+      let connectPt = pt.clone().add(edgeGutter, 0)
+      cell.connectTop.pts = [connectPt]
       for (let n = 0; n < ports; n++) {
-        debugDot(this.ctx, connectPt, 'red')
-        connectPt = connectPt.add(increment)
+        if (this.vs.showDebug.value) debugDot(this.ctx, connectPt.clone().add(0, 1), 'red')
+        cell.connectTop.pts.push(connectPt)
+        connectPt = connectPt.clone().add(increment)
       }
       cell.drawnTop = true
       cell.drawn = isCellCompletelyDrawn(cell)
+      if (cell.drawn) this.drawCellInnerConnections(cell)
       this.drawingCell = neighbors.top
       return
     }
@@ -491,13 +498,16 @@ export default class WaveCollapse extends Sketch {
       const { ports, spread } = cell.connectRight
       const edgeGutter = ((1 - spread) / 2) * gridSize
       const increment = (gridSize * spread) / (ports - 1)
-      let connectPt = pt.clone().add(gridSize - 1, edgeGutter)
+      let connectPt = pt.clone().add(gridSize, edgeGutter)
+      cell.connectRight.pts = [connectPt]
       for (let n = 0; n < ports; n++) {
-        debugDot(this.ctx, connectPt, 'magenta')
-        connectPt = connectPt.add(0, increment)
+        if (this.vs.showDebug.value) debugDot(this.ctx, connectPt.clone().subtract(1, 0), 'magenta')
+        cell.connectRight.pts.push(connectPt)
+        connectPt = connectPt.clone().add(0, increment)
       }
       cell.drawnRight = true
       cell.drawn = isCellCompletelyDrawn(cell)
+      if (cell.drawn) this.drawCellInnerConnections(cell)
       this.drawingCell = neighbors.right
       return
     }
@@ -516,13 +526,16 @@ export default class WaveCollapse extends Sketch {
       const { ports, spread } = cell.connectBottom
       const edgeGutter = ((1 - spread) / 2) * gridSize
       const increment = (gridSize * spread) / (ports - 1)
-      let connectPt = pt.clone().add(edgeGutter, gridSize - 1)
+      let connectPt = pt.clone().add(edgeGutter, gridSize)
+      cell.connectBottom.pts = [connectPt]
       for (let n = 0; n < ports; n++) {
-        debugDot(this.ctx, connectPt, 'blue')
+        if (this.vs.showDebug.value) debugDot(this.ctx, connectPt.clone().subtract(0, 1), 'blue')
+        cell.connectBottom.pts.push(connectPt)
         connectPt = connectPt.add(increment, 0)
       }
       cell.drawnBottom = true
       cell.drawn = isCellCompletelyDrawn(cell)
+      if (cell.drawn) this.drawCellInnerConnections(cell)
       this.drawingCell = neighbors.bottom
       return
     }
@@ -541,13 +554,16 @@ export default class WaveCollapse extends Sketch {
       const { ports, spread } = cell.connectLeft
       const edgeGutter = ((1 - spread) / 2) * gridSize
       const increment = (gridSize * spread) / (ports - 1)
-      let connectPt = pt.clone().add(1, edgeGutter)
+      let connectPt = pt.clone().add(0, edgeGutter)
+      cell.connectLeft.pts = [connectPt]
       for (let n = 0; n < ports; n++) {
-        debugDot(this.ctx, connectPt, 'aqua')
+        if (this.vs.showDebug.value) debugDot(this.ctx, connectPt.clone().add(1, 0), 'aqua')
+        cell.connectLeft.pts.push(connectPt)
         connectPt = connectPt.add(0, increment)
       }
       cell.drawnLeft = true
       cell.drawn = isCellCompletelyDrawn(cell)
+      if (cell.drawn) this.drawCellInnerConnections(cell)
       this.drawingCell = neighbors.left
       return
     }
@@ -562,6 +578,51 @@ export default class WaveCollapse extends Sketch {
     //   this.drawingCell = possibleNextCells[0]
     // }
     // this.drawingCell = this.findEndpoint
+  }
+
+  drawCellInnerConnections = (cell: Cell) => {
+    const edgePts: Point[][] = []
+    if (cell.connectTop && cell.connectTop.pts) edgePts.push(shuffle(cell.connectTop.pts!))
+    if (cell.connectRight && cell.connectRight.pts) edgePts.push(shuffle(cell.connectRight.pts!))
+    if (cell.connectBottom && cell.connectBottom.pts) edgePts.push(shuffle(cell.connectBottom.pts!))
+    if (cell.connectLeft && cell.connectLeft.pts) edgePts.push(shuffle(cell.connectLeft.pts!))
+
+    const pt = this.getCellPoint(cell)
+    const centerPt = this.getCellCenter(cell, pt)
+
+    console.log('EDGE PTS', edgePts, cell)
+    if (edgePts.length === 1) {
+      for (const pt of edgePts[0]) {
+        this.ctx.beginPath()
+        this.ctx.moveTo(centerPt.x, centerPt.y)
+        this.ctx.lineTo(pt.x, pt.y)
+        this.ctx.stroke()
+      }
+    } else {
+      for (let e1 = 0; e1 < edgePts.length; e1++) {
+        for (let e2 = e1; e2 < edgePts.length; e2++) {
+          const edgePts1 = edgePts[e1].length >= edgePts[e2].length ? edgePts[e1] : edgePts[e2]
+          const edgePts2 = edgePts[e1].length >= edgePts[e2].length ? edgePts[e2] : edgePts[e1]
+          for (let ptIndex1 = 0; ptIndex1 < edgePts1.length; ptIndex1++) {
+            const ptIndex2 = Math.round((ptIndex1 / edgePts1.length) * (edgePts2.length - 1))
+            // console.log(p2, Math.round(p2), edgePts2.length)
+            this.ctx.beginPath()
+            this.ctx.moveTo(...edgePts1[ptIndex1].toArray())
+            // this.ctx.lineTo(...centerPt.toArray())
+            // this.ctx.lineTo(...edgePts2[ptIndex2].toArray())
+
+            this.ctx.bezierCurveTo(
+              ...centerPt.toArray(),
+              ...centerPt.toArray(),
+              ...edgePts2[ptIndex2].toArray()
+            )
+            this.ctx.stroke()
+          }
+        }
+      }
+    }
+
+    this.ctx.closePath()
   }
 
   draw(increment: number): void {
