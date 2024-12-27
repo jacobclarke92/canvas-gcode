@@ -25,8 +25,8 @@ export default class WiggleGrid extends Sketch {
     this.addVar('noiseAngleInfluence',{ name: 'noiseAngleInfluence', initialValue: 0, min: 0, max: 2.5, step: 0.01 }) // prettier-ignore
 
     this.addVar('perlinDiv',{ name: 'perlinDiv', initialValue: 6, min: 1, max: 100, step: 1, disableRandomize: true }) // prettier-ignore
-    this.addVar('offsetX', { name: 'offsetX', initialValue: 0, min: -100, max: 100, step: 1 })
-    this.addVar('offsetY', { name: 'offsetY', initialValue: 0, min: -100, max: 100, step: 1 })
+    this.addVar('offsetX', { name: 'offsetX', initialValue: 0, min: -250, max: 250, step: 1 })
+    this.addVar('offsetY', { name: 'offsetY', initialValue: 0, min: -250, max: 250, step: 1 })
 
     this.addVar('outerGap',{ initialValue: 6, min: -25, max: 25, step: 1, disableRandomize: true }) // prettier-ignore
 
