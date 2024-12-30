@@ -299,6 +299,28 @@ export const getBezierPoints = (
   return points
 }
 
+export const getContinuousBezierApproximation = (
+  controlPoints: Point[],
+  outputSegmentCount: number
+): Point[] => {
+  return Array.from({ length: outputSegmentCount + 1 }, (_, i) => {
+    const t = i / outputSegmentCount
+    return getContinuousBezierPoint(t, controlPoints, 0, controlPoints.length)
+  })
+}
+
+export const getContinuousBezierPoint = (
+  t: number,
+  controlPoints: Point[],
+  index: number,
+  count: number
+): Point => {
+  if (count == 1) return controlPoints[index]
+  const P0 = getContinuousBezierPoint(t, controlPoints, index, count - 1)
+  const P1 = getContinuousBezierPoint(t, controlPoints, index + 1, count - 1)
+  return new Point((1 - t) * P0.x + t * P1.x, (1 - t) * P0.y + t * P1.y)
+}
+
 export const getTangentsToCircle = (pt: Point, circlePt: Point, radius: number): [Point, Point] => {
   const relativePt = circlePt.clone().subtract(pt)
   const distance = relativePt.magnitude()

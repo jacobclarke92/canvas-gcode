@@ -1,5 +1,8 @@
+import Point from '../Point'
 import { Sketch } from '../Sketch'
-import { debugText } from '../utils/debugUtils'
+import { debugDot, debugText } from '../utils/debugUtils'
+import { getContinuousBezierApproximation } from '../utils/geomUtils'
+import { randIntRange } from '../utils/numberUtils'
 import { initPen, penUp, plotBounds } from '../utils/penUtils'
 
 export default class GCodeTest extends Sketch {
@@ -73,6 +76,20 @@ export default class GCodeTest extends Sketch {
     // // this.ctx.strokeCircle(100, 30, 20)
     // this.ctx.clearRect(100, 35, 20, 20)
     // this.ctx.clearCircle(100, 15, 8)
+
+    // const testPts: Point[] = []
+    // for (let i = 0; i < 30; i++) {
+    //   testPts.push(new Point(randIntRange(this.cw), randIntRange(this.ch)))
+    // }
+    // testPts.forEach((pt) => debugDot(this.ctx, pt, 'red'))
+    // const bezierPts = getContinuousBezierApproximation(testPts, 30 * 10)
+    // this.ctx.beginPath()
+    // this.ctx.moveTo(...bezierPts[0].toArray())
+    // for (const pt of bezierPts) {
+    //   this.ctx.lineTo(...pt.toArray())
+    // }
+    // this.ctx.stroke()
+    // this.ctx.closePath()
 
     penUp(this)
   }
