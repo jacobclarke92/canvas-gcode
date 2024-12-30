@@ -54,4 +54,5 @@ export default [
   require('./53_StringArt').default,
   require('./54_WaveCollapse').default,
   require('./55_WiggleGrid').default,
+  require('./56_WaveCollapseSimple').default,
 ]
