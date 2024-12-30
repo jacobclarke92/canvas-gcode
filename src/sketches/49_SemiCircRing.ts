@@ -19,13 +19,13 @@ export default class SemiCircRing extends Sketch {
       step: 1,
     })
     this.addVar('lines', {
-      initialValue: 1,
+      initialValue: 16,
       min: 1,
       max: 200,
       step: 1,
     })
     this.addVar('twists', {
-      initialValue: 4,
+      initialValue: 6,
       min: 1,
       max: 24,
       step: 1,
@@ -37,13 +37,13 @@ export default class SemiCircRing extends Sketch {
       step: 0.5,
     })
     this.addVar('circumferenceRange', {
-      initialValue: Math.PI / 2,
+      initialValue: 1.12900985988383,
       min: 0,
       max: Math.PI * 2,
       step: Math.PI / 64,
     })
     this.addVar('arcRadiusModifier', {
-      initialValue: 0.01,
+      initialValue: 1,
       min: 0,
       max: 2.001,
       step: 0.01,
