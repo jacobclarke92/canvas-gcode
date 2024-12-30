@@ -5,7 +5,7 @@ import { Sketch } from '../Sketch'
 import { debugDot } from '../utils/debugUtils'
 import { perlin2, seedNoise } from '../utils/noise'
 import { randInt, randIntRange } from '../utils/numberUtils'
-import { initPen, penUp, plotBounds } from '../utils/penUtils'
+import { initPen, penUp, plotBounds, stopAndWigglePen } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
 import Range, { BooleanRange } from './tools/Range'
 
@@ -89,7 +89,12 @@ export default class WiggleGrid extends Sketch {
       const ringSpacing = this.effectiveHeight / 2 / rings
       const baseRadius = (this.drawCount + 1) * ringSpacing
 
+      this.ctx.strokeStyle = '#35bbca'
       if (this.drawCount >= rings) {
+        stopAndWigglePen(this)
+
+        this.ctx.strokeStyle = 'red' // '#D3dd18'
+
         const gridReduction = Math.sqrt(ringSpacing * ringSpacing * 2)
         let gridRadius = (this.ch - outerGap * 2) / 2
         gridRadius = Math.sqrt(gridRadius * gridRadius * 2)
