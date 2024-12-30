@@ -64,9 +64,9 @@ export default class WaveCollapseSimple extends Sketch {
     this.addVar('speedUp', { initialValue: 32, min: 1, max: 50, step: 1 })
     this.addVar('gutter', { presentation: true, initialValue: 5, min: 0, max: 50, step: 0.2 })
     this.addVar('gridSize', { initialValue: 20, min: 2, max: 128, step: 1 })
-    this.addVar('thickness', { initialValue: 1 / 3, min: 0.1, max: 1, step: 0.001 })
+    this.addVar('thickness', { initialValue: 0.5, min: 0.1, max: 1, step: 0.01 })
 
-    this.vs.displayGrid = new BooleanRange({ disableRandomize: true, initialValue: true })
+    this.vs.displayGrid = new BooleanRange({ disableRandomize: true, initialValue: false })
   }
 
   done = false
