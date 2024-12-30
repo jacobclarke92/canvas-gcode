@@ -1,9 +1,7 @@
 import Point from '../Point'
 import { Sketch } from '../Sketch'
-import { debugDot } from '../utils/debugUtils'
-import { getBezierPoints } from '../utils/geomUtils'
-import { randFloatRange, randIntRange } from '../utils/numberUtils'
-import { initPen, plotBounds } from '../utils/penUtils'
+import { randIntRange } from '../utils/numberUtils'
+import { initPen, penUp, plotBounds } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
 import { BooleanRange } from './tools/Range'
 
@@ -50,13 +48,8 @@ const createCell = (
     randomizeUnset()
     panic++
   }
-  if (panic >= 100) {
-    console.log('PANIC', x, y, connectTop, connectRight, connectBottom, connectLeft)
-    // connectTop = false
-    // connectRight = false
-    // connectBottom = false
-    // connectLeft = false
-  }
+
+  if (panic >= 100) console.log('PANIC', x, y, connectTop, connectRight, connectBottom, connectLeft)
 
   return { x, y, connectTop, connectRight, connectBottom, connectLeft, drawn: false }
 }
@@ -64,34 +57,6 @@ const createCell = (
 const isDeadEnd = (cell: Cell): boolean =>
   [cell.connectTop, cell.connectRight, cell.connectBottom, cell.connectLeft].filter(Boolean)
     .length === 1
-
-const getCellAscii = (cell: Cell): string => {
-  const { connectTop: t, connectRight: r, connectBottom: b, connectLeft: l } = cell
-
-  if (t && r && b && l) return '╋' // All directions
-
-  // Three connections
-  if (t && r && b) return '┣' // Missing left
-  if (t && r && l) return '┻' // Missing bottom
-  if (t && b && l) return '┫' // Missing right
-  if (r && b && l) return '┳' // Missing top
-
-  // Two connections
-  if (t && b) return '┃' // Vertical
-  if (r && l) return '━' // Horizontal
-  if (t && r) return '┗' // Up + right
-  if (t && l) return '┛' // Up + left
-  if (b && r) return '┏' // Down + right
-  if (b && l) return '┓' // Down + left
-
-  // One or no connections
-  if (l) return '⇥' // Left
-  if (r) return '⇤' // Right
-  if (t) return '⇩' // Up
-  if (b) return '⇧' // Down
-
-  return ' ' // Invalid state
-}
 
 export default class WaveCollapseSimple extends Sketch {
   init() {
@@ -162,7 +127,6 @@ export default class WaveCollapseSimple extends Sketch {
       const x = Math.floor(this.cols / 2)
       const y = Math.floor(this.rows / 2)
       const startingCell = createCell(x, y)
-      console.log(x, y, 'starting cell', getCellAscii(startingCell))
       this.registerCell(startingCell)
       this.addSurroundingBlankSpacesToQueue(startingCell)
     }
@@ -238,19 +202,6 @@ export default class WaveCollapseSimple extends Sketch {
     return endpoints[randIntRange(endpoints.length - 1)]
   }
 
-  logState = () => {
-    for (let y = 0; y < this.rows; y++) {
-      let rowStr = ''
-
-      for (let x = 0; x < this.cols; x++) {
-        const cell = this.cells[y]?.[x]
-        const pad = this.lastPlacedCell && cell === this.lastPlacedCell ? '*' : ' '
-        rowStr += cell ? pad + getCellAscii(cell) + pad : '   '
-      }
-      console.log(rowStr)
-    }
-  }
-
   getCellPoint = (cell: Cell): Point => {
     const { gutter, gridSize } = this.vars
     return new Point(
@@ -267,8 +218,6 @@ export default class WaveCollapseSimple extends Sketch {
     const centerPt = pt.clone().add(gridSize / 2, gridSize / 2)
     const gap = (gridSize * (1 - thickness)) / 2
     const gapAndThickness = gap + gridSize * thickness
-    // const oneThird = gridSize * (1 / 3)
-    // const twoThird = gridSize * (2 / 3)
 
     if (!t && !r && !b && !l) {
       this.ctx.beginPath()
@@ -421,7 +370,6 @@ export default class WaveCollapseSimple extends Sketch {
         const neighbors = this.getNeighboringCells(queuedCell)
         if (!Object.keys(neighbors).length) return console.log('no neighbors for some reason')
 
-        console.log(x, y, neighbors)
         const newCell = createCell(x, y, {
           connectTop: neighbors.top?.connectBottom,
           connectRight: neighbors.right?.connectLeft,
@@ -429,32 +377,22 @@ export default class WaveCollapseSimple extends Sketch {
           connectLeft: neighbors.left?.connectRight,
           preventOverflow: { cols: this.cols - 1, rows: this.rows - 1 },
         })
-        console.log('new cell', getCellAscii(newCell), newCell)
 
         this.registerCell(newCell)
-
-        // this.logState()
-
         this.addSurroundingBlankSpacesToQueue(newCell)
       }
 
       if (this.mode === 'draw') {
         console.log('drawing')
-        // this.logState()
-
-        // if (!this.drawingCell) {
-        //   this.drawingCell = this.findEndpoint()
-        // }
 
         if (!this.drawingCell) {
           console.log('no drawing cell')
           this.done = true
+          penUp(this)
           return
         }
 
         this.drawCell(this.drawingCell)
-
-        // this.done = true
       }
     }
   }
