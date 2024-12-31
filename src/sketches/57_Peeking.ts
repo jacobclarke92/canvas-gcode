@@ -24,7 +24,7 @@ export default class Peeking extends Sketch {
     this.vs.mirrorPalette = new BooleanRange({ disableRandomize: true, initialValue: true })
   }
 
-  palette = ['#041fb9', '#6e1ced', '#ff00ff', '#f68b08', '#ffd100']
+  palette = ['#041fb9', '#6e1ced', '#ff00ff', '#f68b08' /*, '#ffd100'*/]
 
   initDraw(): void {
     seedRandom(this.vars.seed)
@@ -50,11 +50,12 @@ export default class Peeking extends Sketch {
     const effectiveWidth = this.cw - (gutter * 2 + extraGutter)
     const effectiveHeight = this.ch - gutter * 2
 
-    const repeatWidth = (effectiveWidth - whitespace * repeats) / repeats
+    const repeatWidth = (effectiveWidth - whitespace * (repeats - 1)) / repeats
     const lineGap = repeatWidth / linesPerGroup
     const colorCount = this.palette.length
 
     this.ctx.ctx.lineWidth = belowThickness
+    let reverseDirection = false
     for (let c = 0; c < colorCount; c++) {
       for (let i = 0; i < repeats; i++) {
         const x = gutter + waviness + i * repeatWidth + i * whitespace
@@ -64,10 +65,16 @@ export default class Peeking extends Sketch {
           if (s !== c) continue
           const color = this.palette[s]
           this.ctx.beginPath()
-          this.ctx.moveTo(x + j * lineGap, gutter)
-          this.ctx.lineToRelative(lean, effectiveHeight)
+          if (reverseDirection) {
+            this.ctx.moveTo(x + j * lineGap + lean, gutter + effectiveHeight)
+            this.ctx.lineToRelative(-lean, -effectiveHeight)
+          } else {
+            this.ctx.moveTo(x + j * lineGap, gutter)
+            this.ctx.lineToRelative(lean, effectiveHeight)
+          }
           this.ctx.strokeStyle = color
           this.ctx.stroke()
+          reverseDirection = !reverseDirection
         }
       }
       const lastColor = c === colorCount - 1
