@@ -56,4 +56,5 @@ export default [
   require('./55_WiggleGrid').default,
   require('./56_WaveCollapseSimple').default,
   require('./57_Peeking').default,
+  require('./58_Genuary1').default,
 ]
