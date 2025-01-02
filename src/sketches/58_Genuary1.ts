@@ -1,7 +1,11 @@
+import { clamp } from 'lodash'
+
 import { colors } from '../constants/colors'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import type { Line } from '../types'
+import type { RGB } from '../utils/colorUtils'
+import { hexToRgb, rgbToHex } from '../utils/colorUtils'
 import { debugDot } from '../utils/debugUtils'
 import { isInBounds, lineIntersectsWithAny } from '../utils/geomUtils'
 import { radToDeg, randFloatRange, randIntRange } from '../utils/numberUtils'
@@ -21,6 +25,8 @@ export default class Genuary1 extends Sketch {
   init() {
     this.addVar('seed', { initialValue: 3994, min: 1000, max: 5000, step: 1 })
     this.addVar('gutter', { disableRandomize: true, initialValue: 5, min: 0, max: 100, step: 0.1 })
+    // this.addVar('minSegLength', { initialValue: 2, min: 1, max: 24, step: 1 })
+    this.addVar('maxSegLength', { initialValue: 14, min: 1, max: 24, step: 1 })
     this.addVar('maxTendrils', { initialValue: 100, min: 1, max: 1000, step: 1 })
     this.addVar('angleVariance', { initialValue: Math.PI * 0.7, min: 0, max: Math.PI, step: 0.1 })
     this.addVar('maxPlacementAttempts', { initialValue: 256, min: 1, max: 1000, step: 1 })
@@ -31,8 +37,11 @@ export default class Genuary1 extends Sketch {
       max: 24,
       step: 1,
     })
-    // this.addVar('minSegLength', { initialValue: 2, min: 1, max: 24, step: 1 })
-    this.addVar('maxSegLength', { initialValue: 14, min: 1, max: 24, step: 1 })
+    this.vs.preventSelfIntersection = new BooleanRange({
+      disableRandomize: true,
+      initialValue: true,
+    })
+    this.vs.debugColors = new BooleanRange({ disableRandomize: true, initialValue: false })
   }
 
   tendrils: Point[][] = []
@@ -54,6 +63,7 @@ export default class Genuary1 extends Sketch {
     this.tendrilLines = []
     this.lastAngle = 0
     this.placementAttempts = 0
+    this.ctx.strokeStyle = '#000'
   }
 
   getAverageAngle(tendril: Point[]): number {
@@ -73,15 +83,17 @@ export default class Genuary1 extends Sketch {
       preventOverlapsAfter,
     } = this.vars
     if (this.tendrils.length > maxTendrils) return
+
     const tendril = this.tendrils[this.tendrils.length - 1]
+
     const averageAngle =
       tendril.length < 2 ? randFloatRange(Math.PI, -Math.PI) : this.getAverageAngle(tendril)
     const aimAngle = averageAngle + randFloatRange(angleVariance, -angleVariance)
     // snap to 90 degree angles
     let angle = (Math.round(aimAngle / (Math.PI / 2)) * (Math.PI / 2)) % (Math.PI * 2)
-    if (angle === this.lastAngle) {
+    // prevent backtracking
+    if (angle === this.lastAngle)
       angle = (angle + randFloatRange(1) > 0.5 ? Math.PI / 2 : -Math.PI / 2) % (Math.PI * 2)
-    }
     this.lastAngle = angle
 
     const dist = randIntRange(maxSegLength, 1 /*minSegLength*/)
@@ -98,21 +110,34 @@ export default class Genuary1 extends Sketch {
       return
     }
 
-    let overlaps = false
-    for (const tendrilLines of this.tendrilLines) {
-      if (lineIntersectsWithAny([prevPt, nextPt], ...tendrilLines.slice(preventOverlapsAfter))) {
-        overlaps = true
-        break
+    const selfLines = tendrilToLines(tendril.slice(0, tendril.length - 2))
+    if (
+      !!this.vs.preventSelfIntersection.value &&
+      selfLines.length > 0 &&
+      lineIntersectsWithAny([prevPt, nextPt], ...selfLines)
+    ) {
+      this.placementAttempts++
+      return
+    } else {
+      for (const tendrilLines of this.tendrilLines) {
+        if (lineIntersectsWithAny([prevPt, nextPt], ...tendrilLines.slice(preventOverlapsAfter))) {
+          this.placementAttempts++
+          return
+        }
       }
     }
-    if (overlaps) {
-      this.placementAttempts++
-    } else {
-      tendril.push(nextPt)
-      this.ctx.beginPath()
-      this.ctx.moveTo(prevPt.x, prevPt.y)
-      this.ctx.lineTo(nextPt.x, nextPt.y)
-      this.ctx.stroke()
+
+    // no overlaps:
+    tendril.push(nextPt)
+    if (!!this.vs.debugColors.value) {
+      const color = hexToRgb(colors[this.tendrils.length % colors.length]).map((c) =>
+        clamp(c + Math.round(Math.sin(tendril.length / 5) * 90), 0, 255)
+      )
+      this.ctx.strokeStyle = rgbToHex(color as RGB)
     }
+    this.ctx.beginPath()
+    this.ctx.moveTo(prevPt.x, prevPt.y)
+    this.ctx.lineTo(nextPt.x, nextPt.y)
+    this.ctx.stroke()
   }
 }
