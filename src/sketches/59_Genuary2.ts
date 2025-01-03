@@ -1,3 +1,6 @@
+import { ClipperOffset } from '../packages/Clipper/ClipperOffset'
+import { EndType, JoinType } from '../packages/Clipper/enums'
+import Path, { Paths } from '../Path'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import type { Line } from '../types'
@@ -45,13 +48,14 @@ export default class Genuary2 extends Sketch {
   }
 
   private done = false
-  private mode: 'plan' | 'draw' | 'finalDraw' = 'plan'
+  private mode: 'plan' | 'draw' | 'finalDraw' | 'outline' = 'plan'
   private branchLevel = 0
   private scaffoldedCurrentStems = 0
   private currentStems: Stem[] = []
   private nextStems: Stem[] = []
   private startingStem: Stem
   private drawCurrentStem: Stem
+  private outlinePts: Point[] = []
 
   initDraw(): void {
     seedRandom(this.vars.seed)
@@ -66,6 +70,7 @@ export default class Genuary2 extends Sketch {
     this.scaffoldedCurrentStems = 0
     this.currentStems = []
     this.nextStems = []
+    this.outlinePts = []
 
     const { initBranchLength, initBranchThickness, branchLengthFalloff, branchThicknessFalloff } =
       this.vars
@@ -126,7 +131,6 @@ export default class Genuary2 extends Sketch {
     }
     this.ctx.lineTo(...pt1.toArray())
     this.ctx.lineTo(...pt2.toArray())
-    // this.ctx.stroke()
     stem.leftLine = [pt1, pt2]
 
     return intersected ? pt1 : null
@@ -141,7 +145,6 @@ export default class Genuary2 extends Sketch {
       stem.position.x + Math.cos(stem.angle + Math.PI / 2) * (stem.thickness / 2),
       stem.position.y + Math.sin(stem.angle + Math.PI / 2) * (stem.thickness / 2)
     )
-    // this.ctx.stroke()
   }
 
   capOffStemBase(stem: Stem): void {
@@ -186,7 +189,6 @@ export default class Genuary2 extends Sketch {
     }
     this.ctx.lineTo(...pt1.toArray())
     this.ctx.lineTo(...pt2.toArray())
-    // this.ctx.stroke()
     stem.rightLine = [pt1, pt2]
     return intersected ? pt1 : null
   }
@@ -214,12 +216,14 @@ export default class Genuary2 extends Sketch {
       this.mode = 'draw'
       this.ctx.beginPath()
       this.capOffStemBase(this.startingStem)
-      // this.ctx.stroke()
       this.drawCurrentStem = this.startingStem
       this.drawBranchLeftSide(this.drawCurrentStem)
       return
     }
 
+    /**
+     * Planning mode -- calculate stems
+     */
     if (this.mode === 'plan') {
       if (this.scaffoldedCurrentStems >= this.currentStems.length) {
         // time to calculate new stems
@@ -284,6 +288,9 @@ export default class Genuary2 extends Sketch {
       }
     }
 
+    /**
+     * First pass of drawing mode -- trace outline of branches, while also fixing parent lines if needed
+     */
     if (this.mode === 'draw') {
       if (!this.drawCurrentStem) {
         this.ctx.stroke({ debug: true, debugColor: showDebug ? undefined : '#fff' })
@@ -333,14 +340,18 @@ export default class Genuary2 extends Sketch {
       }
     }
 
+    /**
+     * Final draw pass with clean lines
+     */
     if (this.mode === 'finalDraw') {
-      console.log('final draw')
       if (!this.drawCurrentStem) {
         this.ctx.closePath()
+        this.outlinePts = this.ctx.path.getPoints()
         this.ctx.stroke()
-        this.done = true
+        this.mode = 'outline'
         return
       }
+
       if (!this.drawCurrentStem.children.length) {
         // reverse direction
         this.capOffStem(this.drawCurrentStem)
@@ -366,6 +377,49 @@ export default class Genuary2 extends Sketch {
           this.drawCurrentStem = this.drawCurrentStem.parent
         }
       }
+    }
+
+    if (this.mode === 'outline') {
+      const scale = 1000
+      const co = new ClipperOffset()
+
+      co.addPath(
+        this.outlinePts.map((pt) => pt.multiply(scale)),
+        JoinType.miter,
+        EndType.closedPolygon
+      )
+
+      const solution = new Paths()
+
+      try {
+        co.execute(solution, 2)
+      } catch (err) {
+        console.log('error', err)
+        this.done = true
+        return
+      }
+
+      if (!solution || solution.length === 0 || solution[0].length === 0) {
+        console.log('no solution')
+        this.done = true
+        return
+      }
+
+      console.log('solution', solution)
+
+      const result = new Path()
+      result.fromPolygons(solution, scale)
+      result.close()
+
+      this.ctx.beginPath()
+      this.ctx.path = result
+      this.ctx.stroke()
+
+      this.outlinePts = result.getPoints()
+
+      // todo: fix all this offset lib stuff and recurse
+
+      this.done = true
     }
   }
 
