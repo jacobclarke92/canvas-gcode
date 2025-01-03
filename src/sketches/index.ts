@@ -57,4 +57,5 @@ export default [
   require('./56_WaveCollapseSimple').default,
   require('./57_Peeking').default,
   require('./58_Genuary1').default,
+  require('./59_Genuary2').default,
 ]
