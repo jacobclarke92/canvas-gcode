@@ -1,12 +1,12 @@
-import { ClipperOffset } from '../packages/Clipper/ClipperOffset'
-import { EndType, JoinType } from '../packages/Clipper/enums'
-import Path, { Paths } from '../Path'
+import * as clipperLib from 'js-angusj-clipper/web'
+
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import type { Line } from '../types'
-import { getLineIntersectionPoint, linesIntersect } from '../utils/geomUtils'
+import { debugDot } from '../utils/debugUtils'
+import { getLineIntersectionPoint, lineIntersectsWithAny, linesIntersect } from '../utils/geomUtils'
 import { randFloat, randFloatRange } from '../utils/numberUtils'
-import { initPen, penUp, plotBounds } from '../utils/penUtils'
+import { initPen, penUp } from '../utils/penUtils'
 import { random, seedRandom } from '../utils/random'
 import { BooleanRange } from './tools/Range'
 
@@ -17,10 +17,57 @@ interface Stem {
   thickness: number
   children: Stem[]
   parent?: Stem
+  depth: number
   leftLine?: Line
   rightLine?: Line
   drawnLeft?: boolean
   drawnRight?: boolean
+}
+
+const getAllStems = (baseStem: Stem, ignoreParent?: Stem): Stem[] => {
+  const stems: Stem[] = []
+  // const isChildOfIgnore = ignoreParent && ignoreParent.children.includes(baseStem)
+  const stemSiblings = baseStem.parent ? baseStem.parent.children : []
+  const isSibling = stemSiblings.includes(baseStem)
+  if (baseStem !== ignoreParent /* && !isSibling*/) {
+    stems.push(baseStem)
+  }
+  for (const stem of baseStem.children) stems.push(...getAllStems(stem, ignoreParent))
+  return stems
+}
+
+const stemToInnerLine = (stem: Stem): Line => [
+  stem.position,
+  stem.position.clone().moveAlongAngle(stem.angle, stem.length),
+]
+
+const stemToOuterLines = (stem: Stem): Line[] => [
+  [
+    stem.position
+      .clone()
+      .moveAlongAngle(stem.angle - Math.PI / 2, stem.thickness / 2)
+      .moveAlongAngle(stem.angle + Math.PI, stem.length * 0.15),
+    stem.position
+      .clone()
+      .moveAlongAngle(stem.angle - Math.PI / 2, stem.thickness / 2)
+      .moveAlongAngle(stem.angle + Math.PI, stem.length * 0.6),
+  ],
+  [
+    stem.position
+      .clone()
+      .moveAlongAngle(stem.angle + Math.PI / 2, stem.thickness / 2)
+      .moveAlongAngle(stem.angle + Math.PI, stem.length * 0.15),
+    stem.position
+      .clone()
+      .moveAlongAngle(stem.angle + Math.PI / 2, stem.thickness / 2)
+      .moveAlongAngle(stem.angle + Math.PI, stem.length * 0.6),
+  ],
+]
+
+const stemsToOuterLines = (stems: Stem[]): Line[] => {
+  const lines: Line[] = []
+  for (const stem of stems) lines.push(...stemToOuterLines(stem))
+  return lines
 }
 
 export default class Genuary2 extends Sketch {
@@ -28,6 +75,8 @@ export default class Genuary2 extends Sketch {
     this.addVar('seed', { initialValue: 3994, min: 1000, max: 5000, step: 1 })
     this.addVar('speedUp', { initialValue: 32, min: 1, max: 50, step: 1 })
     this.addVar('gutter', { disableRandomize: true, initialValue: 3, min: 0, max: 100, step: 0.1 })
+
+    this.addVar('offsetY', { initialValue: -10, min: -120, max: 0, step: 0.1 })
 
     this.addVar('initBranchThickness', { initialValue: 10, min: 2, max: 50, step: 0.1 })
     this.addVar('initBranchLength', { initialValue: 35, min: 5, max: 50, step: 0.1 })
@@ -39,9 +88,13 @@ export default class Genuary2 extends Sketch {
     this.addVar('splitAngleBranchLevelMulti', { initialValue: 0.1, min: -1, max: 1, step: 0.05 })
     this.addVar('splitAngleMinPercent', { initialValue: 1, min: 0, max: 1, step: 0.05 })
     this.addVar('chaosFactor', { initialValue: 0, min: 0, max: 2, step: 0.01 })
-    this.addVar('maxBranchLevels', { initialValue: 3, min: 1, max: 8, step: 1, disableRandomize: true }) // prettier-ignore
+    this.addVar('maxBranchLevels', { initialValue: 3, min: 1, max: 15, step: 1, disableRandomize: true }) // prettier-ignore
 
-    this.vs.showDebug = new BooleanRange({ disableRandomize: true, initialValue: false })
+    this.addVar('offsetRepeats', { initialValue: 5, min: 0, max: 100, step: 1 })
+    this.addVar('offsetDist', { initialValue: 1, min: -25, max: 25, step: 0.05 })
+    this.addVar('offsetFalloff', { initialValue: 0, min: -0.5, max: 0.5, step: 0.001 })
+
+    this.vs.showDebug = new BooleanRange({ disableRandomize: true, initialValue: true })
     // window.addEventListener('keydown', (e) => {
     //   if (e.key === ' ') this.step(0)
     // })
@@ -56,11 +109,12 @@ export default class Genuary2 extends Sketch {
   private startingStem: Stem
   private drawCurrentStem: Stem
   private outlinePts: Point[] = []
+  private offsetRepeatCount = 0
 
   initDraw(): void {
     seedRandom(this.vars.seed)
     initPen(this)
-    plotBounds(this)
+    // plotBounds(this)
 
     // Prompt: Layers upon layers upon layers
 
@@ -71,12 +125,18 @@ export default class Genuary2 extends Sketch {
     this.currentStems = []
     this.nextStems = []
     this.outlinePts = []
+    this.offsetRepeatCount = 0
 
-    const { initBranchLength, initBranchThickness, branchLengthFalloff, branchThicknessFalloff } =
-      this.vars
+    const {
+      initBranchLength,
+      initBranchThickness,
+      branchLengthFalloff,
+      branchThicknessFalloff,
+      offsetY,
+    } = this.vars
     const length = initBranchLength / branchLengthFalloff
     const angle = -Math.PI / 2
-    const startPt = new Point(this.cx, this.ch - 10)
+    const startPt = new Point(this.cx, this.ch + offsetY)
     const position = this.drawBranchScaffold(startPt, angle, length, initBranchThickness)
     this.currentStems.push({
       position,
@@ -84,6 +144,7 @@ export default class Genuary2 extends Sketch {
       length,
       thickness: initBranchThickness,
       children: [],
+      depth: 0,
     })
     this.startingStem = this.currentStems[0]
     this.ctx.strokeCircle(startPt.x, startPt.y, initBranchThickness / branchThicknessFalloff / 2, {
@@ -195,6 +256,7 @@ export default class Genuary2 extends Sketch {
 
   step(increment: number): void {
     const {
+      gutter,
       branchLengthFalloff,
       branchThicknessFalloff,
       splitProbability,
@@ -204,6 +266,9 @@ export default class Genuary2 extends Sketch {
       pruneProbability,
       chaosFactor,
       maxBranchLevels,
+      offsetRepeats,
+      offsetDist,
+      offsetFalloff,
     } = this.vars
     const showDebug = this.vs.showDebug.value
 
@@ -212,19 +277,24 @@ export default class Genuary2 extends Sketch {
       return
     }
 
-    if (this.branchLevel > maxBranchLevels && this.mode === 'plan') {
-      this.mode = 'draw'
-      this.ctx.beginPath()
-      this.capOffStemBase(this.startingStem)
-      this.drawCurrentStem = this.startingStem
-      this.drawBranchLeftSide(this.drawCurrentStem)
-      return
-    }
-
     /**
      * Planning mode -- calculate stems
      */
     if (this.mode === 'plan') {
+      if (this.branchLevel > maxBranchLevels) {
+        this.mode = 'draw'
+        this.ctx.beginPath()
+        this.capOffStemBase(this.startingStem)
+        this.drawCurrentStem = this.startingStem
+        this.drawBranchLeftSide(this.drawCurrentStem)
+        const otherStemLines = stemsToOuterLines(getAllStems(this.startingStem))
+        for (const line of otherStemLines) {
+          this.ctx.moveTo(...line[0].toArray())
+          this.ctx.lineTo(...line[1].toArray())
+        }
+        return
+      }
+
       if (this.scaffoldedCurrentStems >= this.currentStems.length) {
         // time to calculate new stems
         this.currentStems = [...this.nextStems]
@@ -235,6 +305,13 @@ export default class Genuary2 extends Sketch {
         // draw current stems
         const stem = this.currentStems[this.scaffoldedCurrentStems]
         const thickness = stem.thickness * branchThicknessFalloff
+        const otherStemLines = stemsToOuterLines(getAllStems(this.startingStem, stem))
+
+        // for (const line of otherStemLines) {
+        //   this.ctx.moveTo(...line[0].toArray())
+        //   this.ctx.lineTo(...line[1].toArray())
+        //   this.ctx.stroke({ debug: true, debugColor: showDebug ? undefined : '#fff' })
+        // }
 
         const doSplit = random() <= splitProbability
         if (!doSplit) {
@@ -242,7 +319,21 @@ export default class Genuary2 extends Sketch {
           const angle = stem.angle + randFloat((Math.PI * chaosFactor) / 10)
           const length = stem.length * branchLengthFalloff * (1 + randFloat(chaosFactor / 8))
           const endPoint = this.drawBranchScaffold(stem.position, angle, length, thickness)
-          if (this.branchLevel !== this.vs.maxBranchLevels.value && random() > pruneProbability) {
+          const [stemLeftLine, stemRightLine] = stemToOuterLines(stem)
+          let prune = false
+
+          if (this.branchLevel >= this.vs.maxBranchLevels.value) prune = true
+          if (random() <= pruneProbability) prune = true
+          if (!prune) {
+            if (
+              lineIntersectsWithAny(stemLeftLine, ...otherStemLines) ||
+              lineIntersectsWithAny(stemRightLine, ...otherStemLines)
+            ) {
+              prune = true
+              debugDot(this.ctx, endPoint, 'red')
+            }
+          }
+          if (!prune) {
             this.nextStems.push({
               position: endPoint,
               angle,
@@ -250,6 +341,7 @@ export default class Genuary2 extends Sketch {
               thickness,
               parent: stem,
               children: [],
+              depth: stem.depth + 1,
             })
             stem.children.push(this.nextStems[this.nextStems.length - 1])
           }
@@ -272,6 +364,13 @@ export default class Genuary2 extends Sketch {
               splitSlice * s +
               randFloat((Math.PI * chaosFactor) / 10)
             const endPoint = this.drawBranchScaffold(stem.position, angle, length, thickness)
+            const [stemLeftLine, stemRightLine] = stemToOuterLines(stem)
+            if (
+              otherStemLines.length > 0 &&
+              (lineIntersectsWithAny(stemLeftLine, ...otherStemLines) ||
+                lineIntersectsWithAny(stemRightLine, ...otherStemLines))
+            )
+              continue
             this.nextStems.push({
               position: endPoint,
               angle,
@@ -279,6 +378,7 @@ export default class Genuary2 extends Sketch {
               thickness,
               parent: stem,
               children: [],
+              depth: stem.depth + 1,
             })
             stem.children.push(this.nextStems[this.nextStems.length - 1])
           }
@@ -380,46 +480,41 @@ export default class Genuary2 extends Sketch {
     }
 
     if (this.mode === 'outline') {
-      const scale = 1000
-      const co = new ClipperOffset()
-
-      co.addPath(
-        this.outlinePts.map((pt) => pt.multiply(scale)),
-        JoinType.miter,
-        EndType.closedPolygon
-      )
-
-      const solution = new Paths()
-
-      try {
-        co.execute(solution, 2)
-      } catch (err) {
-        console.log('error', err)
+      // if (increment % 500 !== 0) return
+      if (this.offsetRepeatCount >= offsetRepeats) {
         this.done = true
         return
       }
-
-      if (!solution || solution.length === 0 || solution[0].length === 0) {
-        console.log('no solution')
-        this.done = true
-        return
+      if (this.offsetRepeatCount === 0) {
+        this.outlinePts = this.ctx.path.getPoints()
       }
+      const offsetPaths = this.ctx
+        .offsetPath(this.outlinePts, offsetDist * (1 + offsetFalloff * this.offsetRepeatCount))
+        .sort((a, b) => a.length - b.length)
+      this.outlinePts = offsetPaths[offsetPaths.length - 1]
 
-      console.log('solution', solution)
-
-      const result = new Path()
-      result.fromPolygons(solution, scale)
-      result.close()
-
-      this.ctx.beginPath()
-      this.ctx.path = result
-      this.ctx.stroke()
-
-      this.outlinePts = result.getPoints()
-
-      // todo: fix all this offset lib stuff and recurse
-
-      this.done = true
+      for (const offsetPath of offsetPaths) {
+        this.ctx.beginPath()
+        this.ctx.moveTo(offsetPath[0].x, offsetPath[0].y)
+        for (let i = 1; i < offsetPath.length; i++) {
+          this.ctx.lineTo(offsetPath[i].x, offsetPath[i].y)
+        }
+        this.ctx.rect(gutter, gutter, this.cw - gutter * 2, this.ch - gutter * 2)
+        try {
+          this.ctx.clipCurrentPath({
+            clipType: clipperLib.ClipType.Intersection,
+            pathDivisions: 96,
+            subjectIsOpen: true,
+            inputsAreOpen: false,
+            clipFillType: clipperLib.PolyFillType.NonZero,
+          })
+        } catch (e) {
+          return
+        }
+        this.ctx.stroke()
+        this.ctx.closePath()
+      }
+      this.offsetRepeatCount++
     }
   }
 

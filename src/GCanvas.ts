@@ -1105,12 +1105,13 @@ export default class GCanvas {
   }
 
   public offsetPath(
-    path: SubPath,
+    path: SubPath | Point[],
     offset: number,
     { joinType, endType, precision }: OffsetOptions = defaultOffsetOptions
   ) {
-    console.log(path.getPoints())
-    const pathPts = path.getPoints().map((pt) => pt.scale(precision))
+    const pathPts = (path instanceof SubPath ? path.getPoints() : path).map((pt) =>
+      pt.scale(precision)
+    )
     const offsetPaths = clipper.offsetToPaths({
       delta: offset * precision,
       offsetInputs: [
@@ -1133,7 +1134,9 @@ export default class GCanvas {
   ) {
     const subPaths = this.path.subPaths
     for (const subPath of subPaths) {
-      const offsetPaths = this.offsetPath(subPath, offset, { joinType, endType, precision })
+      const offsetPaths = this.offsetPath(subPath, offset, { joinType, endType, precision }).sort(
+        (a, b) => a.length - b.length
+      )
       for (const offsetPath of offsetPaths) {
         this.beginPath()
         this.moveTo(offsetPath[0].x, offsetPath[0].y)

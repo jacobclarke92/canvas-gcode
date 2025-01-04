@@ -73,6 +73,23 @@ export default class GCodeTest extends Sketch {
     for (let i = 0; i < 20; i++) {
       this.ctx.strokeCircle(100, 30, 1 + i)
     }
+
+    this.ctx.driver.comment('Drawing offset polygon')
+    debugText(this.ctx, 'Offset polygon', [100, 60 - 2], { size: 2 })
+    this.ctx.beginPath()
+    this.ctx.moveTo(100, 70)
+    for (let i = 0; i < 5; i++) {
+      this.ctx.lineTo(
+        100 + 10 * Math.cos((i * 2 * Math.PI) / 5),
+        70 + 10 * Math.sin((i * 2 * Math.PI) / 5)
+      )
+    }
+    this.ctx.closePath()
+    this.ctx.stroke()
+    for (let i = 0; i < 5; i++) {
+      this.ctx.strokeOffsetPath(-1)
+    }
+
     // // this.ctx.strokeCircle(100, 30, 20)
     // this.ctx.clearRect(100, 35, 20, 20)
     // this.ctx.clearCircle(100, 15, 8)
