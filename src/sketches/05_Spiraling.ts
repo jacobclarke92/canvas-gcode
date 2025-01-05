@@ -1,5 +1,6 @@
 import Point from '../Point'
 import { Sketch } from '../Sketch'
+import { initPen, plotBounds } from '../utils/penUtils'
 import Osc from './tools/Osc'
 
 const { PI } = Math
@@ -37,6 +38,8 @@ export default class Spiraling extends Sketch {
     this.OSCs[2] = new Osc({ speed: (i) => this.vars.osc3speed, radius: (i) => this.vars.osc3dist, phase: 0 }) // prettier-ignore
   }
   initDraw(): void {
+    initPen(this)
+    plotBounds(this)
     this.lastPoint = new Point(this.cx, this.cy)
     this.vs.stopAfter.step = this.vs.speedUp.value
     this.OSCs[0].phase = this.vars.osc1phase
