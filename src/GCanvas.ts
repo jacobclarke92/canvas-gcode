@@ -736,32 +736,37 @@ export default class GCanvas {
     this.fill()
   }
 
-  public strokeSvgPath(path: string | SimplifiedSvgPathSegment[]) {
+  public strokeSvgPath(
+    path: string | SimplifiedSvgPathSegment[],
+    { scale, offset }: { scale: number; offset: Point } = { scale: 1, offset: new Point() }
+  ) {
     const commands = typeof path === 'string' ? pathToCanvasCommands(path, true) : path
     if (!commands.length) return
     if (commands[0].type !== 'M') throw new Error('First command must be a move command')
     this.beginPath()
-    this.moveTo(commands[0].values[0], commands[0].values[1])
+    this.moveTo(offset.x + commands[0].values[0] * scale, offset.y + commands[0].values[1] * scale)
     for (let i = 1; i < commands.length; i++) {
       const command = commands[i]
       if (command.type === 'M') {
         this.stroke()
-        this.closePath()
         this.beginPath()
-        this.moveTo(command.values[0], command.values[1])
+        this.moveTo(offset.x + command.values[0] * scale, offset.y + command.values[1] * scale)
       } else if (command.type === 'L') {
-        this.lineTo(command.values[0], command.values[1])
+        this.lineTo(offset.x + command.values[0] * scale, offset.y + command.values[1] * scale)
       } else if (command.type === 'C') {
         this.bezierCurveTo(
-          command.values[0],
-          command.values[1],
-          command.values[2],
-          command.values[3],
-          command.values[4],
-          command.values[5]
+          offset.x + command.values[0] * scale,
+          offset.y + command.values[1] * scale,
+          offset.x + command.values[2] * scale,
+          offset.y + command.values[3] * scale,
+          offset.x + command.values[4] * scale,
+          offset.y + command.values[5] * scale
         )
       } else if (command.type === 'Z') {
-        this.lineTo(commands[0].values[0], commands[0].values[1])
+        this.lineTo(
+          offset.x + commands[0].values[0] * scale,
+          offset.y + commands[0].values[1] * scale
+        )
       }
     }
     this.stroke()
