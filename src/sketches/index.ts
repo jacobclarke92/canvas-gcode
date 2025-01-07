@@ -58,4 +58,5 @@ export default [
   require('./57_Peeking').default,
   require('./58_Genuary1').default,
   require('./59_Genuary2').default,
+  require('./60_SVG').default,
 ]
