@@ -60,4 +60,5 @@ export default [
   require('./59_Genuary2').default,
   require('./60_SVG').default,
   require('./61_Genuary5').default,
+  require('./62_Genuary6').default,
 ]

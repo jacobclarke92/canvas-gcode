@@ -664,7 +664,7 @@ export default class GCanvas {
     this.closePath()
   }
 
-  public strokeTriangle(
+  public triangle(
     ...args:
       | [Point, Point, Point]
       | [pt: Point, dir: number, length: number]
@@ -691,10 +691,19 @@ export default class GCanvas {
     this.lineTo(x2, y2)
     this.lineTo(x3, y3)
     this.closePath()
+  }
+
+  public strokeTriangle(
+    ...args:
+      | [Point, Point, Point]
+      | [pt: Point, dir: number, length: number]
+      | [x: number, y: number, dir: number, length: number]
+  ) {
+    this.triangle(...args)
     this.stroke()
   }
 
-  public strokePolygon(
+  public polygon(
     ...args:
       | [x: number, y: number, sides: number, radius: number, angle?: number]
       | [pt: Point, sides: number, radius: number, angle?: number]
@@ -712,6 +721,14 @@ export default class GCanvas {
       this.lineTo(x1, y1)
     }
     this.closePath()
+  }
+
+  public strokePolygon(
+    ...args:
+      | [x: number, y: number, sides: number, radius: number, angle?: number]
+      | [pt: Point, sides: number, radius: number, angle?: number]
+  ) {
+    this.polygon(...args)
     this.stroke()
   }
 
@@ -720,19 +737,7 @@ export default class GCanvas {
       | [x: number, y: number, sides: number, radius: number, angle?: number]
       | [pt: Point, sides: number, radius: number, angle?: number]
   ) {
-    const x = typeof args[0] === 'number' ? args[0] : args[0].x
-    const y = typeof args[0] === 'number' ? args[1] : args[0].y
-    const sides = typeof args[0] === 'number' ? args[2] : args[1]
-    const radius = typeof args[0] === 'number' ? args[3] : args[2]
-    const startAngle = (typeof args[0] === 'number' ? args[4] : args[3]) || 0
-    this.beginPath()
-    for (let i = 0; i < sides; i++) {
-      const angle = startAngle + (i * Math.PI * 2) / sides
-      const x1 = x + Math.cos(angle) * radius
-      const y1 = y + Math.sin(angle) * radius
-      this.lineTo(x1, y1)
-    }
-    this.closePath()
+    this.polygon(...args)
     this.fill()
   }
 

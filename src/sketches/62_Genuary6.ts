@@ -8,9 +8,9 @@ import { seedRandom } from '../utils/random'
 const a90 = Math.PI / 2
 const a180 = Math.PI
 
-export default class ApartmentBlocks extends Sketch {
+export default class Genuary6 extends Sketch {
   init() {
-    this.addVar('seed', { initialValue: 3994, min: 1000, max: 5000, step: 1 })
+    this.addVar('seed', { initialValue: 3305, min: 1000, max: 5000, step: 1 })
     this.addVar('buildingWidth', {
       initialValue: 35,
       min: this.ch * 0.05,
@@ -20,18 +20,23 @@ export default class ApartmentBlocks extends Sketch {
     this.addVar('buildingGutter', { initialValue: 5, min: 0.1, max: 10, step: 0.1 })
     this.addVar('doubleDist', { initialValue: 0.325, min: 0.1, max: 0.5, step: 0.025 })
     this.addVar('sagPercent', { initialValue: 0.35, min: 0, max: 2.5, step: 0.01 })
+    this.addVar('horizonHeight', { initialValue: 0.92, min: 0.5, max: 1, step: 0.01 })
+    this.addVar('sunSetAmount', { initialValue: 0.9, min: 0.1, max: 1.2, step: 0.01 })
+    this.addVar('sunRadius', { initialValue: 10, min: 5, max: 20, step: 1 })
+    this.addVar('sunRays', { initialValue: 36, min: 3, max: 256, step: 1 })
+    this.addVar('sunRayDistFromSun', { initialValue: 5, min: 0, max: 20, step: 0.1 })
+    this.addVar('sunRayLength', { initialValue: 150, min: 3, max: 200, step: 1 })
   }
 
   lBuildingHeight: number
   rBuildingHeight: number
-  drawnCat = false
 
   initDraw(): void {
     seedRandom(this.vars.seed)
     initPen(this)
     plotBounds(this)
 
-    this.drawnCat = false
+    this.drawHorizon()
 
     // Draw buildings
     this.drawBuilding({ facing: 'l' })
@@ -40,15 +45,46 @@ export default class ApartmentBlocks extends Sketch {
     this.drawClothesline({ upper: 0.95, lower: 0.6 })
     this.drawClothesline({ upper: 0.4, lower: 0.25 })
 
-    const { buildingWidth } = this.vars
-    this.drawCloud({
-      x: randFloatRange(this.cw - buildingWidth * 2, buildingWidth),
-      y: randFloatRange(this.ch / 4, 20),
-    })
-    this.drawCloud({
-      x: randFloatRange(this.cw - buildingWidth * 2, buildingWidth),
-      y: randFloatRange(this.ch / 4, 20),
-    })
+    // const { buildingWidth } = this.vars
+    // this.drawCloud({
+    //   x: randFloatRange(this.cw - buildingWidth * 2, buildingWidth),
+    //   y: randFloatRange(this.ch / 4, 20),
+    // })
+    // this.drawCloud({
+    //   x: randFloatRange(this.cw - buildingWidth * 2, buildingWidth),
+    //   y: randFloatRange(this.ch / 4, 20),
+    // })
+  }
+
+  drawHorizon() {
+    const { horizonHeight, sunSetAmount, sunRadius, sunRays, sunRayLength, sunRayDistFromSun } =
+      this.vars
+
+    const sunPt = new Point(this.cw / 2, this.ch * sunSetAmount)
+    this.ctx.strokeCircle(sunPt, sunRadius)
+
+    for (let s = 0; s < sunRays; s++) {
+      const a = (s / sunRays) * Math.PI * 2
+      const pt = sunPt.clone().moveAlongAngle(a, sunRadius + sunRayDistFromSun)
+      this.ctx.beginPath()
+      this.ctx.moveTo(...pt.toArray())
+      for (let l = 0; l < sunRayLength; l++) {
+        const progress = l / sunRayLength
+        const wiggle = Math.sin(l / 2) * progress
+        pt.moveAlongAngle(a, 1)
+        pt.moveAlongAngle(a + Math.PI / 2, wiggle)
+        if (pt.y < 2 || pt.y > this.ch - 2 || pt.x < 2 || pt.x > this.cw - 2) break
+        this.ctx.lineTo(...pt.toArray())
+      }
+      this.ctx.stroke()
+    }
+
+    this.ctx.clearRect(0, this.ch * horizonHeight, this.cw, this.ch * (1 - horizonHeight))
+
+    this.ctx.beginPath()
+    this.ctx.moveTo(0, this.ch * horizonHeight)
+    this.ctx.lineTo(this.cw, this.ch * horizonHeight)
+    this.ctx.stroke()
   }
 
   drawBuilding({ facing }: { facing: 'l' | 'r' }): void {
@@ -61,6 +97,20 @@ export default class ApartmentBlocks extends Sketch {
     else this.rBuildingHeight = buildingHeight
 
     const lrSign = facing === 'l' ? 1 : -1
+
+    // clear horizon behind
+    this.ctx.clearRect(
+      facing === 'l' ? 0 : this.cw - buildingWidth,
+      buildingTop,
+      buildingWidth,
+      buildingHeight
+    )
+    this.ctx.clearRect(
+      facing === 'l' ? 0 : this.cw - (buildingWidth + buildingGutter),
+      buildingTop - buildingGutter * 2.5,
+      buildingWidth + buildingGutter,
+      buildingHeight
+    )
 
     // Building outline
     this.ctx.beginPath()
@@ -162,6 +212,14 @@ export default class ApartmentBlocks extends Sketch {
     const balconyFloorThickness = buildingGutter / 2
     const railingWidth = buildingGutter / 6
 
+    // clear horizon behind
+    this.ctx.clearRect(
+      facing === 'l' ? buildingWidth + 1 : this.cw - (buildingWidth + balconyWidth + 1),
+      y - balconyHeight,
+      balconyWidth,
+      balconyHeight
+    )
+
     this.ctx.beginPath()
     this.ctx.moveTo(facing === 'l' ? buildingWidth : this.cw - buildingWidth, y)
     this.ctx.lineToRelative(facing === 'l' ? balconyWidth : -balconyWidth, 0)
@@ -230,18 +288,6 @@ export default class ApartmentBlocks extends Sketch {
 
     const sag = Math.max(5, (20 + heightDiff / 4) * sagPercent)
 
-    this.ctx.beginPath()
-    this.ctx.moveTo(leftPt.x, leftPt.y)
-    this.ctx.bezierCurveTo(
-      leftPt.x + this.cw / 4,
-      leftPt.y + heightDiff / 2 + sag,
-      rightPt.x - this.cw / 4,
-      rightPt.y + heightDiff / 2 + sag,
-      rightPt.x,
-      rightPt.y
-    )
-    this.ctx.stroke()
-
     const pts = getBezierPoints(
       leftPt,
       leftPt.clone().add(this.cw / 4, heightDiff / 2 + sag),
@@ -254,44 +300,9 @@ export default class ApartmentBlocks extends Sketch {
       const prevPt = pts[i - 1]
       const angle = Math.atan2(pt.y - prevPt.y, pt.x - prevPt.x)
 
-      /*
-      if (
-        !this.drawnCat &&
-        i > pts.length * 0.4 &&
-        i < pts.length * 0.6 &&
-        randFloatRange(1) > 0.5
-      ) {
-        const paths = [
-          'm12.46,35.74c-2.333,1-4.917.8333-4.917.8333-1.677.1458-3.115-4.01-2.485-4.733l3.318-5.1-1.75-3.417s5.008-1.415,7.883,2.09c.3444.42.7943.7429,1.279.9871.0298.015.0602.0302.0912.0456,2.593,1.289,5.546,1.571,8.385.9981,7.222-1.458,14.07-1.37,21.7,2.212,7.625,3.583,14.53-2.25,13.64-7.5-.793-4.647,3.562-7.583,6.75-5',
-          'm16.05,48.82c.6006-2.206,8.491-3.648,8.491-3.648,0,0,3.228-1.201,1.426-4.504',
-          'm18.3,33.24c-1.543,1.834-3.893,4.803-.44,9.158,0,0-6.756,2.853-6.006,8.033,0,0,.3624,2.476,2.402,2.402',
-          'm23.5,50.03c-1.156,7.254,2.386,6.055,3.017,5.661,1.148-.7173,1.848-9.854,3.952-11.31,1.592-1.104,8.167-.3021,8.167-.3021',
-          'm38.44,41.33c.0911,1.742.7529,3.402,1.734,4.845.6616.9727,1.803,2.32,1.453,2.985-4.479,8.5.6224,7.022,1.083,6.167,3.188-5.917,6.125-4.104,4.647-10.52,0,0,5.27-1.81,5.52-7.977',
-          'm48.15,45.59s2.367,3.204,7.758,2.693c0,0-3.326,6.762,0,7.62,1.917.4941,4.722-11.16,4.722-11.16,0,0-1.839-.7937-3.951-4.182',
-        ]
-        // debugDot(this.ctx, pt.x, pt.y, '#f00')
-        const translatePercent = 4.777 // note: 3.1 is the correct value for displaying on screen but 4.777 is correct for gcode *shrugs*
-        for (const path of paths) {
-          this.ctx.save()
-          this.ctx.scale(0.2, 0.2)
-          this.ctx.translate(
-            pt.x * translatePercent + Math.cos(angle - a180) * 20 + Math.cos(angle - a90) * 36,
-            pt.y * translatePercent + Math.sin(angle - a180) * 20 + Math.sin(angle - a90) * 36
-          )
-          this.ctx.rotate(angle)
-          this.ctx.strokeSvgPath(path, {
-            scale: 1,
-            offset: new Point(0, 0),
-          })
-          this.ctx.restore()
-        }
-        this.drawnCat = true
-        // continue
-      }
-      */
-
       if (type === 'party') {
-        this.ctx.strokePolygon(pt.x, pt.y + 1, 3, 2, angle + a90)
+        this.ctx.polygon(pt.x, pt.y + 1, 3, 2, angle + a90)
+        this.ctx.stroke({ cutout: true })
       } else {
         if (randFloatRange(1) > 0.5) continue
 
@@ -303,45 +314,57 @@ export default class ApartmentBlocks extends Sketch {
         this.ctx.lineToRelativeAngle(angle + a90, pegH)
         this.ctx.lineToRelativeAngle(angle + a180, pegW)
         this.ctx.lineToRelativeAngle(angle - a90, pegH)
-        this.ctx.stroke()
+        this.ctx.stroke({ cutout: true })
       }
     }
+
+    this.ctx.beginPath()
+    this.ctx.moveTo(leftPt.x, leftPt.y)
+    this.ctx.bezierCurveTo(
+      leftPt.x + this.cw / 4,
+      leftPt.y + heightDiff / 2 + sag,
+      rightPt.x - this.cw / 4,
+      rightPt.y + heightDiff / 2 + sag,
+      rightPt.x,
+      rightPt.y
+    )
+    this.ctx.stroke()
   }
 
-  drawCloud({ x, y }: { x: number; y: number }): void {
-    const puffy = 0.75
-    const cloudW = randFloatRange(10, 40)
-    const cloudH = randFloatRange(cloudW * 0.75, cloudW * 0.25)
-    const aOffset = randFloatRange(0, Math.PI / 2)
-    console.log(cloudW)
+  // drawCloud({ x, y }: { x: number; y: number }): void {
+  //   const puffy = 0.75
+  //   const cloudW = randFloatRange(10, 40)
+  //   const cloudH = randFloatRange(cloudW * 0.75, cloudW * 0.25)
+  //   const aOffset = randFloatRange(0, Math.PI / 2)
+  //   console.log(cloudW)
 
-    // cloudW of 25 should have min around 10
-    const numPts = Math.max(Math.floor(cloudW * 0.4), randIntRange(24, 10))
-    const pts: Point[] = []
+  //   // cloudW of 25 should have min around 10
+  //   const numPts = Math.max(Math.floor(cloudW * 0.4), randIntRange(24, 10))
+  //   const pts: Point[] = []
 
-    for (let i = 0; i < numPts; i++) {
-      const a = (i / numPts) * Math.PI * 2 + aOffset
-      pts.push(new Point(x + Math.cos(a) * cloudW, y + Math.sin(a) * cloudH))
-    }
+  //   for (let i = 0; i < numPts; i++) {
+  //     const a = (i / numPts) * Math.PI * 2 + aOffset
+  //     pts.push(new Point(x + Math.cos(a) * cloudW, y + Math.sin(a) * cloudH))
+  //   }
 
-    for (let i = 0; i < pts.length; i++) {
-      const pt = pts[i]
-      const prevPt = pts[(i === 0 ? pts.length : i) - 1]
-      const dist = pt.distanceTo(prevPt)
-      const puffDist = dist * puffy
-      const angle = Math.atan2(pt.y - prevPt.y, pt.x - prevPt.x)
-      this.ctx.moveTo(prevPt.x, prevPt.y)
-      this.ctx.bezierCurveTo(
-        prevPt.x + Math.cos(angle - a90) * puffDist,
-        prevPt.y + Math.sin(angle - a90) * puffDist,
-        pt.x + Math.cos(angle - a90) * puffDist,
-        pt.y + Math.sin(angle - a90) * puffDist,
-        pt.x,
-        pt.y
-      )
-      this.ctx.stroke()
-    }
-  }
+  //   for (let i = 0; i < pts.length; i++) {
+  //     const pt = pts[i]
+  //     const prevPt = pts[(i === 0 ? pts.length : i) - 1]
+  //     const dist = pt.distanceTo(prevPt)
+  //     const puffDist = dist * puffy
+  //     const angle = Math.atan2(pt.y - prevPt.y, pt.x - prevPt.x)
+  //     this.ctx.moveTo(prevPt.x, prevPt.y)
+  //     this.ctx.bezierCurveTo(
+  //       prevPt.x + Math.cos(angle - a90) * puffDist,
+  //       prevPt.y + Math.sin(angle - a90) * puffDist,
+  //       pt.x + Math.cos(angle - a90) * puffDist,
+  //       pt.y + Math.sin(angle - a90) * puffDist,
+  //       pt.x,
+  //       pt.y
+  //     )
+  //     this.ctx.stroke()
+  //   }
+  // }
 
   draw(increment: number): void {
     //
