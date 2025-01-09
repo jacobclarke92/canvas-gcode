@@ -4,6 +4,7 @@ import { getBezierPoints } from '../utils/geomUtils'
 import { randFloatRange, randIntRange } from '../utils/numberUtils'
 import { initPen, plotBounds } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
+import { BooleanRange } from './tools/Range'
 
 const a90 = Math.PI / 2
 const a180 = Math.PI
@@ -26,6 +27,8 @@ export default class Genuary6 extends Sketch {
     this.addVar('sunRays', { initialValue: 36, min: 3, max: 256, step: 1 })
     this.addVar('sunRayDistFromSun', { initialValue: 5, min: 0, max: 20, step: 0.1 })
     this.addVar('sunRayLength', { initialValue: 150, min: 3, max: 200, step: 1 })
+
+    this.vs.disableCutout = new BooleanRange({ initialValue: false, disableRandomize: true })
   }
 
   lBuildingHeight: number
@@ -36,16 +39,22 @@ export default class Genuary6 extends Sketch {
     initPen(this)
     plotBounds(this)
 
+    this.ctx.driver.comment('Drawing horizon', true)
     this.drawHorizon()
 
     // Draw buildings
+    this.ctx.driver.comment('Drawing left building', true)
     this.drawBuilding({ facing: 'l' })
+    this.ctx.driver.comment('Drawing right building', true)
     this.drawBuilding({ facing: 'r' })
 
+    this.ctx.driver.comment('Drawing upper clothesline', true)
     this.drawClothesline({ upper: 0.95, lower: 0.6 })
+    this.ctx.driver.comment('Drawing lower clothesline', true)
     this.drawClothesline({ upper: 0.4, lower: 0.25 })
 
     // const { buildingWidth } = this.vars
+    // this.ctx.driver.comment('Drawing clouds', true)
     // this.drawCloud({
     //   x: randFloatRange(this.cw - buildingWidth * 2, buildingWidth),
     //   y: randFloatRange(this.ch / 4, 20),
@@ -79,7 +88,9 @@ export default class Genuary6 extends Sketch {
       this.ctx.stroke()
     }
 
-    this.ctx.clearRect(0, this.ch * horizonHeight, this.cw, this.ch * (1 - horizonHeight))
+    if (!this.vs.disableCutout.value) {
+      this.ctx.clearRect(0, this.ch * horizonHeight, this.cw, this.ch * (1 - horizonHeight))
+    }
 
     this.ctx.beginPath()
     this.ctx.moveTo(0, this.ch * horizonHeight)
@@ -99,18 +110,20 @@ export default class Genuary6 extends Sketch {
     const lrSign = facing === 'l' ? 1 : -1
 
     // clear horizon behind
-    this.ctx.clearRect(
-      facing === 'l' ? 0 : this.cw - buildingWidth,
-      buildingTop,
-      buildingWidth,
-      buildingHeight
-    )
-    this.ctx.clearRect(
-      facing === 'l' ? 0 : this.cw - (buildingWidth + buildingGutter),
-      buildingTop - buildingGutter * 2.5,
-      buildingWidth + buildingGutter,
-      buildingHeight
-    )
+    if (!this.vs.disableCutout.value) {
+      this.ctx.clearRect(
+        facing === 'l' ? 0 : this.cw - buildingWidth,
+        buildingTop,
+        buildingWidth,
+        buildingHeight
+      )
+      this.ctx.clearRect(
+        facing === 'l' ? 0 : this.cw - (buildingWidth + buildingGutter),
+        buildingTop - buildingGutter * 2.5,
+        buildingWidth + buildingGutter,
+        buildingHeight
+      )
+    }
 
     // Building outline
     this.ctx.beginPath()
@@ -213,12 +226,14 @@ export default class Genuary6 extends Sketch {
     const railingWidth = buildingGutter / 6
 
     // clear horizon behind
-    this.ctx.clearRect(
-      facing === 'l' ? buildingWidth + 1 : this.cw - (buildingWidth + balconyWidth + 1),
-      y - balconyHeight,
-      balconyWidth,
-      balconyHeight
-    )
+    if (!this.vs.disableCutout.value) {
+      this.ctx.clearRect(
+        facing === 'l' ? buildingWidth + 1 : this.cw - (buildingWidth + balconyWidth + 1),
+        y - balconyHeight,
+        balconyWidth,
+        balconyHeight
+      )
+    }
 
     this.ctx.beginPath()
     this.ctx.moveTo(facing === 'l' ? buildingWidth : this.cw - buildingWidth, y)
@@ -302,7 +317,7 @@ export default class Genuary6 extends Sketch {
 
       if (type === 'party') {
         this.ctx.polygon(pt.x, pt.y + 1, 3, 2, angle + a90)
-        this.ctx.stroke({ cutout: true })
+        this.ctx.stroke({ cutout: !this.vs.disableCutout.value })
       } else {
         if (randFloatRange(1) > 0.5) continue
 
@@ -314,7 +329,7 @@ export default class Genuary6 extends Sketch {
         this.ctx.lineToRelativeAngle(angle + a90, pegH)
         this.ctx.lineToRelativeAngle(angle + a180, pegW)
         this.ctx.lineToRelativeAngle(angle - a90, pegH)
-        this.ctx.stroke({ cutout: true })
+        this.ctx.stroke({ cutout: !this.vs.disableCutout.value })
       }
     }
 

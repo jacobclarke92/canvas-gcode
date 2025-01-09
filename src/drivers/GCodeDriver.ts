@@ -97,8 +97,15 @@ export default class GCode extends Driver {
   // public bezierCurve(params: BezierCurveParams) {
   //   this.send('G5', params)
   // }
-  public comment(string: string) {
+  public comment(string: string, injectSpacing = false) {
+    if (injectSpacing) {
+      this.send(``)
+      this.send(``)
+      this.send(``)
+      this.send(`(----------------)`)
+    }
     this.send(`(${string})`)
+    if (injectSpacing) this.send(`(----------------)`)
   }
   public meta(params: { [key: string]: any }) {
     let comment = '('
