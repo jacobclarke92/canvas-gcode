@@ -718,7 +718,8 @@ export default class GCanvas {
       const angle = startAngle + (i * Math.PI * 2) / sides
       const x1 = x + Math.cos(angle) * radius
       const y1 = y + Math.sin(angle) * radius
-      this.lineTo(x1, y1)
+      if (i === 0) this.moveTo(x1, y1)
+      else this.lineTo(x1, y1)
     }
     this.closePath()
   }
@@ -867,6 +868,8 @@ export default class GCanvas {
     }
     this.ctx.stroke()
 
+    // this.path?.close() // not doing this makes cutout not work
+
     if (debug) this.ctx.strokeStyle = origStrokeStyle
   }
 
@@ -913,6 +916,7 @@ export default class GCanvas {
 
     for (let i = 0; i < this.pathHistory.length; i++) {
       const subPath = this.pathHistory[i]
+      const closed = subPath.isClosed()
 
       const oldPts = subPath.getPoints()
       const oldPtsTransformed = oldPts.map((pt) => ({
@@ -923,13 +927,17 @@ export default class GCanvas {
 
       if (clipper) {
         // const myClipper = new clipper.instance.Clipper(0)
-        const cleaned = clipper.cleanPolygon(oldPtsTransformed)
+        const cleaned = closed ? oldPtsTransformed : clipper.cleanPolygon(oldPtsTransformed)
         const subject = cleaned.length ? cleaned : oldPtsTransformed
+
+        if (cleaned.length !== oldPtsTransformed.length) {
+          console.log('cleaned', cleaned, 'old', oldPtsTransformed)
+        }
 
         try {
           const diffPath = clipper.clipToPolyTree({
             clipType,
-            subjectInputs: [{ data: subject, closed: false }],
+            subjectInputs: [{ data: subject, closed }],
             clipInputs: [{ data: cutoutRectPtsTransformed }],
             subjectFillType: clipperLib.PolyFillType.NonZero,
             clipFillType: clipperLib.PolyFillType.NonZero,
@@ -1067,14 +1075,14 @@ export default class GCanvas {
       clipType,
       subjectInputs: (clipType === clipperLib.ClipType.Union ? paths : [paths[0]]).map((path) => ({
         data: path.getPoints(pathDivisions).map((pt) => pt.scale(detailScale)),
-        closed: !subjectIsOpen,
+        closed: subjectIsOpen !== undefined ? !subjectIsOpen : path.closed,
       })),
       clipInputs:
         clipType === clipperLib.ClipType.Union
           ? undefined
           : paths.slice(1).map((path) => ({
               data: path.getPoints(pathDivisions).map((pt) => pt.scale(detailScale)),
-              closed: !inputsAreOpen,
+              closed: inputsAreOpen !== undefined ? !inputsAreOpen : path.closed,
             })),
       reverseSolution,
       subjectFillType,
@@ -1098,18 +1106,17 @@ export default class GCanvas {
     }
     this.path.current = this.path.subPaths[this.path.subPaths.length - 1]
 
-    if (!subjectIsOpen) this.ctx.closePath()
-
-    this.ctx.beginPath()
     for (const pts of ptPts) {
-      this.ctx.moveTo(pts[0].x, pts[0].y)
-      for (const pt of pts) {
+      this.ctx.beginPath()
+      for (let i = 0; i < pts.length; i++) {
+        const pt = pts[i]
+        if (i === 0) this.ctx.moveTo(pt.x, pt.y)
         this.ctx.lineTo(pt.x, pt.y)
       }
       if (!subjectIsOpen) this.ctx.lineTo(pts[0].x, pts[0].y)
+      this.ctx.stroke()
+      this.ctx.closePath()
     }
-    // this.ctx.stroke()
-    // this.ctx.closePath()
 
     return { intersected }
   }

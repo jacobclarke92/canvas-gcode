@@ -86,6 +86,7 @@ export default class Genuary6 extends Sketch {
         this.ctx.lineTo(...pt.toArray())
       }
       this.ctx.stroke()
+      this.ctx.closePath()
     }
 
     if (!this.vs.disableCutout.value) {
@@ -96,6 +97,7 @@ export default class Genuary6 extends Sketch {
     this.ctx.moveTo(0, this.ch * horizonHeight)
     this.ctx.lineTo(this.cw, this.ch * horizonHeight)
     this.ctx.stroke()
+    this.ctx.closePath()
   }
 
   drawBuilding({ facing }: { facing: 'l' | 'r' }): void {
@@ -130,19 +132,28 @@ export default class Genuary6 extends Sketch {
     this.ctx.moveTo(facing === 'l' ? 0 : this.cw, buildingTop)
     this.ctx.lineToRelative(lrSign * buildingWidth, 0)
     this.ctx.lineToRelative(0, buildingHeight)
+    this.ctx.stroke()
+    this.ctx.closePath()
 
     // double line
+    this.ctx.beginPath()
     this.ctx.moveTo(facing === 'l' ? 0 : this.cw, buildingTop + doubleDist)
     this.ctx.lineToRelative(lrSign * (buildingWidth - doubleDist), 0)
     this.ctx.lineToRelative(0, buildingHeight - doubleDist)
+    this.ctx.stroke()
+    this.ctx.closePath()
 
     // Building roof
+    this.ctx.beginPath()
     this.ctx.moveTo(facing === 'l' ? buildingWidth : this.cw - buildingWidth, buildingTop)
     this.ctx.lineToRelative(lrSign * buildingGutter, 0)
     this.ctx.lineToRelative(0, -buildingGutter)
     this.ctx.lineToRelative(lrSign * -(buildingWidth + buildingGutter), 0)
+    this.ctx.stroke()
+    this.ctx.closePath()
 
     // double line
+    this.ctx.beginPath()
     this.ctx.moveTo(
       facing === 'l' ? buildingWidth : this.cw - buildingWidth,
       buildingTop + doubleDist
@@ -151,8 +162,12 @@ export default class Genuary6 extends Sketch {
     this.ctx.lineToRelative(0, -(buildingGutter + doubleDist * 2))
     this.ctx.lineToRelative(lrSign * -(buildingWidth + buildingGutter + doubleDist), 0)
     this.ctx.stroke()
+    this.ctx.closePath()
 
     // Roof railing
+
+    // return
+
     const roofRailingHeight = buildingGutter
     this.drawRailings({
       x: facing === 'l' ? 0 : this.cw - buildingWidth - buildingGutter,
@@ -190,30 +205,51 @@ export default class Genuary6 extends Sketch {
       facing === 'l'
         ? buildingWidth - buildingGutter - (s + randOffsetX)
         : this.cw - buildingWidth + (buildingGutter + randOffsetX)
+
     this.ctx.strokeRect(x, y, s, s)
 
     const sil = doubleDist * 2
     const segS = (s - sil) / 2
     if (s < 12) {
+      this.ctx.beginPath()
       this.ctx.moveTo(x, y + segS)
       this.ctx.lineToRelative(s, 0)
+      this.ctx.stroke()
+      this.ctx.closePath()
+
+      this.ctx.beginPath()
       this.ctx.moveTo(x + s, y + segS + sil)
       this.ctx.lineToRelative(-s, 0)
       this.ctx.stroke()
+      this.ctx.closePath()
     } else {
+      this.ctx.beginPath()
       this.ctx.moveTo(x, y + segS)
       this.ctx.lineToRelative(segS, 0)
       this.ctx.lineToRelative(0, -segS)
+      this.ctx.stroke()
+      this.ctx.closePath()
+
+      this.ctx.beginPath()
       this.ctx.moveTo(x + segS + sil, y)
       this.ctx.lineToRelative(0, segS)
       this.ctx.lineToRelative(segS, 0)
+      this.ctx.stroke()
+      this.ctx.closePath()
+
+      this.ctx.beginPath()
       this.ctx.moveTo(x + s, y + segS + sil)
       this.ctx.lineToRelative(-segS, 0)
       this.ctx.lineToRelative(0, segS)
+      this.ctx.stroke()
+      this.ctx.closePath()
+
+      this.ctx.beginPath()
       this.ctx.moveTo(x + segS, y + s)
       this.ctx.lineToRelative(0, -segS)
       this.ctx.lineToRelative(-segS, 0)
       this.ctx.stroke()
+      this.ctx.closePath()
     }
   }
 
@@ -246,6 +282,7 @@ export default class Genuary6 extends Sketch {
       0
     )
     this.ctx.stroke()
+    this.ctx.closePath()
 
     this.drawRailings({
       x: facing === 'l' ? buildingWidth : this.cw - buildingWidth - (balconyWidth - railingWidth),
@@ -274,16 +311,17 @@ export default class Genuary6 extends Sketch {
     const poles = Math.floor(w / (poleWidth * 2.5))
     const gap = (w - (poles + 1) * poleWidth) / (poles + 1)
 
-    this.ctx.beginPath()
     for (let i = 0; i < poles; i++) {
       const poleX = x + gap + i * (poleWidth + gap)
       const height = h + Math.sin((i / poles) * 5) * waveH
+      this.ctx.beginPath()
       this.ctx.moveTo(poleX, y)
       this.ctx.lineToRelative(0, -height)
       this.ctx.lineToRelative(poleWidth, 0)
       this.ctx.lineToRelative(0, height)
+      this.ctx.stroke()
+      this.ctx.closePath()
     }
-    this.ctx.stroke()
   }
 
   drawClothesline({ upper, lower }: { upper: number; lower: number }): void {
@@ -316,20 +354,24 @@ export default class Genuary6 extends Sketch {
       const angle = Math.atan2(pt.y - prevPt.y, pt.x - prevPt.x)
 
       if (type === 'party') {
+        this.ctx.beginPath()
         this.ctx.polygon(pt.x, pt.y + 1, 3, 2, angle + a90)
         this.ctx.stroke({ cutout: !this.vs.disableCutout.value })
+        this.ctx.closePath()
       } else {
         if (randFloatRange(1) > 0.5) continue
 
         const pegW = buildingGutter / 6
         const pegH = buildingGutter / 2
 
+        this.ctx.beginPath()
         this.ctx.moveTo(pt.x - pegW / 2, pt.y - pegH * 0.3)
         this.ctx.lineToRelativeAngle(angle, pegW)
         this.ctx.lineToRelativeAngle(angle + a90, pegH)
         this.ctx.lineToRelativeAngle(angle + a180, pegW)
         this.ctx.lineToRelativeAngle(angle - a90, pegH)
         this.ctx.stroke({ cutout: !this.vs.disableCutout.value })
+        this.ctx.closePath()
       }
     }
 
@@ -344,6 +386,7 @@ export default class Genuary6 extends Sketch {
       rightPt.y
     )
     this.ctx.stroke()
+    this.ctx.closePath()
   }
 
   // drawCloud({ x, y }: { x: number; y: number }): void {
