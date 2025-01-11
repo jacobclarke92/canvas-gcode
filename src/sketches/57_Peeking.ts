@@ -1,3 +1,4 @@
+import { deg360 } from '../constants/angles'
 import { colors } from '../constants/colors'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
@@ -98,8 +99,7 @@ export default class Peeking extends Sketch {
       for (let y = 0; y < effectiveHeight + sineRes; y += sineRes) {
         y = Math.min(y, effectiveHeight)
         const percentY = y / effectiveHeight
-        const x =
-          baseX + Math.sin((percentY + waveCompound) * (wavePeriod * Math.PI * 2)) * waviness
+        const x = baseX + Math.sin((percentY + waveCompound) * (wavePeriod * deg360)) * waviness
         if (y === 0) this.ctx.moveTo(x, y + gutter)
         else this.ctx.lineTo(x, y + gutter)
       }

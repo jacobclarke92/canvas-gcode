@@ -1,3 +1,4 @@
+import { deg90 } from '../constants/angles'
 import { colors } from '../constants/colors'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
@@ -229,8 +230,8 @@ export default class BoaF extends Sketch {
             randFloat(scraggliness * dist)
         )
 
-        const leftOuterPtPerpAngle = leftAngle - (Math.PI / 2 - strandUplift) * flip
-        const rightOuterPtPerpAngle = rightAngle + (Math.PI / 2 - strandUplift) * flip
+        const leftOuterPtPerpAngle = leftAngle - (deg90 - strandUplift) * flip
+        const rightOuterPtPerpAngle = rightAngle + (deg90 - strandUplift) * flip
 
         const leftOuterPtAngle = lerp(leftOuterPtPerpAngle, leftAngle, spineT * strandUprightTrend)
         const rightOuterPtAngle = lerp(

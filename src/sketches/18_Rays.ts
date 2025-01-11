@@ -1,3 +1,4 @@
+import { deg360 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import type { Line } from '../types'
@@ -107,7 +108,7 @@ export default class Rays extends Sketch {
     }
 
     const startingInsideCircle = pointInCircles(this.cp, ...this.reflectiveCircles)
-    const segAngle = (Math.PI * 2) / this.vs.lines.value
+    const segAngle = deg360 / this.vs.lines.value
     for (let i = 0; i < this.vs.lines.value; i++) {
       const lineAngle = segAngle * i + randFloat(this.vs.lineAngleWonk.value) * segAngle
       this.drawingPoints.push([this.cp, lineAngle, startingInsideCircle])

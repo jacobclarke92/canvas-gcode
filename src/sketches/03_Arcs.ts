@@ -1,3 +1,4 @@
+import { deg360 } from '../constants/angles'
 import Path from '../Path'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
@@ -33,10 +34,10 @@ export default class Arcs extends Sketch {
         ),
     })
     const radius = Math.min(this.cw, this.ch) / 2 - (radiusMax + 10)
-    const { start: startPoint } = arcToPoints(this.cx, this.cy, 0, Math.PI * 2, radius)
+    const { start: startPoint } = arcToPoints(this.cx, this.cy, 0, deg360, radius)
     const tmp = new Path()
     tmp.moveTo(startPoint.x, startPoint.y)
-    tmp.arc(this.cx, this.cy, radius, 0, Math.PI * 2, false)
+    tmp.arc(this.cx, this.cy, radius, 0, deg360, false)
     this.circlePoints = tmp.getPoints(this.vars.precision)
   }
   draw(increment: number): void {

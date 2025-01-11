@@ -1,3 +1,4 @@
+import { deg90 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import type { Line } from '../types'
@@ -49,7 +50,7 @@ export default class Perpendicularity extends Sketch {
     })
 
     this.vs.offsetPerpAngle = new Range({
-      initialValue: 1.07 /* Math.PI / 2 - 0.1*/,
+      initialValue: 1.07 /* deg90 - 0.1*/,
       min: 0,
       max: Math.PI,
       step: 0.001,
@@ -71,11 +72,7 @@ export default class Perpendicularity extends Sketch {
   drawnLines: Line[] = []
   nextSpawnPoints: [Point, Line][] = []
 
-  drawLineFromPointAtAngle(
-    startPoint: Point,
-    originalLine: Line,
-    offsetAngle: number = Math.PI / 2
-  ) {
+  drawLineFromPointAtAngle(startPoint: Point, originalLine: Line, offsetAngle: number = deg90) {
     const lineAngle = originalLine[0].angleTo(originalLine[1])
 
     const startPtAngleFromCenter = this.cp.angleTo(startPoint)

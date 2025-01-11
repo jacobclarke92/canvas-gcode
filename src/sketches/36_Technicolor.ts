@@ -1,6 +1,7 @@
 import type { IBodyDefinition, IChamferableBodyDefinition } from 'matter-js'
 import { Bodies, Body, Composite, Engine, Vector } from 'matter-js'
 
+import { deg30, deg90 } from '../constants/angles'
 import { colors } from '../constants/colors'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
@@ -54,7 +55,7 @@ export default class Technicolor extends Sketch {
     this.addVar('initialAngle', {
       initialValue: 0.24,
       min: 0,
-      max: Math.PI / 2,
+      max: deg90,
       step: 0.001,
     })
     this.addVar('initialTorque', {
@@ -85,7 +86,7 @@ export default class Technicolor extends Sketch {
     this.addVar('sizeOscSpeed', {
       initialValue: 0.1,
       min: 0,
-      max: Math.PI / 8,
+      max: deg30,
       step: Math.PI / 666,
     })
     this.sizeOsc = new Osc({

@@ -1,5 +1,6 @@
 import { clamp } from 'lodash'
 
+import { deg90, deg360 } from '../constants/angles'
 import { colors } from '../constants/colors'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
@@ -129,10 +130,10 @@ export default class Genuary1 extends Sketch {
         tendril.length < 2 ? randFloatRange(Math.PI, -Math.PI) : this.getAverageAngle(tendril)
       const aimAngle = averageAngle + randFloatRange(angleVariance, -angleVariance)
       // snap to 90 degree angles
-      let angle = (Math.round(aimAngle / (Math.PI / 2)) * (Math.PI / 2)) % (Math.PI * 2)
+      let angle = (Math.round(aimAngle / deg90) * deg90) % deg360
       // prevent backtracking
       if (angle === this.lastAngle)
-        angle = (angle + randFloatRange(1) > 0.5 ? Math.PI / 2 : -Math.PI / 2) % (Math.PI * 2)
+        angle = (angle + randFloatRange(1) > 0.5 ? deg90 : -deg90) % deg360
       this.lastAngle = angle
 
       const dist = randIntRange(maxSegLength, 1 /*minSegLength*/)

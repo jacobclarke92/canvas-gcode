@@ -1,5 +1,6 @@
 import * as clipperLib from 'js-angusj-clipper/web'
 
+import { deg90 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import type { Line } from '../types'
@@ -8,8 +9,6 @@ import { initPen, penUp, plotBounds } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
 import type Osc from './tools/Osc'
 import { BooleanRange } from './tools/Range'
-
-const quarterTurn = Math.PI / 2
 
 export default class LazyStrokes extends Sketch {
   sizeOsc: Osc
@@ -93,14 +92,14 @@ export default class LazyStrokes extends Sketch {
         this.cw / 2 + Math.cos(angle) * availableSpace,
         this.ch / 2 + Math.sin(angle) * availableSpace
       )
-        .moveAlongAngle(angle - quarterTurn, availableSpace / 2)
-        .moveAlongAngle(angle + quarterTurn, i * spacing)
+        .moveAlongAngle(angle - deg90, availableSpace / 2)
+        .moveAlongAngle(angle + deg90, i * spacing)
       const outsidePt2 = new Point(
         this.cw / 2 + Math.cos(angle + Math.PI) * availableSpace,
         this.ch / 2 + Math.sin(angle + Math.PI) * availableSpace
       )
-        .moveAlongAngle(angle - quarterTurn, availableSpace / 2)
-        .moveAlongAngle(angle + quarterTurn, i * spacing)
+        .moveAlongAngle(angle - deg90, availableSpace / 2)
+        .moveAlongAngle(angle + deg90, i * spacing)
 
       if (!trimToGutter) {
         this.curvyBoi({
@@ -142,10 +141,10 @@ export default class LazyStrokes extends Sketch {
     this.ctx.beginPath()
     this.ctx.moveTo(pt1.x, pt1.y)
     this.ctx.bezierCurveTo(
-      firstMidPt.x + Math.cos(angle - quarterTurn) * amplitude,
-      firstMidPt.y + Math.sin(angle - quarterTurn) * -amplitude,
-      secondMidPt.x + Math.cos(angle + quarterTurn) * amplitude,
-      secondMidPt.y + Math.sin(angle + quarterTurn) * -amplitude,
+      firstMidPt.x + Math.cos(angle - deg90) * amplitude,
+      firstMidPt.y + Math.sin(angle - deg90) * -amplitude,
+      secondMidPt.x + Math.cos(angle + deg90) * amplitude,
+      secondMidPt.y + Math.sin(angle + deg90) * -amplitude,
       pt2.x,
       pt2.y
     )

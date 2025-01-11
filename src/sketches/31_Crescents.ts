@@ -1,5 +1,7 @@
 import * as clipperLib from 'js-angusj-clipper/web'
 
+import { deg360 } from '../constants/angles'
+import Path from '../Path'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import type SubPath from '../SubPath'
@@ -108,26 +110,18 @@ export default class Crescents extends Sketch {
 
     const rad1 = randIntRange(maxRadius, minRadius)
     this.ctx.circle(pt1, rad1)
-    const ang = randFloatRange(0, Math.PI * 2)
+    const ang = randFloatRange(0, deg360)
     const rad2 = Math.abs(rad1 + randIntRange(maxRadius, minRadius) - (maxRadius - minRadius) / 3)
     const pt2 = pt1.clone().moveAlongAngle(ang, rad1)
     this.ctx.circle(pt2, rad2)
 
-    let intersected = false
-    try {
-      const res = this.ctx.clipCurrentPath({
-        clipType: clipperLib.ClipType.Difference,
-        pathDivisions: 32,
-      })
-      intersected = res.intersected
-    } catch (e) {
-      return
-    }
-    if (!intersected) {
-      return
-    }
+    const { intersected } = this.ctx.clipCurrentPath({
+      clipType: clipperLib.ClipType.Difference,
+      pathDivisions: 32,
+    })
+    if (!intersected) return
 
-    const { left, top, bottom, right } = this.ctx.path.getBounds()
+    const { left, top, bottom, right } = this.ctx.currentPath.getBounds()
     const bounds = [top, right, bottom, left] as Bounds
     if (
       this.crescents.length > 0 &&
@@ -135,7 +129,7 @@ export default class Crescents extends Sketch {
     ) {
       return
     }
-    this.crescents.push({ bounds, subPaths: this.ctx.path.subPaths })
+    this.crescents.push({ bounds, subPaths: this.ctx.currentPath.subPaths })
     this.ctx.stroke()
   }
 }

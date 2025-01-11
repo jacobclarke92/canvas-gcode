@@ -1,3 +1,4 @@
+import { deg360 } from '../constants/angles'
 import Path from '../Path'
 import Point from '../Point'
 import type { Edge } from '../types'
@@ -16,8 +17,8 @@ export const arcToPoints = (
   radiusY?: number
 ) => {
   if (radiusY === undefined) radiusY = radiusX
-  aStart = aStart % (Math.PI * 2)
-  aEnd = aEnd % (Math.PI * 2)
+  aStart = aStart % deg360
+  aEnd = aEnd % deg360
   return {
     start: new Point(radiusX * Math.cos(aStart) + x, radiusX * Math.sin(aStart) + y),
     end: new Point(radiusY * Math.cos(aEnd) + x, radiusY * Math.sin(aEnd) + y),
@@ -87,15 +88,15 @@ export const ellipseToPoints = (
   for (j = 0; j <= divisions; j++) {
     t = j / divisions
 
-    if (deltaAngle === -Math.PI * 2) deltaAngle = Math.PI * 2
-    if (deltaAngle < 0) deltaAngle += Math.PI * 2
-    if (deltaAngle > Math.PI * 2) deltaAngle -= Math.PI * 2
+    if (deltaAngle === -deg360) deltaAngle = deg360
+    if (deltaAngle < 0) deltaAngle += deg360
+    if (deltaAngle > deg360) deltaAngle -= deg360
 
     if (antiClockwise) {
       // sin(pi) and sin(0) are the same
       // So we have to special case for full circles
-      if (deltaAngle === Math.PI * 2) deltaAngle = 0
-      angle = endAngle + (1 - t) * (Math.PI * 2 - deltaAngle)
+      if (deltaAngle === deg360) deltaAngle = 0
+      angle = endAngle + (1 - t) * (deg360 - deltaAngle)
     } else {
       angle = startAngle + t * deltaAngle
     }
@@ -118,7 +119,7 @@ export const circleToPoints = (
   const centerY = args.length === 3 ? args[0].y : args[1]
   const radius = args.length === 3 ? args[1] : args[2]
   const divisions = args.length === 3 ? args[2] : args[3]
-  return ellipseToPoints(centerX, centerY, radius, radius, 0, Math.PI * 2, false, divisions)
+  return ellipseToPoints(centerX, centerY, radius, radius, 0, deg360, false, divisions)
 }
 
 // Convert start/end/center point arc to start/end angle arc.
@@ -133,7 +134,7 @@ export const pointsToArc = (center: Point, start: Point, end: Point) => {
 
   // Always assume a full circle if they are the same
   // Handling of 0,0 optimized in the usage
-  if (aEnd === aStart) aEnd += Math.PI * 2
+  if (aEnd === aStart) aEnd += deg360
 
   return { start: aStart, end: aEnd, radius }
 }

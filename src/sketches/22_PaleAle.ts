@@ -1,3 +1,4 @@
+import { deg90 } from '../constants/angles'
 import { Sketch } from '../Sketch'
 import { shuffle } from '../utils/arrayUtils'
 import { randIntRange } from '../utils/numberUtils'
@@ -179,7 +180,7 @@ export default class PaleAle extends Sketch {
 
     // if turning left or right
     if (this.isUsed(nextIntermediatePos)) return this.getNextPos(prevPos, pos, options)
-    const nextDir = dir + turn * (Math.PI / 2)
+    const nextDir = dir + turn * deg90
     const nextPos: Pos = [
       nextIntermediatePos[0] + Math.round(Math.cos(nextDir)),
       nextIntermediatePos[1] + Math.round(Math.sin(nextDir)),
@@ -198,20 +199,20 @@ export default class PaleAle extends Sketch {
     /*
     this.ctx.moveTo(
       pos[0] * gridSize +
-        Math.cos(dir - Math.PI / 2) * (gridSize / 2) +
+        Math.cos(dir - deg90) * (gridSize / 2) +
         Math.cos(dir + (isExiting ? 0 : Math.PI)) * (gridSize / 4),
       pos[1] * gridSize +
-        Math.sin(dir - Math.PI / 2) * (gridSize / 2) +
+        Math.sin(dir - deg90) * (gridSize / 2) +
         Math.sin(dir + (isExiting ? 0 : Math.PI)) * (gridSize / 4)
     )
     this.ctx.quadraticCurveTo(
       pos[0] * gridSize + Math.cos(dir + (isExiting ? Math.PI : 0)) * (gridSize / 2),
       pos[1] * gridSize + Math.sin(dir + (isExiting ? Math.PI : 0)) * (gridSize / 2),
       pos[0] * gridSize +
-        Math.cos(dir + Math.PI / 2) * (gridSize / 2) +
+        Math.cos(dir + deg90) * (gridSize / 2) +
         Math.cos(dir + (isExiting ? 0 : Math.PI)) * (gridSize / 4),
       pos[1] * gridSize +
-        Math.sin(dir + Math.PI / 2) * (gridSize / 2) +
+        Math.sin(dir + deg90) * (gridSize / 2) +
         Math.sin(dir + (isExiting ? 0 : Math.PI)) * (gridSize / 4)
     )
     */

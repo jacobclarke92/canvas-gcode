@@ -1,5 +1,6 @@
 import * as clipperLib from 'js-angusj-clipper/web'
 
+import { deg20, deg90, deg180 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import type { Line } from '../types'
@@ -45,22 +46,22 @@ const stemToOuterLines = (stem: Stem): Line[] => [
   [
     stem.position
       .clone()
-      .moveAlongAngle(stem.angle - Math.PI / 2, stem.thickness / 2)
-      .moveAlongAngle(stem.angle + Math.PI, stem.length * 0.15),
+      .moveAlongAngle(stem.angle - deg90, stem.thickness / 2)
+      .moveAlongAngle(stem.angle + deg180, stem.length * 0.15),
     stem.position
       .clone()
-      .moveAlongAngle(stem.angle - Math.PI / 2, stem.thickness / 2)
-      .moveAlongAngle(stem.angle + Math.PI, stem.length * 0.6),
+      .moveAlongAngle(stem.angle - deg90, stem.thickness / 2)
+      .moveAlongAngle(stem.angle + deg180, stem.length * 0.6),
   ],
   [
     stem.position
       .clone()
-      .moveAlongAngle(stem.angle + Math.PI / 2, stem.thickness / 2)
-      .moveAlongAngle(stem.angle + Math.PI, stem.length * 0.15),
+      .moveAlongAngle(stem.angle + deg90, stem.thickness / 2)
+      .moveAlongAngle(stem.angle + deg180, stem.length * 0.15),
     stem.position
       .clone()
-      .moveAlongAngle(stem.angle + Math.PI / 2, stem.thickness / 2)
-      .moveAlongAngle(stem.angle + Math.PI, stem.length * 0.6),
+      .moveAlongAngle(stem.angle + deg90, stem.thickness / 2)
+      .moveAlongAngle(stem.angle + deg180, stem.length * 0.6),
   ],
 ]
 
@@ -84,7 +85,7 @@ export default class Genuary2 extends Sketch {
     this.addVar('branchThicknessFalloff', { initialValue: 0.75, min: 0.4, max: 0.995, step: 0.005 })
     this.addVar('splitProbability', { initialValue: 0.75, min: 0, max: 1, step: 0.005 })
     this.addVar('pruneProbability', { initialValue: 0.5, min: 0, max: 1, step: 0.05 })
-    this.addVar('splitAngleRange', { initialValue: 1.1, min: 0, max: Math.PI / 2, step: Math.PI / 256 }) // prettier-ignore
+    this.addVar('splitAngleRange', { initialValue: 1.1, min: 0, max: deg90, step: Math.PI/256 }) // prettier-ignore
     this.addVar('splitAngleBranchLevelMulti', { initialValue: 0.1, min: -1, max: 1, step: 0.05 })
     this.addVar('splitAngleMinPercent', { initialValue: 1, min: 0, max: 1, step: 0.05 })
     this.addVar('chaosFactor', { initialValue: 0, min: 0, max: 2, step: 0.01 })
@@ -135,7 +136,7 @@ export default class Genuary2 extends Sketch {
       offsetY,
     } = this.vars
     const length = initBranchLength / branchLengthFalloff
-    const angle = -Math.PI / 2
+    const angle = -deg90
     const startPt = new Point(this.cx, this.ch + offsetY)
     const position = this.drawBranchScaffold(startPt, angle, length, initBranchThickness)
     this.currentStems.push({
@@ -174,15 +175,15 @@ export default class Genuary2 extends Sketch {
 
     let pt1 = new Point(
       stem.position.x +
-        Math.cos(stem.angle + Math.PI) * stem.length +
-        (Math.cos(stem.angle - Math.PI / 2) * (stem.thickness / 2)) / branchThicknessFalloff,
+        Math.cos(stem.angle + deg180) * stem.length +
+        (Math.cos(stem.angle - deg90) * (stem.thickness / 2)) / branchThicknessFalloff,
       stem.position.y +
-        Math.sin(stem.angle + Math.PI) * stem.length +
-        (Math.sin(stem.angle - Math.PI / 2) * (stem.thickness / 2)) / branchThicknessFalloff
+        Math.sin(stem.angle + deg180) * stem.length +
+        (Math.sin(stem.angle - deg90) * (stem.thickness / 2)) / branchThicknessFalloff
     )
     const pt2 = new Point(
-      stem.position.x + Math.cos(stem.angle - Math.PI / 2) * (stem.thickness / 2),
-      stem.position.y + Math.sin(stem.angle - Math.PI / 2) * (stem.thickness / 2)
+      stem.position.x + Math.cos(stem.angle - deg90) * (stem.thickness / 2),
+      stem.position.y + Math.sin(stem.angle - deg90) * (stem.thickness / 2)
     )
 
     let intersected = false
@@ -199,12 +200,12 @@ export default class Genuary2 extends Sketch {
 
   capOffStem(stem: Stem): void {
     this.ctx.lineTo(
-      stem.position.x + Math.cos(stem.angle - Math.PI / 2) * (stem.thickness / 2),
-      stem.position.y + Math.sin(stem.angle - Math.PI / 2) * (stem.thickness / 2)
+      stem.position.x + Math.cos(stem.angle - deg90) * (stem.thickness / 2),
+      stem.position.y + Math.sin(stem.angle - deg90) * (stem.thickness / 2)
     )
     this.ctx.lineTo(
-      stem.position.x + Math.cos(stem.angle + Math.PI / 2) * (stem.thickness / 2),
-      stem.position.y + Math.sin(stem.angle + Math.PI / 2) * (stem.thickness / 2)
+      stem.position.x + Math.cos(stem.angle + deg90) * (stem.thickness / 2),
+      stem.position.y + Math.sin(stem.angle + deg90) * (stem.thickness / 2)
     )
   }
 
@@ -212,19 +213,19 @@ export default class Genuary2 extends Sketch {
     const { branchThicknessFalloff } = this.vars
     this.ctx.moveTo(
       stem.position.x +
-        Math.cos(stem.angle + Math.PI) * stem.length +
-        Math.cos(stem.angle + Math.PI / 2) * (stem.thickness / branchThicknessFalloff / 2),
+        Math.cos(stem.angle + deg180) * stem.length +
+        Math.cos(stem.angle + deg90) * (stem.thickness / branchThicknessFalloff / 2),
       stem.position.y +
-        Math.sin(stem.angle + Math.PI) * stem.length +
-        Math.sin(stem.angle + Math.PI / 2) * (stem.thickness / branchThicknessFalloff / 2)
+        Math.sin(stem.angle + deg180) * stem.length +
+        Math.sin(stem.angle + deg90) * (stem.thickness / branchThicknessFalloff / 2)
     )
     this.ctx.lineTo(
       stem.position.x +
-        Math.cos(stem.angle + Math.PI) * stem.length +
-        Math.cos(stem.angle - Math.PI / 2) * (stem.thickness / branchThicknessFalloff / 2),
+        Math.cos(stem.angle + deg180) * stem.length +
+        Math.cos(stem.angle - deg90) * (stem.thickness / branchThicknessFalloff / 2),
       stem.position.y +
-        Math.sin(stem.angle + Math.PI) * stem.length +
-        Math.sin(stem.angle - Math.PI / 2) * (stem.thickness / branchThicknessFalloff / 2)
+        Math.sin(stem.angle + deg180) * stem.length +
+        Math.sin(stem.angle - deg90) * (stem.thickness / branchThicknessFalloff / 2)
     )
   }
 
@@ -232,16 +233,16 @@ export default class Genuary2 extends Sketch {
     const { branchThicknessFalloff } = this.vars
 
     let pt1 = new Point(
-      stem.position.x + Math.cos(stem.angle + Math.PI / 2) * (stem.thickness / 2),
-      stem.position.y + Math.sin(stem.angle + Math.PI / 2) * (stem.thickness / 2)
+      stem.position.x + Math.cos(stem.angle + deg90) * (stem.thickness / 2),
+      stem.position.y + Math.sin(stem.angle + deg90) * (stem.thickness / 2)
     )
     const pt2 = new Point(
       stem.position.x +
-        Math.cos(stem.angle + Math.PI) * stem.length +
-        (Math.cos(stem.angle + Math.PI / 2) * (stem.thickness / 2)) / branchThicknessFalloff,
+        Math.cos(stem.angle + deg180) * stem.length +
+        (Math.cos(stem.angle + deg90) * (stem.thickness / 2)) / branchThicknessFalloff,
       stem.position.y +
-        Math.sin(stem.angle + Math.PI) * stem.length +
-        (Math.sin(stem.angle + Math.PI / 2) * (stem.thickness / 2)) / branchThicknessFalloff
+        Math.sin(stem.angle + deg180) * stem.length +
+        (Math.sin(stem.angle + deg90) * (stem.thickness / 2)) / branchThicknessFalloff
     )
     let intersected = false
     if (prevRightLine && linesIntersect(prevRightLine, [pt1, pt2])) {
@@ -316,7 +317,7 @@ export default class Genuary2 extends Sketch {
         const doSplit = random() <= splitProbability
         if (!doSplit) {
           // draw branch
-          const angle = stem.angle + randFloat((Math.PI * chaosFactor) / 10)
+          const angle = stem.angle + randFloat(chaosFactor * deg20)
           const length = stem.length * branchLengthFalloff * (1 + randFloat(chaosFactor / 8))
           const endPoint = this.drawBranchScaffold(stem.position, angle, length, thickness)
           const [stemLeftLine, stemRightLine] = stemToOuterLines(stem)
@@ -359,10 +360,7 @@ export default class Genuary2 extends Sketch {
           for (let s = 0; s < splitInto; s++) {
             const length = stem.length * branchLengthFalloff * (1 + randFloat(chaosFactor / 8))
             const angle =
-              stem.angle -
-              splitAngleSpan / 2 +
-              splitSlice * s +
-              randFloat((Math.PI * chaosFactor) / 10)
+              stem.angle - splitAngleSpan / 2 + splitSlice * s + randFloat(chaosFactor * deg20)
             const endPoint = this.drawBranchScaffold(stem.position, angle, length, thickness)
             const [stemLeftLine, stemRightLine] = stemToOuterLines(stem)
             if (
@@ -446,7 +444,7 @@ export default class Genuary2 extends Sketch {
     if (this.mode === 'finalDraw') {
       if (!this.drawCurrentStem) {
         this.ctx.closePath()
-        this.outlinePts = this.ctx.path.getPoints()
+        this.outlinePts = this.ctx.currentPath.getPoints()
         this.ctx.stroke()
         this.mode = 'outline'
         return
@@ -486,7 +484,7 @@ export default class Genuary2 extends Sketch {
         return
       }
       if (this.offsetRepeatCount === 0) {
-        this.outlinePts = this.ctx.path.getPoints()
+        this.outlinePts = this.ctx.currentPath.getPoints()
       }
       const offsetPaths = this.ctx
         .offsetPath(this.outlinePts, offsetDist * (1 + offsetFalloff * this.offsetRepeatCount))

@@ -1,3 +1,4 @@
+import { deg7p5, deg30, deg90 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { seedNoise } from '../utils/noise'
@@ -20,10 +21,10 @@ export default class IsometricGrid extends Sketch {
     this.addVar('edgeLength', { name: 'edgeLength', initialValue: 10.8, min: 1, max: 100, step: 0.1 }) // prettier-ignore
     this.addVar('angle', {
       name: 'angle',
-      initialValue: 30 * (Math.PI / 180),
-      min: 7.5 * (Math.PI / 180),
+      initialValue: deg30,
+      min: deg7p5,
       max: Math.PI,
-      step: 7.5 * (Math.PI / 180),
+      step: deg7p5,
     })
   }
 
@@ -81,8 +82,8 @@ export default class IsometricGrid extends Sketch {
     }
 
     // this.shadeCell(1, 3, 0.5)
-    // this.shadeCell(2, 0, 1, Math.PI / 2 - angle)
-    // this.shadeCell(2, 0, 1, Math.PI / 2 + angle)
+    // this.shadeCell(2, 0, 1, deg90 - angle)
+    // this.shadeCell(2, 0, 1, deg90 + angle)
 
     for (let i = 0; i < shadeAttempts; i++) {
       let x = randIntRange(this.xCols - 1)
@@ -103,7 +104,7 @@ export default class IsometricGrid extends Sketch {
       const key = `${x},${y}`
       if (this.shadedCells.includes(key)) continue
       else this.shadedCells.push(key)
-      this.shadeCell(x, y, randFloatRange(0.5, 1), Math.PI / 2 - angle)
+      this.shadeCell(x, y, randFloatRange(0.5, 1), deg90 - angle)
     }
 
     for (let i = 0; i < shadeAttempts; i++) {
@@ -112,7 +113,7 @@ export default class IsometricGrid extends Sketch {
       const key = `${x},${y}`
       if (this.shadedCells.includes(key)) continue
       else this.shadedCells.push(key)
-      this.shadeCell(x, y, randFloatRange(0.5, 1), Math.PI / 2 + angle)
+      this.shadeCell(x, y, randFloatRange(0.5, 1), deg90 + angle)
     }
   }
 

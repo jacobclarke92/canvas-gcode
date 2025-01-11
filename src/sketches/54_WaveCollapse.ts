@@ -1,3 +1,4 @@
+import { deg90 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { shuffle } from '../utils/arrayUtils'
@@ -439,12 +440,12 @@ export default class WaveCollapse extends Sketch {
       this.ctx.strokeCircle(centerPt, orbitRadius)
       this.ctx.strokeCircle(neighborCenter, orbitRadius)
       const offsetL = new Point(
-        Math.cos(angle - Math.PI / 2) * orbitRadius,
-        Math.sin(angle - Math.PI / 2) * orbitRadius
+        Math.cos(angle - deg90) * orbitRadius,
+        Math.sin(angle - deg90) * orbitRadius
       )
       const offsetR = new Point(
-        Math.cos(angle + Math.PI / 2) * orbitRadius,
-        Math.sin(angle + Math.PI / 2) * orbitRadius
+        Math.cos(angle + deg90) * orbitRadius,
+        Math.sin(angle + deg90) * orbitRadius
       )
       this.ctx.moveTo(centerPt.x + offsetL.x, centerPt.y + offsetL.y)
       this.ctx.lineTo(neighborCenter.x + offsetL.x, neighborCenter.y + offsetL.y)

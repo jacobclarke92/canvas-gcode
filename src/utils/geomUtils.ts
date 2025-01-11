@@ -1,3 +1,4 @@
+import { deg360 } from '../constants/angles'
 import type { IntPoint } from '../packages/Clipper/IntPoint'
 import Point from '../Point'
 import type { Line, LooseLine } from '../types'
@@ -16,15 +17,15 @@ export const mod = (a: number, n: number) => a - Math.floor(a / n) * n
 
 // https://stackoverflow.com/a/1878936/13326984
 // export const smallestSignedAngleDiff = (angle1: number, angle2: number): number => {
-//   const TAU = Math.PI * 2
+//   const TAU = deg360
 //   const a = mod(angle1 - angle2, TAU)
 //   const b = mod(angle2 - angle1, TAU)
 //   return a < b ? -a : b
 // }
 
 export const smallestSignedAngleDiff = (angle1: number, angle2: number): number => {
-  let diff = Math.abs(angle1 - angle2) % (Math.PI * 2)
-  if (diff > Math.PI) diff = Math.PI * 2 - diff
+  let diff = Math.abs(angle1 - angle2) % deg360
+  if (diff > Math.PI) diff = deg360 - diff
   return diff
 }
 

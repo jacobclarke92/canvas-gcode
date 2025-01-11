@@ -1,12 +1,10 @@
+import { deg90, deg180, deg360 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { getBezierPoints } from '../utils/geomUtils'
 import { randFloatRange, randIntRange } from '../utils/numberUtils'
 import { initPen, plotBounds } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
-
-const a90 = Math.PI / 2
-const a180 = Math.PI
 
 export default class ApartmentBlocks extends Sketch {
   init() {
@@ -291,7 +289,7 @@ export default class ApartmentBlocks extends Sketch {
       */
 
       if (type === 'party') {
-        this.ctx.strokePolygon(pt.x, pt.y + 1, 3, 2, angle + a90)
+        this.ctx.strokePolygon(pt.x, pt.y + 1, 3, 2, angle + deg90)
       } else {
         if (randFloatRange(1) > 0.5) continue
 
@@ -300,9 +298,9 @@ export default class ApartmentBlocks extends Sketch {
 
         this.ctx.moveTo(pt.x - pegW / 2, pt.y - pegH * 0.3)
         this.ctx.lineToRelativeAngle(angle, pegW)
-        this.ctx.lineToRelativeAngle(angle + a90, pegH)
-        this.ctx.lineToRelativeAngle(angle + a180, pegW)
-        this.ctx.lineToRelativeAngle(angle - a90, pegH)
+        this.ctx.lineToRelativeAngle(angle + deg90, pegH)
+        this.ctx.lineToRelativeAngle(angle + deg180, pegW)
+        this.ctx.lineToRelativeAngle(angle - deg90, pegH)
         this.ctx.stroke()
       }
     }
@@ -312,7 +310,7 @@ export default class ApartmentBlocks extends Sketch {
     const puffy = 0.75
     const cloudW = randFloatRange(10, 40)
     const cloudH = randFloatRange(cloudW * 0.75, cloudW * 0.25)
-    const aOffset = randFloatRange(0, Math.PI / 2)
+    const aOffset = randFloatRange(0, deg90)
     console.log(cloudW)
 
     // cloudW of 25 should have min around 10
@@ -320,7 +318,7 @@ export default class ApartmentBlocks extends Sketch {
     const pts: Point[] = []
 
     for (let i = 0; i < numPts; i++) {
-      const a = (i / numPts) * Math.PI * 2 + aOffset
+      const a = (i / numPts) * deg360 + aOffset
       pts.push(new Point(x + Math.cos(a) * cloudW, y + Math.sin(a) * cloudH))
     }
 
@@ -332,10 +330,10 @@ export default class ApartmentBlocks extends Sketch {
       const angle = Math.atan2(pt.y - prevPt.y, pt.x - prevPt.x)
       this.ctx.moveTo(prevPt.x, prevPt.y)
       this.ctx.bezierCurveTo(
-        prevPt.x + Math.cos(angle - a90) * puffDist,
-        prevPt.y + Math.sin(angle - a90) * puffDist,
-        pt.x + Math.cos(angle - a90) * puffDist,
-        pt.y + Math.sin(angle - a90) * puffDist,
+        prevPt.x + Math.cos(angle - deg90) * puffDist,
+        prevPt.y + Math.sin(angle - deg90) * puffDist,
+        pt.x + Math.cos(angle - deg90) * puffDist,
+        pt.y + Math.sin(angle - deg90) * puffDist,
         pt.x,
         pt.y
       )

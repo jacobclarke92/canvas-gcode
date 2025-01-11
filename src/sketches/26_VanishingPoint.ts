@@ -1,3 +1,4 @@
+import { deg45, deg90 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { randFloatRange, randInt, randIntRange } from '../utils/numberUtils'
@@ -39,7 +40,7 @@ export default class VanishingPoint extends Sketch {
     this.addVar('planeMaxSize', { initialValue: 50, min: 1, max: 250, step: 0.25 })
     this.addVar('planeSpacingThreshold', { initialValue: 1.5, min: 1, max: 10, step: 0.1 })
 
-    this.addVar('testRotation', { initialValue: 0, min: 0, max: Math.PI / 2, step: 0.001 })
+    this.addVar('testRotation', { initialValue: 0, min: 0, max: deg90, step: 0.001 })
   }
 
   initDraw(): void {
@@ -76,7 +77,7 @@ export default class VanishingPoint extends Sketch {
       const plane: Point[] = []
       this.ctx.beginPath()
       for (let a = 0; a < 4; a++) {
-        const angle = (a * Math.PI) / 2 + Math.PI / 4 + this.vars.testRotation
+        const angle = a * deg90 + deg45 + this.vars.testRotation
         const x = centerPoint.x + radius * Math.cos(angle)
         const y = centerPoint.y + radius * Math.sin(angle)
         plane.push(new Point(x, y))

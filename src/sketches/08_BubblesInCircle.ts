@@ -1,3 +1,4 @@
+import { deg360 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { initPen, penUp, plotBounds } from '../utils/penUtils'
@@ -92,7 +93,7 @@ export default class BubblesInCircle extends Sketch {
       return
     }
 
-    const angle = random() * Math.PI * 2
+    const angle = random() * deg360
     const dist = random() * this.radius
     const point = new Point(this.cx + Math.cos(angle) * dist, this.cy + Math.sin(angle) * dist)
 

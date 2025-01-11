@@ -1,3 +1,4 @@
+import { deg90 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { randIntRange } from '../utils/numberUtils'
@@ -226,8 +227,8 @@ export default class WaveCollapseSimple extends Sketch {
 
     if ([t, r, b, l].filter(Boolean).length === 1) {
       let angle = 0
-      if (t) angle = -Math.PI / 2
-      if (b) angle = Math.PI / 2
+      if (t) angle = -deg90
+      if (b) angle = deg90
       if (l) angle = Math.PI
       const gapAngle = Math.PI
       this.ctx.beginPath()
@@ -240,13 +241,13 @@ export default class WaveCollapseSimple extends Sketch {
         true
       )
       this.ctx.moveTo(
-        centerPt.x + Math.cos(angle - Math.PI / 2) * ((gridSize * thickness) / 2),
-        centerPt.y + Math.sin(angle - Math.PI / 2) * ((gridSize * thickness) / 2)
+        centerPt.x + Math.cos(angle - deg90) * ((gridSize * thickness) / 2),
+        centerPt.y + Math.sin(angle - deg90) * ((gridSize * thickness) / 2)
       )
       this.ctx.lineToRelativeAngle(angle, gridSize / 2)
       this.ctx.moveTo(
-        centerPt.x + Math.cos(angle + Math.PI / 2) * ((gridSize * thickness) / 2),
-        centerPt.y + Math.sin(angle + Math.PI / 2) * ((gridSize * thickness) / 2)
+        centerPt.x + Math.cos(angle + deg90) * ((gridSize * thickness) / 2),
+        centerPt.y + Math.sin(angle + deg90) * ((gridSize * thickness) / 2)
       )
       this.ctx.lineToRelativeAngle(angle, gridSize / 2)
       this.ctx.stroke()

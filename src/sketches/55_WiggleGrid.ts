@@ -1,5 +1,6 @@
 import * as clipperLib from 'js-angusj-clipper/web'
 
+import { deg45, deg360 } from '../constants/angles'
 import Path from '../Path'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
@@ -107,9 +108,9 @@ export default class WiggleGrid extends Sketch {
           const randRingOffset = gridEdges > 12 ? randIntRange(gridEdges, 0) : 0
           for (let i = 0; i < gridEdges + 1; i++) {
             const index = (i + randRingOffset) % gridEdges
-            const angle = (index / gridEdges) * Math.PI * 2
-            const x = this.cx + Math.cos(angle - Math.PI / 4) * gridRadius
-            const y = this.cy + Math.sin(angle - Math.PI / 4) * gridRadius
+            const angle = (index / gridEdges) * deg360
+            const x = this.cx + Math.cos(angle - deg45) * gridRadius
+            const y = this.cy + Math.sin(angle - deg45) * gridRadius
             if (i === 0) this.ctx.moveTo(x, y)
             else this.ctx.lineTo(x, y)
           }
@@ -128,7 +129,7 @@ export default class WiggleGrid extends Sketch {
           })
 
           if (!intersected) this.ctx.stroke()
-          else this.ctx.path = new Path()
+          else this.ctx.currentPath = new Path()
           gridRadius -= gridReduction
         }
 
@@ -144,7 +145,7 @@ export default class WiggleGrid extends Sketch {
 
       const ring: Point[] = []
       for (let t = 0; t < ringPts; t++) {
-        const baseAngle = (t / ringPts) * Math.PI * 2
+        const baseAngle = (t / ringPts) * deg360
         const basePt = new Point(
           this.cx + Math.cos(baseAngle) * baseRadius,
           this.cy + Math.sin(baseAngle) * baseRadius

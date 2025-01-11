@@ -1,5 +1,6 @@
 import * as clipperLib from 'js-angusj-clipper/web'
 
+import { deg90, deg360 } from '../constants/angles'
 import { clipper } from '../GCanvas'
 import Path from '../Path'
 import Point from '../Point'
@@ -67,8 +68,8 @@ export default class Housies extends Sketch {
     diameter: number
     sides: number
   }): void {
-    let angle = sides % 2 === 1 ? -(Math.PI * 2) / (sides * 4) : 0
-    const segmentAngle = (Math.PI * 2) / sides
+    let angle = sides % 2 === 1 ? -deg360 / (sides * 4) : 0
+    const segmentAngle = deg360 / sides
     const radius = (diameter / 2) * (1 + 1 / sides)
     for (let i = 0; i < sides; i++) {
       const x = centerX + Math.cos(angle) * radius
@@ -208,8 +209,8 @@ export default class Housies extends Sketch {
 
     this.ctx.stroke({ cutout: row > 0 })
 
-    const subPaths = this.ctx.path!.subPaths
-    if (!intersected) console.log('intersect path', this.ctx.path)
+    const subPaths = this.ctx.currentPath!.subPaths
+    if (!intersected) console.log('intersect path', this.ctx.currentPath)
 
     this.ctx.endPath()
 
@@ -224,7 +225,7 @@ export default class Housies extends Sketch {
         startY - topShapeOffsetY - topShapeHeight / 2
       )
       const angle = Point.angleBetween(bottomShapeCenter, topShapeCenter)
-      const perpAngle = angle + Math.PI / 2
+      const perpAngle = angle + deg90
       const bottomShapeSupportWidth = bottomShapeWidth * 0.5
       const topShapeSupportWidth = topShapeWidth * 0.5
 

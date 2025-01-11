@@ -1,3 +1,4 @@
+import { deg360 } from '../constants/angles'
 import { colors } from '../constants/colors'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
@@ -109,9 +110,9 @@ export default class Boids extends Sketch {
       step: 1,
     })
     this.addVar('visionConeAngle', {
-      initialValue: Math.PI * 2,
+      initialValue: deg360,
       min: 0.01,
-      max: Math.PI * 2,
+      max: deg360,
       step: 0.001,
     })
     this.addVar('herdAttraction', {
@@ -238,7 +239,7 @@ export default class Boids extends Sketch {
         i--
         continue
       }
-      const boid = new Boid(x, y, randFloatRange(3, 1), randFloatRange(Math.PI * 2))
+      const boid = new Boid(x, y, randFloatRange(3, 1), randFloatRange(deg360))
       this.boids.push(boid)
     }
   }

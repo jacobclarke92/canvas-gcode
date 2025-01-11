@@ -1,3 +1,4 @@
+import { deg2p5, deg360 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import type { Line } from '../types'
@@ -39,8 +40,8 @@ export default class SemiCircRing extends Sketch {
     this.addVar('circumferenceRange', {
       initialValue: 1.12900985988383,
       min: 0,
-      max: Math.PI * 2,
-      step: Math.PI / 64,
+      max: deg360,
+      step: deg2p5,
     })
     this.addVar('arcRadiusModifier', {
       initialValue: 1,
@@ -60,7 +61,7 @@ export default class SemiCircRing extends Sketch {
 
     // this.ctx.strokeCircle(new Point(this.cx, this.cy), 2)
 
-    const theta = (Math.PI * 2) / lines
+    const theta = deg360 / lines
     for (let i = 0; i < lines; i++) {
       let x = this.cx
       let y = this.cy

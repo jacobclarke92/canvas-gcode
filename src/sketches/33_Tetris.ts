@@ -1,3 +1,4 @@
+import { deg45, deg180 } from '../constants/angles'
 import { Sketch } from '../Sketch'
 import { seedNoise } from '../utils/noise'
 import { randFloat, randIntRange } from '../utils/numberUtils'
@@ -247,9 +248,9 @@ export default class Tetris extends Sketch {
       step: 0.01,
     })
     this.addVar('rotationDriftRange', {
-      initialValue: Math.PI / 4,
+      initialValue: deg45,
       min: 0,
-      max: Math.PI,
+      max: deg180,
       step: 0.001,
     })
   }

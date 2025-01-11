@@ -1,3 +1,4 @@
+import { deg360 } from '../constants/angles'
 import { Sketch } from '../Sketch'
 import { perlin2, seedNoise } from '../utils/noise'
 import { initPen, penUp } from '../utils/penUtils'
@@ -128,7 +129,7 @@ export default class PerlinLines extends Sketch {
       const yPos = outerGap + y * spaceY
 
       const theta =
-        perlin2((x + perlinOffsetX) / perlinDivX, (y + perlinOffsetY) / perlinDivY) * Math.PI * 2
+        perlin2((x + perlinOffsetX) / perlinDivX, (y + perlinOffsetY) / perlinDivY) * deg360
       const pt1 = {
         x: xPos + Math.cos(theta) * (adjustedSize + drawOffsetStart),
         y: yPos + Math.sin(theta) * (adjustedSize + drawOffsetStart),

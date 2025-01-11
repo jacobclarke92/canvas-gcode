@@ -46,7 +46,7 @@ export default class GCodeTest extends Sketch {
     this.ctx.driver.comment('Drawing arc')
     debugText(this.ctx, 'Arc', [70, 50 - 2], { size: 2 })
     this.ctx.beginPath()
-    this.ctx.arc(70, 50, 5, Math.PI / 2, -Math.PI * 0.75, true)
+    this.ctx.arc(70, 50, 5, Math.PI / 2, -deg135, true)
     this.ctx.stroke()
     this.ctx.closePath()
 

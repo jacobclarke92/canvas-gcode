@@ -1,3 +1,4 @@
+import { deg360 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { debugDot } from '../utils/debugUtils'
@@ -60,7 +61,7 @@ export default class RadialDownsampling extends Sketch {
     )
 
     for (let t = 0; t < ringPts; t++) {
-      const angle = (t / ringPts) * Math.PI * 2
+      const angle = (t / ringPts) * deg360
       const pt = new Point(this.cx + Math.cos(angle) * radius, this.cy + Math.sin(angle) * radius)
       this.ctx.beginPath()
       if (this.vs.useCircle.value) {

@@ -1,5 +1,6 @@
 import * as clipperLib from 'js-angusj-clipper/web'
 
+import { deg90 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { debugDot } from '../utils/debugUtils'
@@ -243,7 +244,7 @@ export default class VoronoiCells extends Sketch {
         const v2 = halfEdge.getEndPoint()
         const angle = Math.atan2(v2.y - v1.y, v2.x - v1.x)
         if (!this.vs.drawBorder.value) {
-          if (Math.abs(angle % (Math.PI / 2)) <= 0.00000001) continue
+          if (Math.abs(angle % deg90) <= 0.00000001) continue
         }
         if (firstLine) {
           this.ctx.moveTo(v1.x, v1.y)
