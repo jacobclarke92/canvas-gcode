@@ -1,5 +1,6 @@
 import * as clipperLib from 'js-angusj-clipper/web'
 
+import Path from '../Path'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { debugDot } from '../utils/debugUtils'
@@ -118,26 +119,17 @@ export default class WiggleGrid extends Sketch {
             else this.ctx.lineTo(pt.x, pt.y)
           }
 
-          // this.ctx.rect(gutter, gutter, this.cw - gutter * 2, this.ch - gutter * 2)
-          let err = false
-          try {
-            this.ctx.clipCurrentPath({
-              clipType: clipperLib.ClipType.Intersection,
-              pathDivisions,
-              subjectIsOpen: true,
-              inputsAreOpen: false,
-              clipFillType: clipperLib.PolyFillType.NonZero,
-            })
-          } catch (e) {
-            err = true
-          }
-          if (!err) {
-            this.ctx.stroke()
-            this.ctx.closePath()
-          }
-          gridRadius -= gridReduction
+          const { intersected } = this.ctx.clipCurrentPath({
+            clipType: clipperLib.ClipType.Intersection,
+            pathDivisions,
+            subjectIsOpen: true,
+            inputsAreOpen: false,
+            clipFillType: clipperLib.PolyFillType.NonZero,
+          })
 
-          // gridRadius = 0
+          if (!intersected) this.ctx.stroke()
+          else this.ctx.path = new Path()
+          gridRadius -= gridReduction
         }
 
         penUp(this)
@@ -191,7 +183,7 @@ export default class WiggleGrid extends Sketch {
         }
       }
       this.ctx.stroke()
-      this.ctx.closePath()
+      this.ctx.endPath()
 
       this.drawCount++
       if (this.drawCount === rings) {

@@ -512,7 +512,6 @@ export default class Genuary2 extends Sketch {
           return
         }
         this.ctx.stroke()
-        this.ctx.closePath()
       }
       this.offsetRepeatCount++
     }

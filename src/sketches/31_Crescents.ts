@@ -86,8 +86,8 @@ export default class Crescents extends Sketch {
                 break
             }
           }
-          this.ctx.stroke()
           this.ctx.closePath()
+          this.ctx.stroke()
           this.redrawnCount++
         } else {
           penUp(this)
@@ -137,6 +137,5 @@ export default class Crescents extends Sketch {
     }
     this.crescents.push({ bounds, subPaths: this.ctx.path.subPaths })
     this.ctx.stroke()
-    this.ctx.closePath()
   }
 }

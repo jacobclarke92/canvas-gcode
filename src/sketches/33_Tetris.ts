@@ -1,30 +1,9 @@
-import Point from '../Point'
 import { Sketch } from '../Sketch'
-import type { Line } from '../types'
-import { debugDot } from '../utils/debugUtils'
-import {
-  circleOverlapsCircles,
-  getClosestButNotSamePoint,
-  getClosestPoint,
-  getLineIntersectionPoints,
-  getPointsWhereLineIntersectsCircle,
-  lineIntersectsWithAny,
-  pointInCircles,
-} from '../utils/geomUtils'
 import { seedNoise } from '../utils/noise'
-import {
-  angleDiff,
-  degToRad,
-  radToDeg,
-  randFloat,
-  randFloatRange,
-  randIntRange,
-  smallestAngleDiff,
-} from '../utils/numberUtils'
-import { lineToPoints, sameFloat } from '../utils/pathUtils'
+import { randFloat, randIntRange } from '../utils/numberUtils'
 import { initPen, penUp, plotBounds } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
-import Range, { BooleanRange } from './tools/Range'
+import { BooleanRange } from './tools/Range'
 
 const tetrisPieces = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'] as const
 type TetrisPiece = (typeof tetrisPieces)[number]
