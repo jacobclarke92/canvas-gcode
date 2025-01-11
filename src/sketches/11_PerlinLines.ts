@@ -150,7 +150,7 @@ export default class PerlinLines extends Sketch {
       }
 
       this.ctx.stroke()
-      this.ctx.closePath()
+      this.ctx.endPath()
     }
     this.drawCount += this.vs.speedUp.value
   }

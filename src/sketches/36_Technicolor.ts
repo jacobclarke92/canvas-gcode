@@ -265,7 +265,7 @@ export default class Technicolor extends Sketch {
     }
     this.ctx.lineTo(vertices[0].x, vertices[0].y)
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
   }
 
   finalizeDraw(): void {
@@ -278,7 +278,7 @@ export default class Technicolor extends Sketch {
         if (!!this.vs.circleInstead.value && !Array.isArray(shape)) {
           this.ctx.beginPath()
           this.ctx.strokeCircle(shape.pos.x, shape.pos.y, shape.radius)
-          this.ctx.closePath()
+          this.ctx.endPath()
         } else {
           this.drawVertices(shape as Vector[])
         }

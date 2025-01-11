@@ -104,7 +104,7 @@ export default class SpiralingProportional extends Sketch {
       this.ctx.moveTo(this.lastPoint.x, this.lastPoint.y)
       this.ctx.lineTo(point.x, point.y)
       this.ctx.stroke()
-      this.ctx.closePath()
+      this.ctx.endPath()
 
       this.lastPoint = point
     }

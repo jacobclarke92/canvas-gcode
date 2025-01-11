@@ -86,7 +86,7 @@ export default class Genuary6 extends Sketch {
         this.ctx.lineTo(...pt.toArray())
       }
       this.ctx.stroke()
-      this.ctx.closePath()
+      this.ctx.endPath()
     }
 
     if (!this.vs.disableCutout.value) {
@@ -97,7 +97,7 @@ export default class Genuary6 extends Sketch {
     this.ctx.moveTo(0, this.ch * horizonHeight)
     this.ctx.lineTo(this.cw, this.ch * horizonHeight)
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
   }
 
   drawBuilding({ facing }: { facing: 'l' | 'r' }): void {
@@ -133,7 +133,7 @@ export default class Genuary6 extends Sketch {
     this.ctx.lineToRelative(lrSign * buildingWidth, 0)
     this.ctx.lineToRelative(0, buildingHeight)
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
 
     // double line
     this.ctx.beginPath()
@@ -141,7 +141,7 @@ export default class Genuary6 extends Sketch {
     this.ctx.lineToRelative(lrSign * (buildingWidth - doubleDist), 0)
     this.ctx.lineToRelative(0, buildingHeight - doubleDist)
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
 
     // Building roof
     this.ctx.beginPath()
@@ -150,7 +150,7 @@ export default class Genuary6 extends Sketch {
     this.ctx.lineToRelative(0, -buildingGutter)
     this.ctx.lineToRelative(lrSign * -(buildingWidth + buildingGutter), 0)
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
 
     // double line
     this.ctx.beginPath()
@@ -162,7 +162,7 @@ export default class Genuary6 extends Sketch {
     this.ctx.lineToRelative(0, -(buildingGutter + doubleDist * 2))
     this.ctx.lineToRelative(lrSign * -(buildingWidth + buildingGutter + doubleDist), 0)
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
 
     // Roof railing
 
@@ -215,41 +215,41 @@ export default class Genuary6 extends Sketch {
       this.ctx.moveTo(x, y + segS)
       this.ctx.lineToRelative(s, 0)
       this.ctx.stroke()
-      this.ctx.closePath()
+      this.ctx.endPath()
 
       this.ctx.beginPath()
       this.ctx.moveTo(x + s, y + segS + sil)
       this.ctx.lineToRelative(-s, 0)
       this.ctx.stroke()
-      this.ctx.closePath()
+      this.ctx.endPath()
     } else {
       this.ctx.beginPath()
       this.ctx.moveTo(x, y + segS)
       this.ctx.lineToRelative(segS, 0)
       this.ctx.lineToRelative(0, -segS)
       this.ctx.stroke()
-      this.ctx.closePath()
+      this.ctx.endPath()
 
       this.ctx.beginPath()
       this.ctx.moveTo(x + segS + sil, y)
       this.ctx.lineToRelative(0, segS)
       this.ctx.lineToRelative(segS, 0)
       this.ctx.stroke()
-      this.ctx.closePath()
+      this.ctx.endPath()
 
       this.ctx.beginPath()
       this.ctx.moveTo(x + s, y + segS + sil)
       this.ctx.lineToRelative(-segS, 0)
       this.ctx.lineToRelative(0, segS)
       this.ctx.stroke()
-      this.ctx.closePath()
+      this.ctx.endPath()
 
       this.ctx.beginPath()
       this.ctx.moveTo(x + segS, y + s)
       this.ctx.lineToRelative(0, -segS)
       this.ctx.lineToRelative(-segS, 0)
       this.ctx.stroke()
-      this.ctx.closePath()
+      this.ctx.endPath()
     }
   }
 
@@ -282,7 +282,7 @@ export default class Genuary6 extends Sketch {
       0
     )
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
 
     this.drawRailings({
       x: facing === 'l' ? buildingWidth : this.cw - buildingWidth - (balconyWidth - railingWidth),
@@ -320,7 +320,7 @@ export default class Genuary6 extends Sketch {
       this.ctx.lineToRelative(poleWidth, 0)
       this.ctx.lineToRelative(0, height)
       this.ctx.stroke()
-      this.ctx.closePath()
+      this.ctx.endPath()
     }
   }
 
@@ -357,7 +357,7 @@ export default class Genuary6 extends Sketch {
         this.ctx.beginPath()
         this.ctx.polygon(pt.x, pt.y + 1, 3, 2, angle + a90)
         this.ctx.stroke({ cutout: !this.vs.disableCutout.value })
-        this.ctx.closePath()
+        this.ctx.endPath()
       } else {
         if (randFloatRange(1) > 0.5) continue
 
@@ -371,7 +371,7 @@ export default class Genuary6 extends Sketch {
         this.ctx.lineToRelativeAngle(angle + a180, pegW)
         this.ctx.lineToRelativeAngle(angle - a90, pegH)
         this.ctx.stroke({ cutout: !this.vs.disableCutout.value })
-        this.ctx.closePath()
+        this.ctx.endPath()
       }
     }
 
@@ -386,7 +386,7 @@ export default class Genuary6 extends Sketch {
       rightPt.y
     )
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
   }
 
   // drawCloud({ x, y }: { x: number; y: number }): void {

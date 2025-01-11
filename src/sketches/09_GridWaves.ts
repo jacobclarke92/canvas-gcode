@@ -45,7 +45,7 @@ export default class GridWaves extends Sketch {
         this.ctx.beginPath()
         this.ctx.rect(x, y, boxWidth, boxWidth)
         this.ctx.stroke()
-        this.ctx.closePath()
+        this.ctx.endPath()
         x += boxWidth + gap
       }
       y += boxWidth + gap

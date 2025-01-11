@@ -119,7 +119,7 @@ export default class AgeRings extends Sketch {
       }
     }
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
 
     this.drawCount++
   }

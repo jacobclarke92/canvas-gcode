@@ -155,7 +155,7 @@ export default class WaveCollapse extends Sketch {
         this.ctx.lineTo(this.offsetX + gutter + gridSize * this.cols, y)
         this.ctx.stroke()
       }
-      this.ctx.closePath()
+      this.ctx.endPath()
       // Finish drawing debug grid
 
       const x = Math.floor(this.cols / 2)

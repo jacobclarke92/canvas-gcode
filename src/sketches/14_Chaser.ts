@@ -97,7 +97,7 @@ export default class Chaser extends Sketch {
         (this.point.y - this.cy) / this.vs.downscaleDrawing.value + this.cy
       )
       this.ctx.stroke()
-      this.ctx.closePath()
+      this.ctx.endPath()
       // this.point.x = wrap(this.point.x, this.cw)
       // this.point.y = wrap(this.point.y, this.ch)
       this.angleChangeCountdown--

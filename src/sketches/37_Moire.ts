@@ -136,7 +136,7 @@ export default class Moire extends Sketch {
         this.ctx.moveTo(pts[x % 2].x, pts[x % 2].y)
         this.ctx.lineTo(pts[(x + 1) % 2].x, pts[(x + 1) % 2].y)
         this.ctx.stroke()
-        this.ctx.closePath()
+        this.ctx.endPath()
       }
       angle -= Math.PI / 2
       for (let y = 1; y < lines; y++) {
@@ -164,7 +164,7 @@ export default class Moire extends Sketch {
         this.ctx.moveTo(pts[y % 2].x, pts[y % 2].y)
         this.ctx.lineTo(pts[(y + 1) % 2].x, pts[(y + 1) % 2].y)
         this.ctx.stroke()
-        this.ctx.closePath()
+        this.ctx.endPath()
       }
     }
     penUp(this)

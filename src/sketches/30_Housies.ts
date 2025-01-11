@@ -211,7 +211,7 @@ export default class Housies extends Sketch {
     const subPaths = this.ctx.path!.subPaths
     if (!intersected) console.log('intersect path', this.ctx.path)
 
-    this.ctx.closePath()
+    this.ctx.endPath()
 
     // Draw supports
     if (!intersected) {
@@ -296,7 +296,7 @@ export default class Housies extends Sketch {
     this.ctx.arcToRelative(doorWidth / 2, -doorWidth * 2, doorWidth, 0, doorWidth / 2)
     this.ctx.lineTo(startX + bottomShapeOffsetX + bottomShapeWidth / 2 + doorWidth / 2, startY)
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
     this.ctx.restore()
 
     // Draw some windows
@@ -397,7 +397,7 @@ export default class Housies extends Sketch {
               windowPt.y + windowHeight * 0.4
             )
             this.ctx.stroke()
-            this.ctx.closePath()
+            this.ctx.endPath()
           }
         }
       }

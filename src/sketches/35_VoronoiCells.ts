@@ -256,7 +256,7 @@ export default class VoronoiCells extends Sketch {
         endType: clipperLib.EndType.ClosedPolygon,
         precision: 10,
       })
-      this.ctx.closePath()
+      this.ctx.endPath()
       if (this.vs.showDebugDots.value) debugDot(this.ctx, new Point(cell.site.x, cell.site.y))
     }
   }

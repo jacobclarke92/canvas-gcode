@@ -94,7 +94,7 @@ export default class SemiCircRing extends Sketch {
         )
         arcAngleStart = arcAngleEnd
         this.ctx.stroke()
-        this.ctx.closePath()
+        this.ctx.endPath()
         // debugDot(this.ctx, new Point(x, y))
       }
       // this.ctx.lineTo(

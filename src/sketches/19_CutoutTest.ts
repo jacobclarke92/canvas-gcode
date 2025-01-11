@@ -38,7 +38,7 @@ export default class CutoutTest extends Sketch {
     this.ctx.lineTo(30 + 28, 40 + 14)
     this.ctx.lineTo(30 + 28, 25 + 14)
     this.ctx.stroke({ cutout: true })
-    this.ctx.closePath()
+    this.ctx.endPath()
   }
 
   draw(increment: number): void {

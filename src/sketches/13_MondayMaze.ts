@@ -80,7 +80,7 @@ export default class MondayMaze extends Sketch {
 
       this.ctx.lineTo(x + Math.cos(angle) * len, y + Math.sin(angle) * len)
       this.ctx.stroke()
-      this.ctx.closePath()
+      this.ctx.endPath()
 
       this.i++
     }

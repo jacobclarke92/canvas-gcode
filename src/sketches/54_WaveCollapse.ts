@@ -192,7 +192,7 @@ export default class WaveCollapse extends Sketch {
         this.ctx.lineTo(this.offsetX + gutter + gridSize * this.cols, y)
         this.ctx.stroke()
       }
-      this.ctx.closePath()
+      this.ctx.endPath()
       // Finish drawing debug grid
 
       const x = Math.floor(this.cols / 2)
@@ -415,7 +415,7 @@ export default class WaveCollapse extends Sketch {
         this.ctx.beginPath()
         this.ctx.strokeCircle(centerPt, (gridSize / 2 / circles) * i)
         this.ctx.stroke()
-        this.ctx.closePath()
+        this.ctx.endPath()
       }
 
       cell.drawn = true
@@ -451,7 +451,7 @@ export default class WaveCollapse extends Sketch {
       this.ctx.moveTo(centerPt.x + offsetR.x, centerPt.y + offsetR.y)
       this.ctx.lineTo(neighborCenter.x + offsetR.x, neighborCenter.y + offsetR.y)
       this.ctx.stroke()
-      this.ctx.closePath()
+      this.ctx.endPath()
 
       neighbor.drawn = true
       cell.drawn = true

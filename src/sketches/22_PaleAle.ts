@@ -88,7 +88,7 @@ export default class PaleAle extends Sketch {
         this.ctx.lineTo(gridSize * this.cols, y)
         this.ctx.stroke()
       }
-      this.ctx.closePath()
+      this.ctx.endPath()
       // Finish drawing debug grid
     }
 
@@ -146,7 +146,7 @@ export default class PaleAle extends Sketch {
       this.ctx.strokeStyle = '#ff0000'
       this.ctx.rect(pos[0] * gridSize - 0.25, pos[1] * gridSize - 0.25, 0.5, 0.5)
       this.ctx.stroke()
-      this.ctx.closePath()
+      this.ctx.endPath()
       this.ctx.strokeStyle = '#ffffff'
     }
   }
@@ -227,7 +227,7 @@ export default class PaleAle extends Sketch {
 
     if (debugColor) this.ctx.strokeStyle = debugColor
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
     if (debugColor) this.ctx.strokeStyle = '#ffffff'
   }
 
@@ -252,7 +252,7 @@ export default class PaleAle extends Sketch {
     }
     if (debugColor) this.ctx.strokeStyle = debugColor
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
 
     if (this.vs.displayArrows.value) {
       const dir = Math.atan2((corner || from)[1] - to[1], (corner || from)[0] - to[0])

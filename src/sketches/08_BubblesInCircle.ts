@@ -55,7 +55,7 @@ export default class BubblesInCircle extends Sketch {
     this.ctx.beginPath()
     this.ctx.circle(this.cx, this.cy, this.radius)
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
   }
 
   draw(increment: number): void {
@@ -75,7 +75,7 @@ export default class BubblesInCircle extends Sketch {
         this.ctx.beginPath()
         this.ctx.circle(this.cx, this.cy, this.radius)
         this.ctx.stroke()
-        this.ctx.closePath()
+        this.ctx.endPath()
         this.reordered = true
       } else {
         if (this.redrawnCount < this.circles.length) {
@@ -83,7 +83,7 @@ export default class BubblesInCircle extends Sketch {
           this.ctx.beginPath()
           this.ctx.circle(circle.position.x, circle.position.y, circle.radius)
           this.ctx.stroke()
-          this.ctx.closePath()
+          this.ctx.endPath()
           this.redrawnCount++
         } else {
           penUp(this)
@@ -130,7 +130,7 @@ export default class BubblesInCircle extends Sketch {
       this.ctx.beginPath()
       this.ctx.circle(point.x, point.y, newRadius)
       this.ctx.stroke()
-      this.ctx.closePath()
+      this.ctx.endPath()
     }
   }
 }

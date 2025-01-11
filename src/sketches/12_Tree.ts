@@ -201,7 +201,7 @@ export default class Tree extends Sketch {
       .add(new Point(Math.cos(angle) * length, Math.sin(angle) * length))
     this.ctx.lineTo(endPoint.x, endPoint.y)
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
     return endPoint
   }
 
@@ -219,6 +219,6 @@ export default class Tree extends Sketch {
       bloomSize
     )
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
   }
 }

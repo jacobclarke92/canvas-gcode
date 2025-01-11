@@ -105,7 +105,7 @@ export default class Sunflower extends Sketch {
         )
         this.ctx.stroke()
       }
-      this.ctx.closePath()
+      this.ctx.endPath()
     }
     this.drawCount++
 

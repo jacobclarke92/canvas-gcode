@@ -58,7 +58,7 @@ export default class BezierScribbles extends Sketch {
     this.ctx.moveTo(this.lastPoint.x, this.lastPoint.y)
     this.ctx.bezierCurveTo(midPoint.x, midPoint.y, midPoint.x, midPoint.y, endPoint.x, endPoint.y)
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
 
     this.lastPoint = endPoint.clone()
     this.lastAnchorPoint = midPoint.clone()

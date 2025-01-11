@@ -85,7 +85,7 @@ export default class VanishingPoint extends Sketch {
       }
       this.ctx.lineTo(plane[0].x, plane[0].y)
       this.ctx.stroke()
-      this.ctx.closePath()
+      this.ctx.endPath()
       this.planes.push(plane as [Point, Point, Point, Point])
 
       this.vanishingPoints.forEach((vp) => {
@@ -109,7 +109,7 @@ export default class VanishingPoint extends Sketch {
           this.ctx.moveTo(pt.x, pt.y)
           this.ctx.lineTo(vp.x, vp.y)
           this.ctx.stroke({ debug: false /*i === 0 || i === 2*/ })
-          this.ctx.closePath()
+          this.ctx.endPath()
         })
       })
     }
@@ -123,7 +123,7 @@ export default class VanishingPoint extends Sketch {
         this.ctx.lineTo(plane[3].x, plane[3].y)
         this.ctx.lineTo(plane[0].x, plane[0].y)
         this.ctx.stroke({ cutout: true })
-        this.ctx.closePath()
+        this.ctx.endPath()
       })
     }
   }

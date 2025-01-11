@@ -260,7 +260,7 @@ export default class VoronoiBoi extends Sketch {
       this.ctx.lineTo(edge.vertex2.x, edge.vertex2.y)
     }
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
 
     if (this.vs.showDebugDots.value)
       this.sites.forEach((site) => debugDot(this.ctx, new Point(site.x, site.y)))

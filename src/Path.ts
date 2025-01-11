@@ -128,8 +128,8 @@ export default class Path extends ClipperPath {
     const subjectPolygons = this.toPolygons(scale, divisions)
     const clipPolygons = clipRegion.toPolygons(scale, divisions)
 
-    console.log(subjectPolygons)
-    console.log(clipPolygons)
+    // console.log(subjectPolygons)
+    // console.log(clipPolygons)
     // Clean both
     // const subjPolys = Clipper.CleanPolygons(subjPolys, 1);
     // const clipPolys = Clipper.CleanPolygons(clipPolys, 1);
@@ -149,7 +149,7 @@ export default class Path extends ClipperPath {
     const clipped = new Paths()
     clipper.execute(clipType, clipped, PolyFillType.nonZero) // dunno if evenOdd is right: ;
 
-    console.log('clipped', clipped)
+    // console.log('clipped', clipped)
 
     const path = new Path()
     path.fromPolygons(clipped, scale)

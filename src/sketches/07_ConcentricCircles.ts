@@ -103,7 +103,7 @@ export default class ConcentricCircles extends Sketch {
         //   false
         // )
         this.ctx.stroke()
-        this.ctx.closePath()
+        this.ctx.endPath()
       }
 
       this.theta += this.vs.rotateSpeed.value

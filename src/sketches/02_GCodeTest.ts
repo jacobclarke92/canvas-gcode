@@ -16,7 +16,7 @@ export default class GCodeTest extends Sketch {
     this.ctx.moveTo(10, 10)
     this.ctx.lineTo(20, 10)
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
 
     this.ctx.driver.comment('Drawing joined line')
     debugText(this.ctx, 'Joined line', [20, 40 - 2], { size: 2 })
@@ -25,12 +25,13 @@ export default class GCodeTest extends Sketch {
     this.ctx.lineTo(25, 40)
     this.ctx.lineTo(30, 45)
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
 
     this.ctx.driver.comment('Drawing rect outline')
     debugText(this.ctx, 'Rect outline', [20, 20 - 2], { size: 2 })
     this.ctx.strokeRect(20, 20, 5, 5)
 
+    /*
     this.ctx.driver.comment('Drawing rect fill')
     debugText(this.ctx, 'Rect fill', [30, 20 - 2], { size: 2 })
     this.ctx.fillRect(30, 20, 5, 5)
@@ -65,8 +66,6 @@ export default class GCodeTest extends Sketch {
     this.ctx.stroke()
     this.ctx.closePath()
 
-    /*
-     */
 
     this.ctx.driver.comment('Drawing concentric circles')
     debugText(this.ctx, 'Concentric circles', [100, 30 - 20 - 2], { size: 2 })
@@ -89,6 +88,12 @@ export default class GCodeTest extends Sketch {
     for (let i = 0; i < 5; i++) {
       this.ctx.strokeOffsetPath(-1)
     }
+      */
+
+    this.ctx.beginPath()
+    this.ctx.polygon(120, 80, 3, 2, 0)
+    this.ctx.stroke({ cutout: true })
+    this.ctx.endPath()
 
     // // this.ctx.strokeCircle(100, 30, 20)
     // this.ctx.clearRect(100, 35, 20, 20)

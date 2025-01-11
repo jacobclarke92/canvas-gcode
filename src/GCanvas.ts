@@ -229,6 +229,7 @@ export default class GCanvas {
   }
 
   public beginPath() {
+    if (this.enableCutouts && this.path?.current) this.pathHistory.push(this.path.current.clone())
     this.path = new Path()
     this.ctx?.beginPath()
   }
@@ -525,7 +526,7 @@ export default class GCanvas {
     this.beginPath()
     this.rect(x, y, w, h)
     this.stroke(options ? { ...options, cutout: false } : undefined)
-    this.closePath()
+    // this.endPath()
     if (options?.cutout === clipperLib.ClipType.Union) this.clearRect(x, y, w, h)
   }
 
@@ -559,7 +560,7 @@ export default class GCanvas {
     this.beginPath()
     this.rectCentered(x, y, w, h)
     this.stroke(options ? { ...options, cutout: false } : undefined)
-    this.closePath()
+    // this.endPath()
     if (options?.cutout === clipperLib.ClipType.Union) this.clearRect(x, y, w, h)
   }
 
@@ -591,7 +592,7 @@ export default class GCanvas {
     this.beginPath()
     this.rect(x, y, w, h)
     this.fill()
-    this.closePath()
+    // this.endPath()
   }
 
   public fillRectCentered(
@@ -604,7 +605,7 @@ export default class GCanvas {
     this.beginPath()
     this.rectCentered(x, y, w, h)
     this.fill()
-    this.closePath()
+    // this.endPath()
   }
 
   public circle: OverloadedFunctionWithOptionals<
@@ -638,7 +639,7 @@ export default class GCanvas {
     this.beginPath()
     this.circle(x, y, radius)
     this.stroke(options ? { ...options, cutout: false } : undefined)
-    this.closePath()
+    // this.endPath()
   }
 
   public fillCircle(...args: [pt: Point, radius: number] | [x: number, y: number, radius: number]) {
@@ -649,7 +650,7 @@ export default class GCanvas {
     this.circle(x, y, radius)
     // TODO: spiral inwards instead?
     this.fill()
-    this.closePath()
+    // this.endPath()
   }
 
   public strokeLine(...args: [Point, Point] | [x1: number, y1: number, x2: number, y2: number]) {
@@ -661,7 +662,7 @@ export default class GCanvas {
     this.moveTo(x1, y1)
     this.lineTo(x2, y2)
     this.stroke()
-    this.closePath()
+    // this.endPath()
   }
 
   public triangle(
@@ -690,7 +691,7 @@ export default class GCanvas {
     this.moveTo(x1, y1)
     this.lineTo(x2, y2)
     this.lineTo(x3, y3)
-    this.closePath()
+    // this.endPath()
   }
 
   public strokeTriangle(
@@ -818,18 +819,7 @@ export default class GCanvas {
       let path = this.path
 
       if (cutout) {
-        if (this.pathHistory.length > 0) {
-          this.cutOutShape(path)
-          /*
-          const currentLines = convertPointsToEdges(path.getPoints())
-          console.log('lines making up current shape:', currentLines)
-          console.log('previously stored shapes: ', this.pathHistory.length)
-          for (let i = this.pathHistory.length - 1; i >= 0; i--) {
-            const compareLines = convertPointsToEdges(this.pathHistory[i].getPoints())
-            console.log(`history item ${i} lines:`, compareLines)
-          }
-          */
-        }
+        if (this.pathHistory.length > 0) this.cutOutShape(path)
       }
 
       this.save()
@@ -912,8 +902,6 @@ export default class GCanvas {
     this.motion.reset()
     this.driver.reset()
 
-    // console.log(cutoutRectPtsTransformed)
-
     for (let i = 0; i < this.pathHistory.length; i++) {
       const subPath = this.pathHistory[i]
       const closed = subPath.isClosed()
@@ -923,16 +911,19 @@ export default class GCanvas {
         x: Math.round(pt.x * SCALE),
         y: Math.round(pt.y * SCALE),
       }))
-      // console.log(oldPtsTransformed)
 
       if (clipper) {
-        // const myClipper = new clipper.instance.Clipper(0)
-        const cleaned = closed ? oldPtsTransformed : clipper.cleanPolygon(oldPtsTransformed)
+        const cleaned =
+          closed || oldPtsTransformed.length < 3
+            ? oldPtsTransformed
+            : clipper.cleanPolygon(oldPtsTransformed)
         const subject = cleaned.length ? cleaned : oldPtsTransformed
 
         if (cleaned.length !== oldPtsTransformed.length) {
-          console.log('cleaned', cleaned, 'old', oldPtsTransformed)
+          console.log('cleaned:', cleaned, 'original:', oldPtsTransformed)
         }
+
+        if (!cleaned.length) continue
 
         try {
           const diffPath = clipper.clipToPolyTree({
@@ -943,27 +934,30 @@ export default class GCanvas {
             clipFillType: clipperLib.PolyFillType.NonZero,
           })
 
-          const lengthDiff = Math.abs(subject.length - diffPath.total)
-          if (lengthDiff > 0 && cleaned.length !== 0) {
-            // const pts = []
-            subPath.pointsCache[DEFAULT_DIVISIONS] = []
-            subPath.hasBeenCutInto = true
-            subPath.actions = []
-            let node = diffPath.getFirst()
-            while (node) {
-              const pts = node.contour.map((pt) => new Point(pt.x / SCALE, pt.y / SCALE))
+          subPath.pointsCache[DEFAULT_DIVISIONS] = []
+          subPath.hasBeenCutInto = true
+          subPath.actions = []
+          let node = diffPath.getFirst()
+          while (node) {
+            const pts = node.contour.map((pt) => new Point(pt.x / SCALE, pt.y / SCALE))
+            subPath.addAction({
+              type: 'MOVE_TO',
+              args: [pts[0].x, pts[0].y],
+            })
+            for (let i = 1; i < pts.length; i++) {
+              const pt = pts[i]
               subPath.addAction({
-                type: 'MOVE_TO',
+                type: 'LINE_TO',
+                args: [pt.x, pt.y],
+              })
+            }
+            if (!node.isOpen) {
+              subPath.addAction({
+                type: 'LINE_TO',
                 args: [pts[0].x, pts[0].y],
               })
-              for (const pt of pts)
-                subPath.addAction({
-                  type: 'LINE_TO',
-                  args: [pt.x, pt.y],
-                })
-
-              node = node.getNext()
             }
+            node = node.getNext()
           }
         } catch (e) {
           console.log('unable to clip shape', subPath)
@@ -1034,9 +1028,14 @@ export default class GCanvas {
     this.cutOutShape(cutoutCircle)
   }
 
+  public endPath() {
+    if (this.enableCutouts && this.path?.current) this.pathHistory.push(this.path.current.clone())
+    this.path = undefined
+  }
+
   public closePath() {
     this.path.close()
-    if (this.enableCutouts && this.path.current) this.pathHistory.push(this.path.current.clone())
+    if (this.enableCutouts && this.path?.current) this.pathHistory.push(this.path.current.clone())
     this.ctx?.closePath()
   }
 
@@ -1089,7 +1088,6 @@ export default class GCanvas {
       clipFillType,
     })
 
-    // console.log('diffPath', diffPath)
     const intersected = diffPath.total < paths.length
 
     let node = diffPath.getFirst()
@@ -1098,7 +1096,6 @@ export default class GCanvas {
 
     const ptPts: Point[][] = []
     while (node) {
-      // console.log('contour', node.contour)
       const pts = node.contour.map((pt) => new Point(pt.x / detailScale, pt.y / detailScale))
       this.path.subPaths.push(new SubPath(pts))
       ptPts.push(pts)
@@ -1161,7 +1158,7 @@ export default class GCanvas {
           this.lineTo(offsetPath[i].x, offsetPath[i].y)
         }
         this.stroke()
-        this.closePath()
+        // this.endPath()
       }
     }
   }
