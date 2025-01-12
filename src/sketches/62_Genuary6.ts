@@ -1,11 +1,11 @@
 import * as clipperLib from 'js-angusj-clipper/web'
 
-import { deg15, deg20, deg90, deg180, deg360 } from '../constants/angles'
+import { deg5, deg10, deg20, deg30, deg90, deg180, deg360 } from '../constants/angles'
 import Path from '../Path'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { getBezierPoints } from '../utils/geomUtils'
-import { randFloat, randFloatRange, randIntRange } from '../utils/numberUtils'
+import { randFloat, randFloatRange, randInt, randIntRange } from '../utils/numberUtils'
 import { lineToPoints } from '../utils/pathUtils'
 import { initPen, plotBounds } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
@@ -30,6 +30,7 @@ export default class Genuary6 extends Sketch {
     this.addVar('sunRayDistFromSun', { initialValue: 5, min: 0, max: 20, step: 0.1 })
     this.addVar('sunRayLength', { initialValue: 85, min: 3, max: 200, step: 1 })
     this.addVar('godRayDensity', { initialValue: 0.75, min: 0.1, max: 5, step: 0.05 })
+    this.addVar('birdTrailLength', { initialValue: 50, min: 10, max: 150, step: 1 })
 
     this.vs.disableCutout = new BooleanRange({ initialValue: true, disableRandomize: true })
   }
@@ -66,6 +67,7 @@ export default class Genuary6 extends Sketch {
       sunRayLength,
       sunRayDistFromSun,
       godRayDensity,
+      birdTrailLength,
     } = this.vars
 
     // Draw sun
@@ -189,6 +191,31 @@ export default class Genuary6 extends Sketch {
 
       this.ctx.beginPath()
       this.ctx.strokePath(cloudPts, { cutout: !this.vs.disableCutout.value })
+    }
+
+    // draw birds
+    this.ctx.driver.comment('Drawing birds', true)
+    const birdVPt = new Point(this.cw / 2, this.ch / 4)
+    const angle = deg20 + randFloat(deg5)
+    const birdPlacementPts = [
+      birdVPt,
+      ...lineToPoints(
+        birdVPt,
+        birdVPt.clone().moveAlongAngle(-angle / 2, birdTrailLength + randInt(5)),
+        Math.ceil(birdTrailLength / 8)
+      ),
+      ...lineToPoints(
+        birdVPt,
+        birdVPt.clone().moveAlongAngle(angle / 2, birdTrailLength + randInt(5)),
+        Math.ceil(birdTrailLength / 8)
+      ),
+    ].map((pt) => pt.add(randFloat(2)))
+    for (const pt of birdPlacementPts) {
+      this.ctx.beginPath()
+      this.ctx.moveTo(pt.x, pt.y)
+      this.ctx.lineToRelativeAngle(deg30 + randFloat(deg10), 1.5)
+      this.ctx.lineToRelativeAngle(-deg30 + randFloat(deg10), 2)
+      this.ctx.stroke()
     }
   }
 
