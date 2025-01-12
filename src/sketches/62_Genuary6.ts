@@ -7,8 +7,8 @@ import { Sketch } from '../Sketch'
 import { getBezierPoints } from '../utils/geomUtils'
 import { randFloat, randFloatRange, randInt, randIntRange } from '../utils/numberUtils'
 import { lineToPoints } from '../utils/pathUtils'
-import { initPen, plotBounds } from '../utils/penUtils'
-import { seedRandom } from '../utils/random'
+import { initPen } from '../utils/penUtils'
+import { random, seedRandom } from '../utils/random'
 import { BooleanRange } from './tools/Range'
 
 export default class Genuary6 extends Sketch {
@@ -22,6 +22,8 @@ export default class Genuary6 extends Sketch {
     })
     this.addVar('buildingGutter', { initialValue: 5, min: 0.1, max: 10, step: 0.1 })
     this.addVar('doubleDist', { initialValue: 0.325, min: 0.1, max: 0.5, step: 0.025 })
+    this.addVar('windowSize', { initialValue: 10, min: 5, max: 20, step: 0.1 })
+    this.addVar('windowSpacing', { initialValue: 10, min: 5, max: 50, step: 0.1 })
     this.addVar('sagPercent', { initialValue: 0.35, min: 0, max: 2.5, step: 0.01 })
     this.addVar('horizonHeight', { initialValue: 0.92, min: 0.5, max: 1, step: 0.01 })
     this.addVar('sunSetAmount', { initialValue: 0.9, min: 0.1, max: 1.2, step: 0.01 })
@@ -41,7 +43,7 @@ export default class Genuary6 extends Sketch {
   initDraw(): void {
     seedRandom(this.vars.seed)
     initPen(this)
-    plotBounds(this)
+    // plotBounds(this)
 
     this.ctx.driver.comment('Drawing horizon', true)
     this.drawHorizon()
@@ -170,7 +172,6 @@ export default class Genuary6 extends Sketch {
           furthestLeftPt.distanceTo(furthestRightPt) / godRayDensity
         ),
       ]
-      this.ctx.beginPath()
       for (let i = 0; i < linePts.length; i++) {
         const pt = linePts[i]
         const relativeSunPt = sunPt
@@ -184,10 +185,11 @@ export default class Genuary6 extends Sketch {
           // hypotenuse to right of canvas
           Math.abs((this.cw - pt.x) / Math.cos(relativeSunPt.angleTo(pt)))
         )
+        this.ctx.beginPath()
         this.ctx.moveTo(...pt.toArray())
         this.ctx.lineToRelativeAngle(relativeSunPt.angleTo(pt), lineLength - 0.5)
+        this.ctx.stroke()
       }
-      this.ctx.stroke()
 
       this.ctx.beginPath()
       this.ctx.strokePath(cloudPts, { cutout: !this.vs.disableCutout.value })
@@ -195,7 +197,7 @@ export default class Genuary6 extends Sketch {
 
     // draw birds
     this.ctx.driver.comment('Drawing birds', true)
-    const birdVPt = new Point(this.cw / 2, this.ch / 4)
+    const birdVPt = new Point(this.cw / 2 + randInt(this.cw / 4), this.ch / 4)
     const angle = deg20 + randFloat(deg5)
     const birdPlacementPts = [
       birdVPt,
@@ -294,6 +296,7 @@ export default class Genuary6 extends Sketch {
       w: buildingWidth + buildingGutter,
       h: roofRailingHeight,
       waveH: 2,
+      facing,
     })
 
     // Building windows
@@ -312,18 +315,21 @@ export default class Genuary6 extends Sketch {
   }
 
   drawWindows({ y, h, facing }: { y: number; h: number; facing: 'l' | 'r' }): void {
-    const { buildingWidth, buildingGutter } = this.vars
+    const { buildingWidth, buildingGutter, windowSize, windowSpacing } = this.vars
     let nextY = y
     while (nextY < y + h) {
-      const windowSize = Math.min(randFloatRange(8, 15), buildingWidth - buildingGutter * 2)
-      this.drawWindow({ s: windowSize, y: nextY, facing })
-      nextY += windowSize + randFloatRange(5, 30)
+      const size = Math.max(
+        5,
+        Math.min(windowSize + randFloat(6), buildingWidth - buildingGutter * 2)
+      )
+      this.drawWindow({ s: size, y: nextY, facing })
+      nextY += size + windowSpacing + randFloat(windowSpacing / 2)
     }
   }
 
   drawWindow({ s, y, facing }: { s: number; y: number; facing: 'l' | 'r' }): void {
-    const { buildingWidth, buildingGutter, doubleDist } = this.vars
-    const randOffsetX = randFloatRange(0, buildingGutter / 2)
+    const { buildingWidth, buildingGutter, doubleDist, windowSize } = this.vars
+    const randOffsetX = randFloatRange(0, buildingGutter * 2)
     const x =
       facing === 'l'
         ? buildingWidth - buildingGutter - (s + randOffsetX)
@@ -333,7 +339,7 @@ export default class Genuary6 extends Sketch {
 
     const sil = doubleDist * 2
     const segS = (s - sil) / 2
-    if (s < 12) {
+    if (s < windowSize) {
       this.ctx.beginPath()
       this.ctx.moveTo(x, y + segS)
       this.ctx.lineToRelative(s, 0)
@@ -382,17 +388,27 @@ export default class Genuary6 extends Sketch {
     const balconyWidth = randFloatRange(8, 20)
     const balconyHeight = randFloatRange(12, 18)
     const balconyFloorThickness = buildingGutter / 2
-    const railingWidth = buildingGutter / 6
+    const railingWidth = buildingGutter / 8
 
     // clear horizon behind
     // 2991
+    const useGlass = random() > 0.3
     if (!this.vs.disableCutout.value) {
-      this.ctx.clearRect(
-        facing === 'l' ? buildingWidth : this.cw - (buildingWidth + balconyWidth),
-        y - balconyHeight + balconyFloorThickness,
-        balconyWidth,
-        balconyHeight - balconyFloorThickness
-      )
+      if (!useGlass) {
+        this.ctx.clearRect(
+          facing === 'l' ? buildingWidth + 0.5 : this.cw - (buildingWidth + balconyWidth + 0.5),
+          y - balconyHeight + balconyFloorThickness,
+          balconyWidth,
+          balconyHeight - balconyFloorThickness
+        )
+      } else {
+        this.ctx.clearRect(
+          facing === 'l' ? buildingWidth : this.cw - (buildingWidth + balconyWidth),
+          y - balconyFloorThickness,
+          balconyWidth,
+          balconyFloorThickness
+        )
+      }
       this.ctx.clearRect(
         facing === 'l'
           ? buildingWidth + balconyWidth - railingWidth
@@ -421,8 +437,22 @@ export default class Genuary6 extends Sketch {
       y: y - balconyFloorThickness,
       w: balconyWidth,
       h: balconyHeight - balconyFloorThickness * 2,
-      waveH: 0,
+      waveH: useGlass ? 1 : 0,
+      facing,
     })
+
+    if (useGlass) {
+      this.ctx.beginPath()
+      this.ctx.moveTo(
+        facing === 'l' ? buildingWidth : this.cw - buildingWidth,
+        y - balconyHeight * 0.8
+      )
+      this.ctx.lineToRelative(
+        facing === 'l' ? balconyWidth - railingWidth : -(balconyWidth - railingWidth),
+        0
+      )
+      this.ctx.stroke()
+    }
   }
 
   drawRailings({
@@ -431,51 +461,89 @@ export default class Genuary6 extends Sketch {
     w,
     h,
     waveH,
+    facing,
   }: {
     x: number
     y: number
     w: number
     h: number
     waveH: number
+    facing: 'l' | 'r'
   }): void {
     const { buildingGutter } = this.vars
 
     const umbrellaX = x + w / 4 + randFloatRange(w / 2)
+    const hasSpace = w > 20
+    if (hasSpace) this.drawUmbrella({ x: umbrellaX, y: y, w: 12 })
+    if (random() > 0.2)
+      this.drawChair({
+        x: umbrellaX + randFloat(hasSpace ? 5 : 1),
+        y,
+        a: hasSpace ? deg30 : deg5,
+        w: hasSpace ? 8 : 4,
+        facing,
+      })
+
+    if (waveH <= 0) {
+      const poleWidth = buildingGutter / 8
+      const poles = Math.floor(w / (poleWidth * 2.5))
+      const gap = (w - (poles + 1) * poleWidth) / (poles + 1)
+
+      for (let i = 0; i < poles; i++) {
+        const poleX = x + gap + i * (poleWidth + gap)
+        const height = h + Math.sin((i / poles) * 5) * waveH
+        this.ctx.beginPath()
+        this.ctx.moveTo(poleX, y)
+        this.ctx.lineToRelative(0, -height)
+        this.ctx.lineToRelative(poleWidth, 0)
+        this.ctx.lineToRelative(0, height)
+        this.ctx.stroke({ cutout: !this.vs.disableCutout.value })
+        this.ctx.endPath()
+      }
+    }
+  }
+
+  drawUmbrella({ x, y, w }: { x: number; y: number; w: number }): void {
     const umbrellaAngle = -deg90 + randFloat(deg20)
     const umbrellaHeight = 10
     this.ctx.beginPath()
-    this.ctx.moveTo(umbrellaX, y)
+    this.ctx.moveTo(x, y)
     this.ctx.lineToRelativeAngle(umbrellaAngle, umbrellaHeight)
     const lastPt = this.ctx.currentPath.lastPoint() as Point
     this.ctx.stroke()
     this.ctx.beginPath()
     this.ctx.moveTo(...lastPt.toArray())
-    this.ctx.lineToRelativeAngle(umbrellaAngle - deg90, umbrellaHeight / 2)
-    this.ctx.arc(
-      ...lastPt.toArray(),
-      umbrellaHeight / 1.5,
-      umbrellaAngle - deg90,
-      umbrellaAngle + deg90,
-      false
-    )
-    this.ctx.lineToRelativeAngle(umbrellaAngle - deg90, umbrellaHeight / 1.5)
+    this.ctx.lineToRelativeAngle(umbrellaAngle - deg90, w / 2)
+    this.ctx.arc(...lastPt.toArray(), w / 2, umbrellaAngle - deg90, umbrellaAngle + deg90, false)
+    this.ctx.lineToRelativeAngle(umbrellaAngle - deg90, w / 2)
     this.ctx.stroke({ cutout: !this.vs.disableCutout.value })
+  }
 
-    const poleWidth = buildingGutter / 8
-    const poles = Math.floor(w / (poleWidth * 2.5))
-    const gap = (w - (poles + 1) * poleWidth) / (poles + 1)
-
-    for (let i = 0; i < poles; i++) {
-      const poleX = x + gap + i * (poleWidth + gap)
-      const height = h + Math.sin((i / poles) * 5) * waveH
-      this.ctx.beginPath()
-      this.ctx.moveTo(poleX, y)
-      this.ctx.lineToRelative(0, -height)
-      this.ctx.lineToRelative(poleWidth, 0)
-      this.ctx.lineToRelative(0, height)
-      this.ctx.stroke({ cutout: !this.vs.disableCutout.value })
-      this.ctx.endPath()
-    }
+  drawChair({
+    x,
+    y,
+    w,
+    a,
+    facing,
+  }: {
+    x: number
+    y: number
+    w: number
+    a: number
+    facing: 'l' | 'r'
+  }): void {
+    const reclineAngle =
+      facing === 'l' ? -deg90 - a + randFloat(deg10) : -deg90 + a - randFloat(deg10)
+    this.ctx.beginPath()
+    this.ctx.moveTo(x - w * 0.4, y)
+    this.ctx.lineTo(x, y - 3)
+    this.ctx.lineTo(x + w * 0.4, y)
+    this.ctx.stroke()
+    this.ctx.beginPath()
+    this.ctx.moveTo(x + w * 0.5 * (facing === 'l' ? 1 : -1), y - 3)
+    this.ctx.lineTo(x + w * 0.5 * (facing === 'l' ? -1 : 1), y - 3)
+    this.ctx.lineToRelativeAngle(reclineAngle, 4)
+    this.ctx.stroke()
   }
 
   drawClothesline({ upper, lower }: { upper: number; lower: number }): void {
