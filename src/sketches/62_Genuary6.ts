@@ -420,6 +420,9 @@ export default class Genuary6 extends Sketch {
     this.ctx.moveTo(umbrellaX, y)
     this.ctx.lineToRelativeAngle(umbrellaAngle, umbrellaHeight)
     const lastPt = this.ctx.currentPath.lastPoint() as Point
+    this.ctx.stroke()
+    this.ctx.beginPath()
+    this.ctx.moveTo(...lastPt.toArray())
     this.ctx.lineToRelativeAngle(umbrellaAngle - deg90, umbrellaHeight / 2)
     this.ctx.arc(
       ...lastPt.toArray(),
@@ -429,7 +432,7 @@ export default class Genuary6 extends Sketch {
       false
     )
     this.ctx.lineToRelativeAngle(umbrellaAngle - deg90, umbrellaHeight / 1.5)
-    this.ctx.stroke()
+    this.ctx.stroke({ cutout: !this.vs.disableCutout.value })
 
     const poleWidth = buildingGutter / 8
     const poles = Math.floor(w / (poleWidth * 2.5))
