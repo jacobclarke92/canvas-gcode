@@ -286,6 +286,28 @@ export default class GCanvas {
     }
   }
 
+  public dot(
+    _x: number,
+    _y: number,
+    { drawSize, pauseMs }: { drawSize?: number; pauseMs?: number } = { drawSize: 0.25, pauseMs: 0 }
+  ) {
+    const { x, y } = this.transformPoint([_x, _y])
+    if (!this.currentPath) this.beginPath()
+    this.ensurePath(x, y)
+    this.currentPath.moveTo(x, y)
+    this.currentPath.dot(x, y, pauseMs)
+    // this.ctx?.fillStyle = this.fillStyle
+    if (this.ctx) {
+      this.ctx.fillStyle = 'black'
+      this.ctx.fillRect(x - drawSize / 2, y - drawSize / 2, drawSize, drawSize)
+    }
+    // this.ctx?.moveTo(x - drawSize / 2, y)
+    // this.ctx?.lineTo(x + drawSize / 2, y)
+    // this.ctx?.moveTo(x, y - drawSize / 2)
+    // this.ctx?.lineTo(x, y + drawSize / 2)
+    // this.ctx?.arc(x, y, drawSize / 2, 0, deg360)
+  }
+
   public moveTo(_x: number, _y: number) {
     const { x, y } = this.transformPoint([_x, _y])
     this.currentPath.moveTo(x, y)

@@ -7,9 +7,11 @@ import type {
   Action,
   ArcAction,
   BezierCurveToAction,
+  DotAction,
   EllipseAction,
   GetPointsOpts,
   LineToAction,
+  MoveToAction,
   QuadraticCurveToAction,
 } from './SubPath'
 import SubPath from './SubPath'
@@ -60,9 +62,9 @@ export default class Path extends ClipperPath {
     this.current.close()
   }
 
-  /**
-   * Pass all curves straight through
-   * */
+  public dot(...args: DotAction['args']) {
+    this.current.actions.push({ type: 'DOT', args })
+  }
   public lineTo(...args: LineToAction['args']) {
     this.ensure(...args)
     this.current.lineTo(...args)

@@ -18,6 +18,11 @@ export type LineToAction = {
   args: [x: number, y: number]
 }
 
+export type DotAction = {
+  type: 'DOT'
+  args: [x: number, y: number, pauseMs: number]
+}
+
 export type QuadraticCurveToAction = {
   type: 'QUADRATIC_CURVE_TO'
   args: [aCPx: number, aCPy: number, aX: number, aY: number]
@@ -56,6 +61,7 @@ export type EllipseAction = {
 export type Action =
   | MoveToAction
   | LineToAction
+  | DotAction
   | QuadraticCurveToAction
   | BezierCurveToAction
   // | ArcAction
@@ -150,6 +156,7 @@ export default class SubPath {
           break
         }
 
+        case 'DOT':
         case 'BEZIER_CURVE_TO':
         case 'QUADRATIC_CURVE_TO':
         case 'LINE_TO': {
@@ -198,6 +205,7 @@ export default class SubPath {
           break
         }
 
+        case 'DOT':
         case 'LINE_TO':
         case 'MOVE_TO': {
           const [x, y] = action.args
