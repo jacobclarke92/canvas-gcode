@@ -49,6 +49,7 @@ export default class Genuary8 extends Sketch {
     this.addVar('regionRepelForce', { initialValue: 1, min: 0, max: 100, step: 0.1 })
     this.addVar('regionAvoidRadiusOffset', { initialValue: 1, min: 0.1, max: 2, step: 0.01 })
 
+    this.vs.outputGCode = new BooleanRange({ disableRandomize: true, initialValue: false })
     this.vs.addAvoidToPosition = new BooleanRange({ disableRandomize: true, initialValue: false })
     this.vs.avoidCircleOverlap = new BooleanRange({ disableRandomize: true, initialValue: false })
     this.vs.debugColors = new BooleanRange({ disableRandomize: true, initialValue: false })
@@ -115,6 +116,7 @@ export default class Genuary8 extends Sketch {
   }
 
   doGCode(): void {
+    if (!this.vs.outputGCode.value) return
     for (let i = 0; i < 50; i++) {
       if (this.doneGCode) return
       const pts = this.ptsStore[this.gCodePtsIndex]
