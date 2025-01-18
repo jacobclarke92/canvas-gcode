@@ -1,4 +1,5 @@
-import { deg360 } from '../constants/angles'
+import { deg180, deg360 } from '../constants/angles'
+import { colors } from '../constants/colors'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import type { Line } from '../types'
@@ -34,6 +35,7 @@ export default class Genuary8 extends Sketch {
     this.addVar('pointAvoidanceMaxDist', { initialValue: 100, min: 20, max: 300, step: 0.1 })
     this.addVar('pointAvoidanceAmount', { initialValue: 10, min: 0, max: 50, step: 0.01 })
     this.addVar('progressDistanceInfluence', { initialValue: 10, min: 0.5, max: 50, step: 0.01 })
+    this.addVar('progressAngleInfluence', { initialValue: 1, min: 0.5, max: 1.5, step: 0.01 })
     this.addVar('distanceFrameDiv', { initialValue: 7500, min: 1, max: 10000, step: 1 })
     this.addVar('inverseCenterPull', { initialValue: 1.9, min: 0.5, max: 20, step: 0.001 })
     this.addVar('progressPullPowInfluence', { initialValue: 1.5, min: -10, max: 10, step: 0.001 })
@@ -58,6 +60,10 @@ export default class Genuary8 extends Sketch {
   initialAngleOffset = 0
 
   pts: Point[] = []
+  ptsStore: Point[][] = []
+  doneGCode = false
+  gCodePtsIndex = 0
+  gCodePtIndex = 0
 
   initDraw(): void {
     const { seed, startingPoints, avoidRegions, regionMinRadius, regionMaxRadius } = this.vars
@@ -70,8 +76,16 @@ export default class Genuary8 extends Sketch {
     this.drawn = 0
     this.panic = 0
     this.pts = []
+    this.ptsStore = []
+    this.doneGCode = false
+    this.gCodePtsIndex = 0
+    this.gCodePtIndex = 0
+
     this.initialAngleOffset = deg360 / startingPoints
-    for (let i = 0; i < startingPoints; i++) this.pts.push(new Point(this.cw / 2, this.ch / 2))
+    for (let i = 0; i < startingPoints; i++) {
+      this.pts.push(new Point(this.cw / 2, this.ch / 2))
+      this.ptsStore.push([])
+    }
 
     this.avoidZones = []
     let panic = 0
@@ -100,6 +114,31 @@ export default class Genuary8 extends Sketch {
     // this.ctx.stroke()
   }
 
+  doGCode(): void {
+    for (let i = 0; i < 50; i++) {
+      if (this.doneGCode) return
+      const pts = this.ptsStore[this.gCodePtsIndex]
+      const pt = pts[this.gCodePtIndex]
+
+      this.gCodePtIndex++
+      if (this.gCodePtIndex >= pts.length) {
+        this.gCodePtsIndex++
+        this.gCodePtIndex = 0
+
+        if (this.gCodePtsIndex >= this.ptsStore.length) {
+          this.doneGCode = true
+          return
+        } else {
+          this.ctx.driver.comment(`Color ${this.gCodePtsIndex + 1}`, true)
+        }
+      }
+
+      this.ctx.motion.rapid({ x: pt.x, y: pt.y })
+      this.ctx.motion.plunge()
+      this.ctx.motion.retract()
+    }
+  }
+
   draw(increment: number): void {
     //
     const {
@@ -108,6 +147,7 @@ export default class Genuary8 extends Sketch {
       pointAvoidanceAmount,
       pointAvoidanceMaxDist,
       progressDistanceInfluence,
+      progressAngleInfluence,
       distanceFrameDiv,
       inverseCenterPull,
       progressPullPowInfluence,
@@ -122,7 +162,10 @@ export default class Genuary8 extends Sketch {
     } = this.vars
 
     let frame = increment * this.vars.speedUp
-    if (this.drawn > milli || this.panic > 100000) return
+    if (this.drawn > milli || this.panic > 100000) {
+      this.doGCode()
+      return
+    }
     if (increment % 1000 === 0) document.title = `Genuary 8: ${increment * this.vars.speedUp}`
     for (let i = 0; i < this.vars.speedUp; i++) {
       const progress = this.drawn / milli
@@ -131,17 +174,17 @@ export default class Genuary8 extends Sketch {
         // this.ctx.stroke()
         break
       }
-      for (let i = 0; i < this.pts.length; i++) {
-        const pt = this.pts[i]
-        const angleOffset = this.initialAngleOffset * i
+      for (let m = 0; m < this.pts.length; m++) {
+        const pt = this.pts[m]
+        const angleOffset = this.initialAngleOffset * m
+        const angle = angleOffset + Math.cos(frame / 4 / ((1 - progress) / progressAngleInfluence))
+
+        const relativeFrameForce = frame / distanceFrameDiv
         pt.add(
-          Math.cos(angleOffset + frame / 4 / (1 - progress)) *
-            (frame / distanceFrameDiv / ((1 - progress) * progressDistanceInfluence)),
-          Math.sin(angleOffset + frame / 4 / (1 - progress)) *
-            (frame / distanceFrameDiv / ((1 - progress) * progressDistanceInfluence))
+          Math.cos(angle) * (relativeFrameForce / ((1 - progress) * progressDistanceInfluence)),
+          Math.sin(angle) * (relativeFrameForce / ((1 - progress) * progressDistanceInfluence))
         )
         pt.add(
-          //
           (this.cp.x - pt.x) /
             (inverseCenterPull * Math.pow(1 - progress, progressPullPowInfluence * (1 - progress))),
           (this.cp.y - pt.y) /
@@ -151,7 +194,7 @@ export default class Genuary8 extends Sketch {
         if (frame % skip !== 0) continue
 
         if (pointAvoidance > 0) {
-          for (let n = i + 1; n < this.pts.length; n++) {
+          for (let n = m + 1; n < this.pts.length; n++) {
             const otherPt = this.pts[n]
             const dist = pt.distanceTo(otherPt)
             if (dist < 50) {
@@ -188,12 +231,19 @@ export default class Genuary8 extends Sketch {
             }
           }
           this.ctx.ctx.beginPath()
-          this.ctx.dot(...actualPos.toArray())
+          this.ptsStore[m].push(actualPos.clone())
+          this.ctx.dot(...actualPos.toArray(), {
+            drawSize: 0.25,
+            pauseMs: 0,
+            color: colors[m % colors.length],
+          })
           this.drawn++
         } else {
           this.panic++
           if (this.panic > 100000) {
             console.log('panic at', this.drawn)
+
+            break
           }
         }
       }

@@ -289,7 +289,11 @@ export default class GCanvas {
   public dot(
     _x: number,
     _y: number,
-    { drawSize, pauseMs }: { drawSize?: number; pauseMs?: number } = { drawSize: 0.25, pauseMs: 0 }
+    { drawSize, pauseMs, color }: { drawSize?: number; pauseMs?: number; color?: string } = {
+      drawSize: 0.25,
+      pauseMs: 0,
+      color: 'black',
+    }
   ) {
     const { x, y } = this.transformPoint([_x, _y])
     if (!this.currentPath) this.beginPath()
@@ -298,7 +302,7 @@ export default class GCanvas {
     this.currentPath.dot(x, y, pauseMs)
     // this.ctx?.fillStyle = this.fillStyle
     if (this.ctx) {
-      this.ctx.fillStyle = 'black'
+      this.ctx.fillStyle = color
       this.ctx.fillRect(x - drawSize / 2, y - drawSize / 2, drawSize, drawSize)
     }
     // this.ctx?.moveTo(x - drawSize / 2, y)
