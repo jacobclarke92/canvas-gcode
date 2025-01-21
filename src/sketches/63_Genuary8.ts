@@ -1,5 +1,5 @@
 import { deg180, deg360 } from '../constants/angles'
-import { colors } from '../constants/colors'
+import { colors, darkColors, mixColors, vaporDarkColors } from '../constants/colors'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import type { Line } from '../types'
@@ -71,7 +71,6 @@ export default class Genuary8 extends Sketch {
     seedRandom(seed)
     seedNoise(seed)
     initPen(this)
-    // plotBounds(this)
     // Challenge: Draw a million of something
 
     this.drawn = 0
@@ -82,12 +81,14 @@ export default class Genuary8 extends Sketch {
     this.gCodePtsIndex = 0
     this.gCodePtIndex = 0
 
+    // Initialize starting points
     this.initialAngleOffset = deg360 / startingPoints
     for (let i = 0; i < startingPoints; i++) {
       this.pts.push(new Point(this.cw / 2, this.ch / 2))
       this.ptsStore.push([])
     }
 
+    // Initialize avoid zones
     this.avoidZones = []
     let panic = 0
     while (this.avoidZones.length < avoidRegions) {
@@ -145,6 +146,7 @@ export default class Genuary8 extends Sketch {
     //
     const {
       skip,
+      startingPoints,
       pointAvoidance,
       pointAvoidanceAmount,
       pointAvoidanceMaxDist,
@@ -158,8 +160,6 @@ export default class Genuary8 extends Sketch {
       perlinOffsetY,
       perlinInfluence,
       regionRepelForce,
-      regionMinRadius,
-      regionMaxRadius,
       regionAvoidRadiusOffset,
     } = this.vars
 
@@ -172,20 +172,28 @@ export default class Genuary8 extends Sketch {
     for (let i = 0; i < this.vars.speedUp; i++) {
       const progress = this.drawn / milli
       frame++
-      if (this.drawn > milli) {
-        // this.ctx.stroke()
-        break
-      }
+      if (this.drawn > milli) break
+
       for (let m = 0; m < this.pts.length; m++) {
         const pt = this.pts[m]
-        const angleOffset = this.initialAngleOffset * m
-        const angle = angleOffset + Math.cos(frame / 4 / ((1 - progress) / progressAngleInfluence))
 
+        // Calculate angle that we want the point to move in
+        const angleOffset = this.initialAngleOffset * m
+        const angle =
+          startingPoints === 1
+            ? angleOffset + frame / 4 / (1 - progress)
+            : angleOffset + Math.cos(frame / 4 / ((1 - progress) / progressAngleInfluence))
+
+        // Calculate the distance which we want the point to move
         const relativeFrameForce = frame / distanceFrameDiv
+
+        // Move the point
         pt.add(
           Math.cos(angle) * (relativeFrameForce / ((1 - progress) * progressDistanceInfluence)),
           Math.sin(angle) * (relativeFrameForce / ((1 - progress) * progressDistanceInfluence))
         )
+
+        // Apply the 'pull to center' force
         pt.add(
           (this.cp.x - pt.x) /
             (inverseCenterPull * Math.pow(1 - progress, progressPullPowInfluence * (1 - progress))),
@@ -195,6 +203,7 @@ export default class Genuary8 extends Sketch {
 
         if (frame % skip !== 0) continue
 
+        // Apply point avoidance forces
         if (pointAvoidance > 0) {
           for (let n = m + 1; n < this.pts.length; n++) {
             const otherPt = this.pts[n]
@@ -210,6 +219,7 @@ export default class Genuary8 extends Sketch {
           }
         }
 
+        // Apply perlin noise
         const actualPos = pt.clone()
         if (perlinInfluence > 0) {
           const theta = perlin2(
@@ -219,9 +229,11 @@ export default class Genuary8 extends Sketch {
           actualPos.moveAlongAngle(theta * deg360, theta * 10 * perlinInfluence)
         }
 
-        // if (this.cp.distanceTo(pt) > 20) {
+        // Check that the point is actually in bounds
         if (isInBounds(actualPos, [0, this.cw, this.ch, 0])) {
           this.panic = 0
+
+          // Apply region avoidance forces
           for (const [pt, radius] of this.avoidZones) {
             if (!pointInCircle(actualPos, pt, radius)) continue
             const proximityToCenter =
@@ -232,12 +244,14 @@ export default class Genuary8 extends Sketch {
               pt.moveAway(pt, regionRepelForce * proximityToCenter)
             }
           }
+
+          // Draw pixel and store it for later GCode generation
           this.ctx.ctx.beginPath()
           this.ptsStore[m].push(actualPos.clone())
           this.ctx.dot(...actualPos.toArray(), {
             drawSize: 0.25,
             pauseMs: 0,
-            color: colors[m % colors.length],
+            color: vaporDarkColors[m % vaporDarkColors.length],
           })
           this.drawn++
         } else {
