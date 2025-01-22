@@ -97,6 +97,60 @@ export const getClosestButNotSamePoint = (pt: Point, ...pts: [Point] | Point[]):
   return ptsWithDist[0][0]
 }
 
+/**
+ * Liang-Barsky function by Daniel White
+ * http://www.skytopia.com/project/articles/compsci/clipping.html
+ */
+export const getPointsWhereLineIntersectsRectangle = (
+  [p1, p2]: Line,
+  bounds: Bounds
+): [Point, Point] => {
+  const [ymin, xmax, ymax, xmin] = bounds
+  let t0 = 0
+  let t1 = 1
+  const dx = p2.x - p1.x
+  const dy = p2.y - p1.y
+  let p: number, q: number, r: number
+
+  for (let edge = 0; edge < 4; edge++) {
+    // Traverse through left, right, bottom, top edges.
+    if (edge === 0) {
+      p = -dx
+      q = -(xmin - p1.x)
+    }
+    if (edge === 1) {
+      p = dx
+      q = xmax - p1.x
+    }
+    if (edge === 2) {
+      p = -dy
+      q = -(ymin - p1.y)
+    }
+    if (edge === 3) {
+      p = dy
+      q = ymax - p1.y
+    }
+
+    r = q / p
+
+    if (p === 0 && q < 0) return null // Don't draw line at all. (parallel line outside)
+
+    if (p < 0) {
+      if (r > t1) return null // Don't draw line at all.
+      else if (r > t0) t0 = r // Line is clipped!
+    } else if (p > 0) {
+      if (r < t0) return null // Don't draw line at all.
+      else if (r < t1) t1 = r // Line is clipped!
+    }
+  }
+
+  return [
+    //
+    new Point(p1.x + t0 * dx, p1.y + t0 * dy),
+    new Point(p1.x + t1 * dx, p1.y + t1 * dy),
+  ]
+}
+
 export const lineIntersectsCircle = ([p1, p2]: Line, pt: Point, radius: number): boolean => {
   const x1 = p1.clone().subtract(pt)
   const x2 = p2.clone().subtract(pt)

@@ -62,4 +62,5 @@ export default [
   require('./61_Genuary5').default,
   require('./62_Genuary6').default,
   require('./63_Genuary8').default,
+  require('./64_Genuary12_Subdivision').default,
 ]
