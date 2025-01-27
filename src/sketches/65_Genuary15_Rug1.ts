@@ -16,14 +16,14 @@ interface SegmentIntersection {
   lineSeg: LineSegment
 }
 
-export default class Genuary15_Rug extends Sketch {
+export default class Genuary15_Rug1 extends Sketch {
   init() {
     this.addVar('seed', { initialValue: 3994, min: 1000, max: 5000, step: 1 })
     this.addVar('gutterX', { initialValue: 11.25, min: 0, max: 120, step: 0.25 })
     this.addVar('gutterY', { initialValue: 11, min: 0, max: 120, step: 0.25 })
     this.addVar('baseSize', { initialValue: 13, min: 1, max: 50, step: 0.5 })
     this.addVar('spacerSize', { initialValue: 0, min: 0, max: 10, step: 0.1 })
-    this.addVar('fillGap', { initialValue: 0.35, min: 0.1, max: 10, step: 0.05 })
+    this.addVar('fillGap', { initialValue: 0.35, min: 0.1, max: 10, step: 0.05, disableRandomize: true }) // prettier-ignore
     this.addVar('indexDiv', { initialValue: 68.5, min: 1.5, max: 100, step: 0.5 })
     this.addVar('sizingOffset', {
       initialValue: 2.35619449019234,
