@@ -65,4 +65,5 @@ export default [
   require('./64_Genuary12_Subdivision').default,
   require('./65_Genuary15_Rug1').default,
   require('./66_Genuary15_Rug2').default,
+  require('./67_Genuary16_Palette').default,
 ]
