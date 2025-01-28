@@ -4,19 +4,6 @@ import { Sketch } from '../Sketch'
 import { initPen } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
 
-interface LineSegment {
-  pt1: Point
-  pt2: Point
-  length: number
-  touchL?: LineSegment
-  touchR?: LineSegment
-}
-
-interface SegmentIntersection {
-  pt: Point
-  lineSeg: LineSegment
-}
-
 export default class Genuary15_Rug2 extends Sketch {
   init() {
     this.addVar('seed', { initialValue: 3994, min: 1000, max: 5000, step: 1 })
@@ -27,10 +14,6 @@ export default class Genuary15_Rug2 extends Sketch {
     this.addVar('offsetDistance', { initialValue: 2, min: 0.25, max: 50, step: 0.25 })
     this.addVar('offsetCount', { initialValue: 16, min: 0, max: 50, step: 1 })
   }
-
-  mode: 'plan' | 'draw' = 'plan'
-  lines: LineSegment[] = []
-  lastDrawLine: LineSegment | null = null
 
   initDraw(): void {
     const { seed, gutterX, gutterY, segments, thickness, offsetDistance, offsetCount } = this.vars
@@ -230,22 +213,6 @@ export default class Genuary15_Rug2 extends Sketch {
     this.ctx.lineTo(bounds.right + offsetDistance * 3, bounds.bottom + offsetDistance * 3)
     this.ctx.lineTo(bounds.left - offsetDistance * 3, bounds.bottom + offsetDistance * 3)
     this.ctx.closePath()
-    this.ctx.stroke()
-
-    // do decorative outline now
-  }
-
-  fillRect(x: number, y: number, w: number, h: number): void {
-    const { fillGap } = this.vars
-    const rows = Math.floor(h / fillGap)
-    const gapY = h / rows
-    this.ctx.beginPath()
-    this.ctx.moveTo(x, y)
-    for (let i = 0; i < rows; i++) {
-      this.ctx.lineToRelative((i % 2 === 0 ? 1 : -1) * w, 0)
-      this.ctx.lineToRelative(0, gapY)
-    }
-    this.ctx.lineToRelative((rows % 2 === 0 ? 1 : -1) * w, 0)
     this.ctx.stroke()
   }
 
