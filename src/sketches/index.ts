@@ -66,4 +66,5 @@ export default [
   require('./65_Genuary15_Rug1').default,
   require('./66_Genuary15_Rug2').default,
   require('./67_Genuary16_Palette').default,
+  require('./68_Genuary18_Wind').default,
 ]
