@@ -166,7 +166,7 @@ export default class WormHoles extends Sketch {
     this.ctx.lineTo((xSeg - thickness / 2) * segW, yPos)
 
     this.ctx.stroke({ cutout: !!this.vs.cutout.value })
-    this.ctx.closePath()
+    this.ctx.endPath()
   }
 
   draw(increment: number): void {

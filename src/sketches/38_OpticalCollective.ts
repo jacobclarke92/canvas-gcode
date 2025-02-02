@@ -171,8 +171,6 @@ export default class OpticalCollective extends Sketch {
             })
           }
         }
-
-        this.ctx.closePath()
       }
     }
 

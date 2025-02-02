@@ -1,3 +1,4 @@
+import { deg1, deg90 } from '../../constants/angles'
 import Point from '../../Point'
 
 interface OscOptions {
@@ -14,7 +15,7 @@ export default class Osc {
   public offset: Point
   public speed: number
   public phase: number
-  public offsetPhase = -Math.PI / 2 // start drawing from top middle
+  public offsetPhase = -deg90 // start drawing from top middle
   private theta: Point
   private speedFunc: Exclude<OscOptions['speed'], number>
   private radiusFunc: Exclude<OscOptions['radius'], number | Point>
@@ -22,7 +23,7 @@ export default class Osc {
     if (typeof options.speed === 'function') {
       this.speedFunc = options.speed
       this.speed = this.speedFunc(0)
-    } else this.speed = options.speed || Math.PI / 180
+    } else this.speed = options.speed || deg1
 
     if (options.radius === undefined) this.radius = new Point(1, 1)
     else if (typeof options.radius === 'function') {

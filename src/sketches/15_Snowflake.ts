@@ -97,7 +97,7 @@ export default class Kaleido extends Sketch {
           this.cy + Math.sin(angle + segAngle) * (a % 2 ? length2 : length1)
         )
         this.ctx.stroke()
-        this.ctx.closePath()
+        this.ctx.endPath()
       }
     }
   }

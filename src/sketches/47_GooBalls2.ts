@@ -1,3 +1,4 @@
+import { deg20, deg90, deg360 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import type { Line } from '../types'
@@ -223,7 +224,7 @@ class Segment {
           isOutsideAllowedAngledDiff
         ) {
           isInitialPt = false
-          const angle = randFloatRange(Math.PI * 2)
+          const angle = randFloatRange(deg360)
           const dist = randFloatRange(
             prev.radius + this.radius + maxGap,
             prev.radius + this.radius + minGap
@@ -251,8 +252,8 @@ class Segment {
     const gapDist = this.pt.distanceTo(nextSeg.pt) - (this.radius + nextSeg.radius)
     const angle = this.pt.angleTo(nextSeg.pt)
     const midPt = this.pt.clone().moveTowards(nextSeg.pt, this.radius + gapDist / 2)
-    const midPtL = midPt.clone().moveAlongAngle(angle - Math.PI / 2, adhesion)
-    const midPtR = midPt.clone().moveAlongAngle(angle + Math.PI / 2, adhesion)
+    const midPtL = midPt.clone().moveAlongAngle(angle - deg90, adhesion)
+    const midPtR = midPt.clone().moveAlongAngle(angle + deg90, adhesion)
 
     const tangentPtsSegL = getTangentsToCircle(midPtL, this.pt, this.radius)
     const tangentPtsSegR = getTangentsToCircle(midPtR, this.pt, this.radius)
@@ -522,7 +523,7 @@ class Creature {
     // draw eyes
     const firstJointAngle = this.segments[1].pt.angleTo(this.segments[0].pt)
     const eyeSize = this.segments[0].radius * 0.2
-    const eyeGap = Math.PI / 8
+    const eyeGap = deg20
     const eyePos1 = this.segments[0].pt
       .clone()
       .moveAlongAngle(firstJointAngle + eyeGap, this.segments[0].radius * 0.7)
@@ -531,10 +532,10 @@ class Creature {
       .moveAlongAngle(firstJointAngle - eyeGap, this.segments[0].radius * 0.7)
     const pupilPos1 = eyePos1
       .clone()
-      .moveAlongAngle(randFloatRange(Math.PI * 2), randFloatRange(eyeSize / 2))
+      .moveAlongAngle(randFloatRange(deg360), randFloatRange(eyeSize / 2))
     const pupilPos2 = eyePos2
       .clone()
-      .moveAlongAngle(randFloatRange(Math.PI * 2), randFloatRange(eyeSize / 2))
+      .moveAlongAngle(randFloatRange(deg360), randFloatRange(eyeSize / 2))
 
     this.ctx.strokeCircle(eyePos1, eyeSize)
     this.ctx.strokeCircle(eyePos2, eyeSize)
@@ -580,7 +581,7 @@ class Creature {
     const { hairDensity, hairInverseSpace, maxHairLength, hairSway, hairLoss } = this.vars
 
     let angleRange = Math.abs(smallestSignedAngleDiff(startAngle, endAngle))
-    if (opts?.useLargerAngle) angleRange = Math.PI * 2 - angleRange
+    if (opts?.useLargerAngle) angleRange = deg360 - angleRange
     const hairCount = Math.ceil(
       ((angleRange / hairDensity) * (hairInverseSpace - seg.radius)) / hairInverseSpace
     )

@@ -1,3 +1,4 @@
+import { deg360 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { degToRad, normalizeRadian, randFloat, randFloatRange } from '../utils/numberUtils'
@@ -52,7 +53,7 @@ export default class Chaser extends Sketch {
 
     seedRandom(this.vs.seed.value)
     this.point = new Point(randFloatRange(this.cw), randFloatRange(this.ch))
-    this.pointAngle = randFloatRange(Math.PI * 2)
+    this.pointAngle = randFloatRange(deg360)
     this.aimAngle = this.pointAngle
     this.increment = 0
     this.angleChangeCountdown = 0
@@ -97,7 +98,7 @@ export default class Chaser extends Sketch {
         (this.point.y - this.cy) / this.vs.downscaleDrawing.value + this.cy
       )
       this.ctx.stroke()
-      this.ctx.closePath()
+      this.ctx.endPath()
       // this.point.x = wrap(this.point.x, this.cw)
       // this.point.y = wrap(this.point.y, this.ch)
       this.angleChangeCountdown--

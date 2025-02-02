@@ -1,5 +1,8 @@
+import Point from '../Point'
 import { Sketch } from '../Sketch'
-import { debugText } from '../utils/debugUtils'
+import { debugDot, debugText } from '../utils/debugUtils'
+import { getContinuousBezierApproximation } from '../utils/geomUtils'
+import { randIntRange } from '../utils/numberUtils'
 import { initPen, penUp, plotBounds } from '../utils/penUtils'
 
 export default class GCodeTest extends Sketch {
@@ -13,7 +16,7 @@ export default class GCodeTest extends Sketch {
     this.ctx.moveTo(10, 10)
     this.ctx.lineTo(20, 10)
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
 
     this.ctx.driver.comment('Drawing joined line')
     debugText(this.ctx, 'Joined line', [20, 40 - 2], { size: 2 })
@@ -22,12 +25,13 @@ export default class GCodeTest extends Sketch {
     this.ctx.lineTo(25, 40)
     this.ctx.lineTo(30, 45)
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
 
     this.ctx.driver.comment('Drawing rect outline')
     debugText(this.ctx, 'Rect outline', [20, 20 - 2], { size: 2 })
     this.ctx.strokeRect(20, 20, 5, 5)
 
+    /*
     this.ctx.driver.comment('Drawing rect fill')
     debugText(this.ctx, 'Rect fill', [30, 20 - 2], { size: 2 })
     this.ctx.fillRect(30, 20, 5, 5)
@@ -42,7 +46,7 @@ export default class GCodeTest extends Sketch {
     this.ctx.driver.comment('Drawing arc')
     debugText(this.ctx, 'Arc', [70, 50 - 2], { size: 2 })
     this.ctx.beginPath()
-    this.ctx.arc(70, 50, 5, Math.PI / 2, -Math.PI * 0.75, true)
+    this.ctx.arc(70, 50, 5, Math.PI / 2, -deg135, true)
     this.ctx.stroke()
     this.ctx.closePath()
 
@@ -62,17 +66,52 @@ export default class GCodeTest extends Sketch {
     this.ctx.stroke()
     this.ctx.closePath()
 
-    /*
-     */
 
     this.ctx.driver.comment('Drawing concentric circles')
     debugText(this.ctx, 'Concentric circles', [100, 30 - 20 - 2], { size: 2 })
     for (let i = 0; i < 20; i++) {
       this.ctx.strokeCircle(100, 30, 1 + i)
     }
+
+    this.ctx.driver.comment('Drawing offset polygon')
+    debugText(this.ctx, 'Offset polygon', [100, 60 - 2], { size: 2 })
+    this.ctx.beginPath()
+    this.ctx.moveTo(100, 70)
+    for (let i = 0; i < 5; i++) {
+      this.ctx.lineTo(
+        100 + 10 * Math.cos((i * 2 * Math.PI) / 5),
+        70 + 10 * Math.sin((i * 2 * Math.PI) / 5)
+      )
+    }
+    this.ctx.closePath()
+    this.ctx.stroke()
+    for (let i = 0; i < 5; i++) {
+      this.ctx.strokeOffsetPath(-1)
+    }
+      */
+
+    this.ctx.beginPath()
+    this.ctx.polygon(120, 80, 3, 2, 0)
+    this.ctx.stroke({ cutout: true })
+    this.ctx.endPath()
+
     // // this.ctx.strokeCircle(100, 30, 20)
     // this.ctx.clearRect(100, 35, 20, 20)
     // this.ctx.clearCircle(100, 15, 8)
+
+    // const testPts: Point[] = []
+    // for (let i = 0; i < 30; i++) {
+    //   testPts.push(new Point(randIntRange(this.cw), randIntRange(this.ch)))
+    // }
+    // testPts.forEach((pt) => debugDot(this.ctx, pt, 'red'))
+    // const bezierPts = getContinuousBezierApproximation(testPts, 30 * 10)
+    // this.ctx.beginPath()
+    // this.ctx.moveTo(...bezierPts[0].toArray())
+    // for (const pt of bezierPts) {
+    //   this.ctx.lineTo(...pt.toArray())
+    // }
+    // this.ctx.stroke()
+    // this.ctx.closePath()
 
     penUp(this)
   }

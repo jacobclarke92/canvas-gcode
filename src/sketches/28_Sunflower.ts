@@ -1,3 +1,4 @@
+import { deg360 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { debugDot } from '../utils/debugUtils'
@@ -72,7 +73,7 @@ export default class Sunflower extends Sketch {
     const ringPts = Math.max(4, Math.ceil(this.drawCount * complexityReduction))
 
     for (let t = 0; t < ringPts; t++) {
-      const baseAngle = (t / ringPts) * Math.PI * 2
+      const baseAngle = (t / ringPts) * deg360
       const basePt = new Point(
         this.cx + Math.cos(baseAngle) * radius,
         this.cy + Math.sin(baseAngle) * radius
@@ -105,7 +106,7 @@ export default class Sunflower extends Sketch {
         )
         this.ctx.stroke()
       }
-      this.ctx.closePath()
+      this.ctx.endPath()
     }
     this.drawCount++
 

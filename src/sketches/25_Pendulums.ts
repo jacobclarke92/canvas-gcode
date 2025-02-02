@@ -119,7 +119,7 @@ export default class Pendulums extends Sketch {
         pos.y += Math.sin(this.angles[i]) * pendulumLength
         if (this.vs.debugLines.value) this.ctx.lineTo(pos.x, pos.y)
         if (this.vs.debugLines.value) this.ctx.stroke()
-        if (this.vs.debugLines.value) this.ctx.closePath()
+        if (this.vs.debugLines.value) this.ctx.endPath()
         pendulumLength *= pendLengthFalloff
       }
       if (this.lastPos) {
@@ -127,7 +127,7 @@ export default class Pendulums extends Sketch {
         this.ctx.moveTo(this.lastPos.x, this.lastPos.y)
         this.ctx.lineTo(pos.x, pos.y)
         this.ctx.stroke()
-        this.ctx.closePath()
+        this.ctx.endPath()
 
         if (
           this.increment > 100 &&
@@ -137,7 +137,7 @@ export default class Pendulums extends Sketch {
           this.ctx.moveTo(pos.x, pos.y)
           this.ctx.lineTo(this.startPos.x, this.startPos.y)
           this.ctx.stroke()
-          this.ctx.closePath()
+          this.ctx.endPath()
 
           console.log('STOPPED')
           this.stopDrawing = true

@@ -1,3 +1,4 @@
+import { deg90, deg360 } from '../constants/angles'
 import { Sketch } from '../Sketch'
 import { normalizeRadian, randInt, segmentValue } from '../utils/numberUtils'
 import { seedRandom } from '../utils/random'
@@ -57,13 +58,13 @@ export default class MondayMaze extends Sketch {
       const x = xI * this.vs.gridSize.value
       const y = yI * this.vs.gridSize.value
 
-      const offsetAngle = segmentValue(this.vs.offsetAng.value, this.vs.offsetAng.max, Math.PI * 2)
+      const offsetAngle = segmentValue(this.vs.offsetAng.value, this.vs.offsetAng.max, deg360)
       const segIndex = randInt(this.vs.radialDivs.value)
       let angle = (Math.PI / this.vs.radialDivs.value) * segIndex
       angle = normalizeRadian(angle)
 
-      if (angle > Math.PI / 2) angle -= Math.PI
-      if (angle < Math.PI / 2) angle += Math.PI
+      if (angle > deg90) angle -= Math.PI
+      if (angle < deg90) angle += Math.PI
 
       angle += offsetAngle
 
@@ -80,7 +81,7 @@ export default class MondayMaze extends Sketch {
 
       this.ctx.lineTo(x + Math.cos(angle) * len, y + Math.sin(angle) * len)
       this.ctx.stroke()
-      this.ctx.closePath()
+      this.ctx.endPath()
 
       this.i++
     }

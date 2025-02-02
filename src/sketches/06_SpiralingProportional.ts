@@ -1,3 +1,4 @@
+import { deg30, deg360 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { initPen, penUp, plotBounds } from '../utils/penUtils'
@@ -29,8 +30,8 @@ export default class SpiralingProportional extends Sketch {
     })
     this.vs.oscSpeed = new Range({
       initialValue: 0.1825,
-      min: -Math.PI / 8,
-      max: Math.PI / 8,
+      min: -deg30,
+      max: deg30,
       step: Math.PI / 666,
     })
     this.vs.oscSpeedMulti = new Range({ initialValue: 2.994, min: 0.5, max: 5, step: 0.00001 })
@@ -38,19 +39,19 @@ export default class SpiralingProportional extends Sketch {
     this.vs.osc1phase = new Range({
       initialValue: 5.9,
       min: 0,
-      max: Math.PI * 2,
+      max: deg360,
       step: Math.PI / 128,
     })
     this.vs.osc2phase = new Range({
       initialValue: 1.8,
       min: 0,
-      max: Math.PI * 2,
+      max: deg360,
       step: Math.PI / 128,
     })
     this.vs.osc3phase = new Range({
       initialValue: 2,
       min: 0,
-      max: Math.PI * 2,
+      max: deg360,
       step: Math.PI / 128,
     })
     this.osc1 = new Osc({
@@ -104,7 +105,7 @@ export default class SpiralingProportional extends Sketch {
       this.ctx.moveTo(this.lastPoint.x, this.lastPoint.y)
       this.ctx.lineTo(point.x, point.y)
       this.ctx.stroke()
-      this.ctx.closePath()
+      this.ctx.endPath()
 
       this.lastPoint = point
     }

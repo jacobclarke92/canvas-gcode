@@ -1,3 +1,4 @@
+import { deg360 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { initPen, penUp, plotBounds } from '../utils/penUtils'
@@ -55,7 +56,7 @@ export default class BubblesInCircle extends Sketch {
     this.ctx.beginPath()
     this.ctx.circle(this.cx, this.cy, this.radius)
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
   }
 
   draw(increment: number): void {
@@ -75,7 +76,7 @@ export default class BubblesInCircle extends Sketch {
         this.ctx.beginPath()
         this.ctx.circle(this.cx, this.cy, this.radius)
         this.ctx.stroke()
-        this.ctx.closePath()
+        this.ctx.endPath()
         this.reordered = true
       } else {
         if (this.redrawnCount < this.circles.length) {
@@ -83,7 +84,7 @@ export default class BubblesInCircle extends Sketch {
           this.ctx.beginPath()
           this.ctx.circle(circle.position.x, circle.position.y, circle.radius)
           this.ctx.stroke()
-          this.ctx.closePath()
+          this.ctx.endPath()
           this.redrawnCount++
         } else {
           penUp(this)
@@ -92,7 +93,7 @@ export default class BubblesInCircle extends Sketch {
       return
     }
 
-    const angle = random() * Math.PI * 2
+    const angle = random() * deg360
     const dist = random() * this.radius
     const point = new Point(this.cx + Math.cos(angle) * dist, this.cy + Math.sin(angle) * dist)
 
@@ -130,7 +131,7 @@ export default class BubblesInCircle extends Sketch {
       this.ctx.beginPath()
       this.ctx.circle(point.x, point.y, newRadius)
       this.ctx.stroke()
-      this.ctx.closePath()
+      this.ctx.endPath()
     }
   }
 }

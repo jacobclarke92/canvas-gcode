@@ -1,3 +1,4 @@
+import { deg360 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { randInt } from '../utils/numberUtils'
@@ -18,7 +19,7 @@ export default class BezierScribbles extends Sketch {
   }
 
   initDraw(): void {
-    const dir = Math.random() * Math.PI * 2
+    const dir = Math.random() * deg360
     this.lastPoint = new Point(this.cx + Math.cos(dir) * 100, this.cy + +Math.sin(dir) * 100)
     this.lastAnchorPoint = this.lastPoint.clone()
   }
@@ -29,11 +30,11 @@ export default class BezierScribbles extends Sketch {
 
     const endPoint = new Point(
       this.lastPoint.x +
-        Math.cos(Math.random() * Math.PI * 2) *
+        Math.cos(Math.random() * deg360) *
           (this.vs.driftMin.value +
             Math.random() * (this.vs.driftMax.value - this.vs.driftMin.value)),
       this.lastPoint.y +
-        Math.sin(Math.random() * Math.PI * 2) *
+        Math.sin(Math.random() * deg360) *
           (this.vs.driftMin.value +
             Math.random() * (this.vs.driftMax.value - this.vs.driftMin.value))
     )
@@ -58,7 +59,7 @@ export default class BezierScribbles extends Sketch {
     this.ctx.moveTo(this.lastPoint.x, this.lastPoint.y)
     this.ctx.bezierCurveTo(midPoint.x, midPoint.y, midPoint.x, midPoint.y, endPoint.x, endPoint.y)
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
 
     this.lastPoint = endPoint.clone()
     this.lastAnchorPoint = midPoint.clone()

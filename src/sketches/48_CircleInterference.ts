@@ -1,19 +1,8 @@
 import Point from '../Point'
 import { Sketch } from '../Sketch'
-import type { Line } from '../types'
-import { debugDot, debugLine, debugText } from '../utils/debugUtils'
-import {
-  arcsOverlap,
-  circleOverlapsCircles,
-  getCircleCircleIntersectionPoints,
-  getTangentsToCircle,
-  isInBounds,
-  lineIntersectsWithAny,
-  pointInCircle,
-  smallestSignedAngleDiff,
-} from '../utils/geomUtils'
+import { debugDot } from '../utils/debugUtils'
+import { getCircleCircleIntersectionPoints } from '../utils/geomUtils'
 import { seedNoise } from '../utils/noise'
-import { randFloatRange, randIntRange } from '../utils/numberUtils'
 import { initPen, plotBounds } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
 import { BooleanRange } from './tools/Range'
@@ -38,28 +27,28 @@ export default class CircleInterference extends Sketch {
     })
 
     this.addVar('waves', {
-      initialValue: 20,
+      initialValue: 60,
       min: 2,
       max: 500,
       step: 1,
     })
 
     this.addVar('waveDist', {
-      initialValue: 4.2,
+      initialValue: 1.5,
       min: 0.1,
       max: 12,
       step: 0.1,
     })
 
     this.addVar('wavesApartX', {
-      initialValue: 20,
+      initialValue: 40,
       min: 1,
       max: 200,
       step: 1,
     })
 
     this.addVar('wavesApartY', {
-      initialValue: 0,
+      initialValue: 0.0000001,
       min: -200,
       max: 200,
       step: 1,
@@ -72,7 +61,7 @@ export default class CircleInterference extends Sketch {
 
     this.vs.showDebug = new BooleanRange({
       disableRandomize: true,
-      initialValue: true,
+      initialValue: false,
     })
   }
 

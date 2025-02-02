@@ -1,3 +1,4 @@
+import { deg30, deg360 } from '../constants/angles'
 import type GCanvas from '../GCanvas'
 import Point from '../Point'
 import type { OverloadedFunctionWithOptionals } from '../types'
@@ -20,7 +21,7 @@ export const debugDot: OverloadedFunctionWithOptionals<
   const prevFillStyle = ctx.ctx.fillStyle
   ctx.ctx.beginPath()
   ctx.ctx.fillStyle = color
-  ctx.ctx.arc(x, y, 0.75, 0, Math.PI * 2)
+  ctx.ctx.arc(x, y, 0.75, 0, deg360)
   ctx.ctx.fill()
   ctx.ctx.closePath()
   ctx.ctx.fillStyle = prevFillStyle
@@ -106,13 +107,13 @@ export const debugArrow = (
   ctx.ctx.moveTo(start.x, start.y)
   ctx.ctx.lineTo(end.x, end.y)
   ctx.ctx.lineTo(
-    end.x - headLen * Math.cos(angle - Math.PI / 6),
-    end.y - headLen * Math.sin(angle - Math.PI / 6)
+    end.x - headLen * Math.cos(angle - deg30),
+    end.y - headLen * Math.sin(angle - deg30)
   )
   ctx.ctx.moveTo(end.x, end.y)
   ctx.ctx.lineTo(
-    end.x - headLen * Math.cos(angle + Math.PI / 6),
-    end.y - headLen * Math.sin(angle + Math.PI / 6)
+    end.x - headLen * Math.cos(angle + deg30),
+    end.y - headLen * Math.sin(angle + deg30)
   )
   ctx.ctx.stroke()
   ctx.ctx.closePath()

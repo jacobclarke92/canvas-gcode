@@ -1,3 +1,4 @@
+import { deg360 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { debugDot } from '../utils/debugUtils'
@@ -85,7 +86,7 @@ export default class AgeRings extends Sketch {
 
     const ring: Point[] = []
     for (let t = 0; t < ringPts; t++) {
-      const baseAngle = (t / ringPts) * Math.PI * 2
+      const baseAngle = (t / ringPts) * deg360
       const basePt = new Point(
         this.cx + Math.cos(baseAngle) * baseRadius,
         this.cy + Math.sin(baseAngle) * baseRadius
@@ -119,7 +120,7 @@ export default class AgeRings extends Sketch {
       }
     }
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
 
     this.drawCount++
   }

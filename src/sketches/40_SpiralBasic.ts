@@ -1,5 +1,6 @@
 import * as clipperLib from 'js-angusj-clipper/web'
 
+import { deg60 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import type { Line } from '../types'
@@ -63,7 +64,7 @@ export default class SpiralBasic extends Sketch {
     this.addVar('angularSpeed', {
       initialValue: 0.01,
       min: 0.001,
-      max: Math.PI / 3,
+      max: deg60,
       step: 0.0001,
     })
     this.addVar('angularSpeedOscDist', {

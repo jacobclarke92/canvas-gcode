@@ -1,3 +1,4 @@
+import { deg360 } from '../constants/angles'
 import type { IntPoint } from '../packages/Clipper/IntPoint'
 import Point from '../Point'
 import type { Line, LooseLine } from '../types'
@@ -16,15 +17,15 @@ export const mod = (a: number, n: number) => a - Math.floor(a / n) * n
 
 // https://stackoverflow.com/a/1878936/13326984
 // export const smallestSignedAngleDiff = (angle1: number, angle2: number): number => {
-//   const TAU = Math.PI * 2
+//   const TAU = deg360
 //   const a = mod(angle1 - angle2, TAU)
 //   const b = mod(angle2 - angle1, TAU)
 //   return a < b ? -a : b
 // }
 
 export const smallestSignedAngleDiff = (angle1: number, angle2: number): number => {
-  let diff = Math.abs(angle1 - angle2) % (Math.PI * 2)
-  if (diff > Math.PI) diff = Math.PI * 2 - diff
+  let diff = Math.abs(angle1 - angle2) % deg360
+  if (diff > Math.PI) diff = deg360 - diff
   return diff
 }
 
@@ -94,6 +95,60 @@ export const getClosestButNotSamePoint = (pt: Point, ...pts: [Point] | Point[]):
     .filter((p) => p[1] > 0.0001)
   if (!ptsWithDist.length) return null
   return ptsWithDist[0][0]
+}
+
+/**
+ * Liang-Barsky function by Daniel White
+ * http://www.skytopia.com/project/articles/compsci/clipping.html
+ */
+export const getPointsWhereLineIntersectsRectangle = (
+  [p1, p2]: Line,
+  bounds: Bounds
+): [Point, Point] => {
+  const [ymin, xmax, ymax, xmin] = bounds
+  let t0 = 0
+  let t1 = 1
+  const dx = p2.x - p1.x
+  const dy = p2.y - p1.y
+  let p: number, q: number, r: number
+
+  for (let edge = 0; edge < 4; edge++) {
+    // Traverse through left, right, bottom, top edges.
+    if (edge === 0) {
+      p = -dx
+      q = -(xmin - p1.x)
+    }
+    if (edge === 1) {
+      p = dx
+      q = xmax - p1.x
+    }
+    if (edge === 2) {
+      p = -dy
+      q = -(ymin - p1.y)
+    }
+    if (edge === 3) {
+      p = dy
+      q = ymax - p1.y
+    }
+
+    r = q / p
+
+    if (p === 0 && q < 0) return null // Don't draw line at all. (parallel line outside)
+
+    if (p < 0) {
+      if (r > t1) return null // Don't draw line at all.
+      else if (r > t0) t0 = r // Line is clipped!
+    } else if (p > 0) {
+      if (r < t0) return null // Don't draw line at all.
+      else if (r < t1) t1 = r // Line is clipped!
+    }
+  }
+
+  return [
+    //
+    new Point(p1.x + t0 * dx, p1.y + t0 * dy),
+    new Point(p1.x + t1 * dx, p1.y + t1 * dy),
+  ]
 }
 
 export const lineIntersectsCircle = ([p1, p2]: Line, pt: Point, radius: number): boolean => {
@@ -297,6 +352,28 @@ export const getBezierPoints = (
     points.push(getBezierPoint(start, control1, control2, end, t))
   }
   return points
+}
+
+export const getContinuousBezierApproximation = (
+  controlPoints: Point[],
+  outputSegmentCount: number
+): Point[] => {
+  return Array.from({ length: outputSegmentCount + 1 }, (_, i) => {
+    const t = i / outputSegmentCount
+    return getContinuousBezierPoint(t, controlPoints, 0, controlPoints.length)
+  })
+}
+
+export const getContinuousBezierPoint = (
+  t: number,
+  controlPoints: Point[],
+  index: number,
+  count: number
+): Point => {
+  if (count == 1) return controlPoints[index]
+  const P0 = getContinuousBezierPoint(t, controlPoints, index, count - 1)
+  const P1 = getContinuousBezierPoint(t, controlPoints, index + 1, count - 1)
+  return new Point((1 - t) * P0.x + t * P1.x, (1 - t) * P0.y + t * P1.y)
 }
 
 export const getTangentsToCircle = (pt: Point, circlePt: Point, radius: number): [Point, Point] => {

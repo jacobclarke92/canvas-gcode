@@ -1,3 +1,4 @@
+import { deg90, deg360 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { circleOverlapsCircles, pointInCircles } from '../utils/geomUtils'
@@ -104,7 +105,7 @@ export default class Tattoo extends Sketch {
         let shape = shapes[randIntRange(shapes.length)]
         for (let x = 0; x < waveLength; x += shapeInterval) {
           const xAngle = (x / waveLength) * i * wavePeriod
-          const xSin = Math.sin(xAngle * (Math.PI * 2))
+          const xSin = Math.sin(xAngle * deg360)
           const y =
             Math.pow(xSin, steepness) *
             Math.pow(1 / i, fatness) *
@@ -151,12 +152,12 @@ export default class Tattoo extends Sketch {
           } else if (shape === 'line') {
             this.ctx.beginPath()
             this.ctx.moveTo(
-              shapePos.x + Math.cos(angleFromLast - Math.PI / 2) * shapeSize,
-              shapePos.y + Math.sin(angleFromLast - Math.PI / 2) * shapeSize
+              shapePos.x + Math.cos(angleFromLast - deg90) * shapeSize,
+              shapePos.y + Math.sin(angleFromLast - deg90) * shapeSize
             )
             this.ctx.lineTo(
-              shapePos.x + Math.cos(angleFromLast + Math.PI / 2) * shapeSize,
-              shapePos.y + Math.sin(angleFromLast + Math.PI / 2) * shapeSize
+              shapePos.x + Math.cos(angleFromLast + deg90) * shapeSize,
+              shapePos.y + Math.sin(angleFromLast + deg90) * shapeSize
             )
             this.ctx.stroke()
 
@@ -209,7 +210,7 @@ export default class Tattoo extends Sketch {
       let drewLastTick = false
       xLoop: for (let x = 0; x < waveLength; x += detail) {
         const xAngle = (x / waveLength) * i * wavePeriod
-        const xSin = Math.sin(xAngle * (Math.PI * 2))
+        const xSin = Math.sin(xAngle * deg360)
         const y =
           Math.pow(xSin, steepness) *
           Math.pow(1 / i, fatness) *

@@ -1,3 +1,4 @@
+import { deg45 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { initPen, penUp } from '../utils/penUtils'
@@ -55,13 +56,13 @@ export default class ConcentricCircles extends Sketch {
     this.vs.shrinkVarOsc = new Range({
       initialValue: 0.56,
       min: 0,
-      max: Math.PI / 4,
+      max: deg45,
       step: 0.001,
     })
     this.vs.rotateSpeed = new Range({
       initialValue: 0.05,
-      min: -Math.PI / 4,
-      max: Math.PI / 4,
+      min: -deg45,
+      max: deg45,
       step: 0.001,
     })
     this.osc1 = new Osc({
@@ -93,17 +94,17 @@ export default class ConcentricCircles extends Sketch {
       if (this.radius > 0) {
         this.ctx.beginPath()
         this.ctx.circle(this.lastPoint.x, this.lastPoint.y, this.radius)
-        // const angleOffset = ((realIncrement * Math.PI) / 64) % (Math.PI * 2)
+        // const angleOffset = ((realIncrement * Math.PI) / 64) % deg360
         // this.ctx.arc(
         //   this.lastPoint.x,
         //   this.lastPoint.y,
         //   this.radius,
         //   angleOffset,
-        //   angleOffset + Math.PI * 2,
+        //   angleOffset + deg360,
         //   false
         // )
         this.ctx.stroke()
-        this.ctx.closePath()
+        this.ctx.endPath()
       }
 
       this.theta += this.vs.rotateSpeed.value

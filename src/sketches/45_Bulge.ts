@@ -1,3 +1,4 @@
+import { deg360 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { debugDot } from '../utils/debugUtils'
@@ -178,8 +179,7 @@ export default class Bulge extends Sketch {
         const elevatedSquarePts = squarePts.map((pt) => {
           const dist = this.bulgePt.distanceTo(pt)
           const height =
-            Math.sin((dist / bulgeSize + distribution) * Math.PI * 2 * distributionScale) *
-            maxHeight
+            Math.sin((dist / bulgeSize + distribution) * deg360 * distributionScale) * maxHeight
           return pt.clone().moveAlongAngle(this.bulgePt.angleTo(pt), height)
         })
         console.log(elevatedSquarePts)

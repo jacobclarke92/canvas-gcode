@@ -1,3 +1,4 @@
+import { deg7p5, deg20, deg90, deg360 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import type { Line } from '../types'
@@ -33,8 +34,8 @@ export default class Moire extends Sketch {
     })
     this.addVar('initialAngle', {
       initialValue: 0.0002006122008506,
-      min: -Math.PI / 8,
-      max: Math.PI / 8,
+      min: -deg20,
+      max: deg20,
       step: 0.001,
     })
     this.addVar('angleStep', {
@@ -45,8 +46,8 @@ export default class Moire extends Sketch {
     })
     this.addVar('scaleStep', {
       initialValue: 0.0061003061004253,
-      min: -Math.PI / 24,
-      max: Math.PI / 24,
+      min: -deg7p5,
+      max: deg7p5,
       step: 0.001,
     })
     this.addVar('xStep', {
@@ -106,13 +107,12 @@ export default class Moire extends Sketch {
     for (let l = 0; l < layers; l++) {
       if (l > 0) stopAndWigglePen(this)
 
-      let angle = initialAngle + l * angleStep + Math.PI / 2
+      let angle = initialAngle + l * angleStep + deg90
       const layerLineSpacing = lineSpacing + l * scaleStep
       const offsetX = l * xStep
       const offsetY = l * yStep
       for (let x = 1; x < lines; x++) {
-        const theta =
-          perlin2((x + noiseOffset) / noiseDiv, (0 + noiseOffset) / noiseDiv) * Math.PI * 2
+        const theta = perlin2((x + noiseOffset) / noiseDiv, (0 + noiseOffset) / noiseDiv) * deg360
 
         const pts = getPointsWhereLineIntersectsCircle(
           [
@@ -136,12 +136,11 @@ export default class Moire extends Sketch {
         this.ctx.moveTo(pts[x % 2].x, pts[x % 2].y)
         this.ctx.lineTo(pts[(x + 1) % 2].x, pts[(x + 1) % 2].y)
         this.ctx.stroke()
-        this.ctx.closePath()
+        this.ctx.endPath()
       }
-      angle -= Math.PI / 2
+      angle -= deg90
       for (let y = 1; y < lines; y++) {
-        const theta =
-          perlin2((0 + noiseOffset) / noiseDiv, (y + noiseOffset) / noiseDiv) * Math.PI * 2
+        const theta = perlin2((0 + noiseOffset) / noiseDiv, (y + noiseOffset) / noiseDiv) * deg360
 
         const pts = getPointsWhereLineIntersectsCircle(
           [
@@ -164,7 +163,7 @@ export default class Moire extends Sketch {
         this.ctx.moveTo(pts[y % 2].x, pts[y % 2].y)
         this.ctx.lineTo(pts[(y + 1) % 2].x, pts[(y + 1) % 2].y)
         this.ctx.stroke()
-        this.ctx.closePath()
+        this.ctx.endPath()
       }
     }
     penUp(this)

@@ -1,3 +1,4 @@
+import { deg30, deg90 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import type { Line } from '../types'
@@ -55,9 +56,9 @@ export default class Prism extends Sketch {
       step: 1,
     })
     this.addVar('obstacleTilt', {
-      initialValue: Math.PI / 8,
+      initialValue: deg30,
       min: 0,
-      max: Math.PI / 2,
+      max: deg90,
       step: 0.0001,
     })
     this.addVar('obstacleLength', {
@@ -141,7 +142,7 @@ export default class Prism extends Sketch {
     let i = 0
     let panic = 0
     while (i < obstacles && panic < 100) {
-      const angle = Math.PI / 2 + randFloat(obstacleTilt)
+      const angle = deg90 + randFloat(obstacleTilt)
       const pos = new Point(
         randFloatRange(this.cw - gutter * 2, gutter),
         randFloatRange(this.ch - gutter * 2, gutter)
@@ -261,7 +262,7 @@ export default class Prism extends Sketch {
         this.drawingPoints.push([closestPt.clone(), refractionAngle, true, bounces + 1])
       } else {
         const intersectionAngle =
-          Point.angleBetween(hitLine[0] as Point, hitLine[1] as Point) + Math.PI / 2
+          Point.angleBetween(hitLine[0] as Point, hitLine[1] as Point) + deg90
 
         const intersectionAngleDiff = smallestAngleDiff(intersectionAngle, angle)
 

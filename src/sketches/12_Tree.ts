@@ -1,3 +1,4 @@
+import { deg20, deg90 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { randFloat, randFloatRange } from '../utils/numberUtils'
@@ -62,7 +63,7 @@ export default class Tree extends Sketch {
     this.vs.splitAngleRange = new Range({
       initialValue: 0.44,
       min: 0,
-      max: Math.PI / 2,
+      max: deg90,
       step: Math.PI / 256,
     })
     this.vs.splitAngleBranchLevelMulti = new Range({
@@ -117,7 +118,7 @@ export default class Tree extends Sketch {
     const initBranchLength = this.vs.initBranchLength.value
 
     const length = initBranchLength / branchLengthFalloff
-    const angle = -Math.PI / 2
+    const angle = -deg90
     const position = this.drawBranch(new Point(this.cx, this.ch - 10), angle, length)
     this.currentStems.push({ position, angle, length })
   }
@@ -150,7 +151,7 @@ export default class Tree extends Sketch {
 
       if (!doSplit) {
         // draw branch
-        const angle = stem.angle + randFloat((Math.PI * chaosFactor) / 10)
+        const angle = stem.angle + randFloat(chaosFactor * deg20)
         const length = stem.length * branchLengthFalloff * (1 + randFloat(chaosFactor / 8))
         const endPoint = this.drawBranch(stem.position, angle, length)
         if (this.branchLevel !== this.vs.maxBranchLevels.value && random() > pruneProbability) {
@@ -176,10 +177,7 @@ export default class Tree extends Sketch {
         for (let s = 0; s < splitInto; s++) {
           const length = stem.length * branchLengthFalloff * (1 + randFloat(chaosFactor / 8))
           const angle =
-            stem.angle -
-            splitAngleSpan / 2 +
-            splitSlice * s +
-            randFloat((Math.PI * chaosFactor) / 10)
+            stem.angle - splitAngleSpan / 2 + splitSlice * s + randFloat(chaosFactor * deg20)
           const endPoint = this.drawBranch(stem.position, angle, length)
           this.nextStems.push({
             position: endPoint,
@@ -201,7 +199,7 @@ export default class Tree extends Sketch {
       .add(new Point(Math.cos(angle) * length, Math.sin(angle) * length))
     this.ctx.lineTo(endPoint.x, endPoint.y)
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
     return endPoint
   }
 
@@ -219,6 +217,6 @@ export default class Tree extends Sketch {
       bloomSize
     )
     this.ctx.stroke()
-    this.ctx.closePath()
+    this.ctx.endPath()
   }
 }

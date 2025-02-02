@@ -1,3 +1,4 @@
+import { deg360 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { Line } from '../types'
@@ -149,7 +150,7 @@ class Segment {
         ++panik < 2000
       ) {
         isInitialPt = false
-        const angle = randFloatRange(Math.PI * 2)
+        const angle = randFloatRange(deg360)
         const dist = randFloatRange(
           prev.radius + this.radius + maxGap,
           prev.radius + this.radius + minGap

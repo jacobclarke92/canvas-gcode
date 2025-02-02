@@ -14,6 +14,7 @@ import type Path from './Path'
 import Point from './Point'
 import type {
   BezierCurveToAction,
+  DotAction,
   EllipseAction,
   LineToAction,
   MoveToAction,
@@ -307,6 +308,12 @@ export default class Motion {
         // console.log('[motion] line to', args)
         const [x, y] = args
         this.linear({ x, y, z: helix() })
+      },
+      ['DOT' satisfies DotAction['type']]: (...args: DotAction['args']) => {
+        this.plunge()
+        const [x, y, pauseMs] = args
+        if (pauseMs) this.ctx.driver.wait(pauseMs)
+        this.retract()
       },
       ['ELLIPSE' as EllipseAction['type']]: (...args: EllipseAction['args']) => {
         // console.log('[motion] ellipse', args)

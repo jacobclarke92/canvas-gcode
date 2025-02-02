@@ -1,3 +1,4 @@
+import { deg180, deg360 } from '../constants/angles'
 import { random } from './random'
 
 /** random int between min and max (min is 0 by default) */
@@ -18,6 +19,10 @@ export const flipCoin = randBool
 
 /** sign function */
 export const sign = (x: number): -1 | 1 => (x < 0.0 ? -1 : 1)
+
+/** clamp value between min and max */
+export const clamp = (value: number, min: number, max: number): number =>
+  Math.min(max, Math.max(value, min))
 
 /** wraps value around within range, e.g. val: -2, range: 0 - 5, return: 3 */
 export const wrap = (value: number, max: number, min = 0): number => {
@@ -40,8 +45,7 @@ export const radToDeg = (rad: number, round?: boolean): number => {
 }
 
 /** normalizes any angle to be between -PI and PI */
-export const normalizeRadian = (radian: number): number =>
-  ((radian + Math.PI) % (Math.PI * 2)) - Math.PI
+export const normalizeRadian = (radian: number): number => ((radian + deg180) % deg360) - deg180
 
 /** counts how many decimals a number has, default max of 8  */
 export const countDecimals = (number: number, most = 8): number => {
@@ -60,8 +64,8 @@ export const floatString = (number: number, decimals = 5): string => {
 
 /** compares two angles and gets the difference (normalized) */
 export const angleDiff = (startAngle: number, endAngle: number) =>
-  ((endAngle - startAngle + Math.PI * 3) % (Math.PI * 2)) - Math.PI
+  ((endAngle - startAngle + deg360 + deg180) % deg360) - deg180
 
 /** similar to angleDiff but is always positive */
 export const smallestAngleDiff = (a1: number, a2: number): number =>
-  Math.PI - Math.abs(Math.abs(a1 - a2) - Math.PI)
+  deg180 - Math.abs(Math.abs(a1 - a2) - deg180)

@@ -1,3 +1,4 @@
+import { deg90, deg360 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { getPointsWhereLineIntersectsCircle, pointInCircle } from '../utils/geomUtils'
@@ -20,7 +21,7 @@ export default class Valleys extends Sketch {
       disableRandomize: true,
     })
 
-    this.addVar('mainAngle', { initialValue: 1.169, min: 0, max: Math.PI * 2, step: 0.001 })
+    this.addVar('mainAngle', { initialValue: 1.169, min: 0, max: deg360, step: 0.001 })
 
     this.addVar('lineDrift', { initialValue: 0.45, min: 0, max: 1, step: 0.01 })
     this.addVar('lineStretchy', { initialValue: 0.4, min: 0, max: 1, step: 0.01 })
@@ -54,7 +55,7 @@ export default class Valleys extends Sketch {
 
     const ctxRadius = (this.cw + this.ch) / 3
 
-    const perpAngle = this.vars.mainAngle + Math.PI / 2
+    const perpAngle = this.vars.mainAngle + deg90
 
     const startPt = new Point(
       this.cw / 2 + Math.cos(this.vars.mainAngle) * ctxRadius,

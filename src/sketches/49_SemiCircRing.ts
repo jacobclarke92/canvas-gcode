@@ -1,3 +1,4 @@
+import { deg2p5, deg360 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import type { Line } from '../types'
@@ -19,13 +20,13 @@ export default class SemiCircRing extends Sketch {
       step: 1,
     })
     this.addVar('lines', {
-      initialValue: 1,
+      initialValue: 16,
       min: 1,
       max: 200,
       step: 1,
     })
     this.addVar('twists', {
-      initialValue: 4,
+      initialValue: 6,
       min: 1,
       max: 24,
       step: 1,
@@ -37,13 +38,13 @@ export default class SemiCircRing extends Sketch {
       step: 0.5,
     })
     this.addVar('circumferenceRange', {
-      initialValue: Math.PI / 2,
+      initialValue: 1.12900985988383,
       min: 0,
-      max: Math.PI * 2,
-      step: Math.PI / 64,
+      max: deg360,
+      step: deg2p5,
     })
     this.addVar('arcRadiusModifier', {
-      initialValue: 0.01,
+      initialValue: 1,
       min: 0,
       max: 2.001,
       step: 0.01,
@@ -60,7 +61,7 @@ export default class SemiCircRing extends Sketch {
 
     // this.ctx.strokeCircle(new Point(this.cx, this.cy), 2)
 
-    const theta = (Math.PI * 2) / lines
+    const theta = deg360 / lines
     for (let i = 0; i < lines; i++) {
       let x = this.cx
       let y = this.cy
@@ -94,7 +95,7 @@ export default class SemiCircRing extends Sketch {
         )
         arcAngleStart = arcAngleEnd
         this.ctx.stroke()
-        this.ctx.closePath()
+        this.ctx.endPath()
         // debugDot(this.ctx, new Point(x, y))
       }
       // this.ctx.lineTo(

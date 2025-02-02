@@ -7,9 +7,11 @@ import type {
   Action,
   ArcAction,
   BezierCurveToAction,
+  DotAction,
   EllipseAction,
   GetPointsOpts,
   LineToAction,
+  MoveToAction,
   QuadraticCurveToAction,
 } from './SubPath'
 import SubPath from './SubPath'
@@ -60,9 +62,9 @@ export default class Path extends ClipperPath {
     this.current.close()
   }
 
-  /**
-   * Pass all curves straight through
-   * */
+  public dot(...args: DotAction['args']) {
+    this.current.actions.push({ type: 'DOT', args })
+  }
   public lineTo(...args: LineToAction['args']) {
     this.ensure(...args)
     this.current.lineTo(...args)
@@ -128,8 +130,8 @@ export default class Path extends ClipperPath {
     const subjectPolygons = this.toPolygons(scale, divisions)
     const clipPolygons = clipRegion.toPolygons(scale, divisions)
 
-    console.log(subjectPolygons)
-    console.log(clipPolygons)
+    // console.log(subjectPolygons)
+    // console.log(clipPolygons)
     // Clean both
     // const subjPolys = Clipper.CleanPolygons(subjPolys, 1);
     // const clipPolys = Clipper.CleanPolygons(clipPolys, 1);
@@ -149,7 +151,7 @@ export default class Path extends ClipperPath {
     const clipped = new Paths()
     clipper.execute(clipType, clipped, PolyFillType.nonZero) // dunno if evenOdd is right: ;
 
-    console.log('clipped', clipped)
+    // console.log('clipped', clipped)
 
     const path = new Path()
     path.fromPolygons(clipped, scale)

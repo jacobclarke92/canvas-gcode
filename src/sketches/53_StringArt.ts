@@ -1,3 +1,4 @@
+import { deg360 } from '../constants/angles'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { debugDot } from '../utils/debugUtils'
@@ -54,7 +55,7 @@ export default class StringArt extends Sketch {
     this.done = false
     this.currentRadialIndex = 0
     this.currentTestIndex = 0
-    this.segAng = (Math.PI * 2) / points
+    this.segAng = deg360 / points
     this.radius = (this.ch - this.ch * gutter * 2) / 2
     this.drawnLines = new Set()
 

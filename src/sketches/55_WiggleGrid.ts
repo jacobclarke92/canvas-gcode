@@ -1,11 +1,13 @@
 import * as clipperLib from 'js-angusj-clipper/web'
 
+import { deg45, deg360 } from '../constants/angles'
+import Path from '../Path'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { debugDot } from '../utils/debugUtils'
 import { perlin2, seedNoise } from '../utils/noise'
 import { randInt, randIntRange } from '../utils/numberUtils'
-import { initPen, penUp, plotBounds } from '../utils/penUtils'
+import { initPen, penUp, plotBounds, stopAndWigglePen } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
 import Range, { BooleanRange } from './tools/Range'
 
@@ -25,8 +27,8 @@ export default class WiggleGrid extends Sketch {
     this.addVar('noiseAngleInfluence',{ name: 'noiseAngleInfluence', initialValue: 0, min: 0, max: 2.5, step: 0.01 }) // prettier-ignore
 
     this.addVar('perlinDiv',{ name: 'perlinDiv', initialValue: 6, min: 1, max: 100, step: 1, disableRandomize: true }) // prettier-ignore
-    this.addVar('offsetX', { name: 'offsetX', initialValue: 0, min: -100, max: 100, step: 1 })
-    this.addVar('offsetY', { name: 'offsetY', initialValue: 0, min: -100, max: 100, step: 1 })
+    this.addVar('offsetX', { name: 'offsetX', initialValue: 0, min: -250, max: 250, step: 1 })
+    this.addVar('offsetY', { name: 'offsetY', initialValue: 0, min: -250, max: 250, step: 1 })
 
     this.addVar('outerGap',{ initialValue: 6, min: -25, max: 25, step: 1, disableRandomize: true }) // prettier-ignore
 
@@ -89,7 +91,12 @@ export default class WiggleGrid extends Sketch {
       const ringSpacing = this.effectiveHeight / 2 / rings
       const baseRadius = (this.drawCount + 1) * ringSpacing
 
+      this.ctx.strokeStyle = '#35bbca'
       if (this.drawCount >= rings) {
+        stopAndWigglePen(this)
+
+        this.ctx.strokeStyle = 'red' // '#D3dd18'
+
         const gridReduction = Math.sqrt(ringSpacing * ringSpacing * 2)
         let gridRadius = (this.ch - outerGap * 2) / 2
         gridRadius = Math.sqrt(gridRadius * gridRadius * 2)
@@ -101,9 +108,9 @@ export default class WiggleGrid extends Sketch {
           const randRingOffset = gridEdges > 12 ? randIntRange(gridEdges, 0) : 0
           for (let i = 0; i < gridEdges + 1; i++) {
             const index = (i + randRingOffset) % gridEdges
-            const angle = (index / gridEdges) * Math.PI * 2
-            const x = this.cx + Math.cos(angle - Math.PI / 4) * gridRadius
-            const y = this.cy + Math.sin(angle - Math.PI / 4) * gridRadius
+            const angle = (index / gridEdges) * deg360
+            const x = this.cx + Math.cos(angle - deg45) * gridRadius
+            const y = this.cy + Math.sin(angle - deg45) * gridRadius
             if (i === 0) this.ctx.moveTo(x, y)
             else this.ctx.lineTo(x, y)
           }
@@ -113,26 +120,17 @@ export default class WiggleGrid extends Sketch {
             else this.ctx.lineTo(pt.x, pt.y)
           }
 
-          // this.ctx.rect(gutter, gutter, this.cw - gutter * 2, this.ch - gutter * 2)
-          let err = false
-          try {
-            this.ctx.clipCurrentPath({
-              clipType: clipperLib.ClipType.Intersection,
-              pathDivisions,
-              subjectIsOpen: true,
-              inputsAreOpen: false,
-              clipFillType: clipperLib.PolyFillType.NonZero,
-            })
-          } catch (e) {
-            err = true
-          }
-          if (!err) {
-            this.ctx.stroke()
-            this.ctx.closePath()
-          }
-          gridRadius -= gridReduction
+          const { intersected } = this.ctx.clipCurrentPath({
+            clipType: clipperLib.ClipType.Intersection,
+            pathDivisions,
+            subjectIsOpen: true,
+            inputsAreOpen: false,
+            clipFillType: clipperLib.PolyFillType.NonZero,
+          })
 
-          // gridRadius = 0
+          if (!intersected) this.ctx.stroke()
+          else this.ctx.currentPath = new Path()
+          gridRadius -= gridReduction
         }
 
         penUp(this)
@@ -147,7 +145,7 @@ export default class WiggleGrid extends Sketch {
 
       const ring: Point[] = []
       for (let t = 0; t < ringPts; t++) {
-        const baseAngle = (t / ringPts) * Math.PI * 2
+        const baseAngle = (t / ringPts) * deg360
         const basePt = new Point(
           this.cx + Math.cos(baseAngle) * baseRadius,
           this.cy + Math.sin(baseAngle) * baseRadius
@@ -186,7 +184,7 @@ export default class WiggleGrid extends Sketch {
         }
       }
       this.ctx.stroke()
-      this.ctx.closePath()
+      this.ctx.endPath()
 
       this.drawCount++
       if (this.drawCount === rings) {
