@@ -50,7 +50,7 @@ export default class Genuary16_Palette extends Sketch {
             (oklabRange.b.min + oklabRange.b.max) / 2,
         })
 
-        this.ctx.ctx.fillStyle = `rgb(${color.r}, ${color.g}, ${color.b})`
+        this.ctx.ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`
         this.ctx.ctx.fillRect(
           offsetX + x * blockSize,
           offsetY + y * blockSize,

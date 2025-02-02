@@ -20,6 +20,10 @@ export const flipCoin = randBool
 /** sign function */
 export const sign = (x: number): -1 | 1 => (x < 0.0 ? -1 : 1)
 
+/** clamp value between min and max */
+export const clamp = (value: number, min: number, max: number): number =>
+  Math.min(max, Math.max(value, min))
+
 /** wraps value around within range, e.g. val: -2, range: 0 - 5, return: 3 */
 export const wrap = (value: number, max: number, min = 0): number => {
   const range = max - min

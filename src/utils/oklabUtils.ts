@@ -3,15 +3,11 @@
  * https://github.com/beenotung/oklab.ts/blob/main/src/oklab.ts
  */
 
+import type { RGB } from './colorUtils'
+
 // See https://bottosson.github.io/posts/oklab/
 // and https://observablehq.com/@fil/oklab-color-space
 // and https://github.com/Butterwell/oklab
-
-export type RGB = {
-  r: number
-  g: number
-  b: number
-}
 
 export type Oklab = {
   L: number
@@ -20,7 +16,7 @@ export type Oklab = {
 }
 
 export function newRgb(): RGB {
-  return { r: 0, g: 0, b: 0 }
+  return [0, 0, 0]
 }
 
 export function newOklab(): Oklab {
@@ -36,9 +32,9 @@ export function rgbToOklab(c: RGB, o?: Oklab): void | Oklab {
     return o
   }
 
-  const r = gamma_inv(c.r / 255)
-  const g = gamma_inv(c.g / 255)
-  const b = gamma_inv(c.b / 255)
+  const r = gamma_inv(c[0] / 255)
+  const g = gamma_inv(c[1] / 255)
+  const b = gamma_inv(c[2] / 255)
 
   const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)
   const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
@@ -58,9 +54,9 @@ function toFractionalRgb(ok: Oklab, c: RGB): void {
   const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3
   const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3
 
-  c.r = 255 * gamma(+4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s)
-  c.g = 255 * gamma(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s)
-  c.b = 255 * gamma(-0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s)
+  c[0] = 255 * gamma(+4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s)
+  c[1] = 255 * gamma(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s)
+  c[2] = 255 * gamma(-0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s)
 }
 
 export function oklabToRgb(ok: Oklab): RGB
@@ -82,9 +78,9 @@ function clamp(c: number): number {
 }
 
 function normalizeRgb(c: RGB): void {
-  c.r = clamp(c.r)
-  c.g = clamp(c.g)
-  c.b = clamp(c.b)
+  c[0] = clamp(c[0])
+  c[1] = clamp(c[1])
+  c[2] = clamp(c[2])
 }
 
 /**
@@ -104,23 +100,9 @@ export function oklabToCssString(ok: Oklab, alpha?: number): string {
  * @example "rgb(20 80 120 / 0.5)"
  */
 export function rgbToCssString(c: RGB, alpha?: number): string {
-  if (typeof alpha != 'number') return `rgb(${c.r} ${c.g} ${c.b})`
-  if (alpha > 1) return `rgb(${c.r} ${c.g} ${c.b} / ${alpha}%)`
-  return `rgb(${c.r} ${c.g} ${c.b} / ${alpha})`
-}
-
-export function hexToRgb(hex: string): RGB
-export function hexToRgb(hex: string, c: RGB): void
-export function hexToRgb(hex: string, c?: RGB): void | RGB {
-  if (!c) {
-    c = newRgb()
-    hexToRgb(hex, c)
-    return c
-  }
-
-  c.r = parseInt(hex.slice(1, 3), 16)
-  c.g = parseInt(hex.slice(3, 5), 16)
-  c.b = parseInt(hex.slice(5, 7), 16)
+  if (typeof alpha != 'number') return `rgb(${c[0]} ${c[1]} ${c[2]})`
+  if (alpha > 1) return `rgb(${c[0]} ${c[1]} ${c[2]} / ${alpha}%)`
+  return `rgb(${c[0]} ${c[1]} ${c[2]} / ${alpha})`
 }
 
 /**
