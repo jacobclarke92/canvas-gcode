@@ -7,16 +7,30 @@ export default class Genuary18_Wind extends Sketch {
   static disableOverclock = true
 
   init() {
-    this.addVar('size', { initialValue: 100, min: 16, max: 1024, step: 1 })
-    this.addVar('timeStep', { initialValue: 0.016, min: 0.001, max: 1, step: 0.001 })
-    this.addVar('solverIterations', { initialValue: 40, min: 1, max: 120, step: 1 })
+    this.addVar('size', { initialValue: 128, min: 16, max: 512, step: 1 })
+    this.addVar('timeStep', { initialValue: 0.0122, min: 0.001, max: 0.05, step: 0.001 })
+    this.addVar('solverIterations', { initialValue: 40, min: 8, max: 120, step: 1 })
+    this.addVar('pipeHeight', { initialValue: 0.1, min: 0.01, max: 1, step: 0.01 })
+    this.addVar('windVelocity', { initialValue: 1.3, min: 0.1, max: 10, step: 0.1 })
+    this.addVar('obstacleX', { initialValue: 0.15, min: 0.1, max: 0.9, step: 0.01 })
+    this.addVar('obstacleY', { initialValue: 0.5, min: 0.1, max: 0.9, step: 0.01 })
+    this.addVar('obstacleRadius', { initialValue: 0.1, min: 0.01, max: 0.5, step: 0.01 })
   }
 
   renderer: FluidRenderer
   simulator: FluidSimulator
 
   initDraw(): void {
-    const { size, timeStep, solverIterations } = this.vars
+    const {
+      size,
+      timeStep,
+      solverIterations,
+      pipeHeight,
+      windVelocity,
+      obstacleX,
+      obstacleY,
+      obstacleRadius,
+    } = this.vars
 
     this.simulator = new FluidSimulator(size, size, timeStep, solverIterations)
     this.renderer = new FluidRenderer(
@@ -76,8 +90,7 @@ export default class Genuary18_Wind extends Sketch {
       */
 
     this.simulator.reset()
-    const windVelocity = 2.0
-    const pipeHeight = 0.1 * this.simulator.gridH
+    const realPipeHeight = pipeHeight * this.simulator.gridH
 
     // set obstacles
     this.simulator.solidMaskField.fill(1.0)
@@ -94,8 +107,8 @@ export default class Genuary18_Wind extends Sketch {
       this.simulator.velocityFieldX[id(1, j)] = windVelocity
 
     // set dye
-    const jMin = Math.floor(0.5 * this.simulator.gridH - 0.5 * pipeHeight)
-    const jMax = Math.floor(0.5 * this.simulator.gridH + 0.5 * pipeHeight)
+    const jMin = Math.floor(0.5 * this.simulator.gridH - 0.5 * realPipeHeight)
+    const jMax = Math.floor(0.5 * this.simulator.gridH + 0.5 * realPipeHeight)
     for (let j = jMin; j < jMax; j++) {
       this.simulator.rDyeField[id(0, j)] = 0.0
       this.simulator.gDyeField[id(0, j)] = 0.0
@@ -105,7 +118,7 @@ export default class Genuary18_Wind extends Sketch {
       this.simulator.bDyeField[id(1, j)] = 0.0
     }
 
-    addCircularObstacle(this.simulator, 0.3, 0.5, 0.1)
+    addCircularObstacle(this.simulator, obstacleX, obstacleY, obstacleRadius)
   }
 
   draw(increment: number): void {
