@@ -9,16 +9,16 @@ export default class Genuary18_Wind extends Sketch {
   init() {
     this.addVar('size', { initialValue: 100, min: 16, max: 1024, step: 1 })
     this.addVar('timeStep', { initialValue: 0.016, min: 0.001, max: 1, step: 0.001 })
-    this.addVar('viscosity', { initialValue: 40, min: 0.01, max: 80, step: 0.01 })
+    this.addVar('solverIterations', { initialValue: 40, min: 1, max: 120, step: 1 })
   }
 
   renderer: FluidRenderer
   simulator: FluidSimulator
 
   initDraw(): void {
-    const { size, timeStop, viscosity } = this.vars
+    const { size, timeStep, solverIterations } = this.vars
 
-    this.simulator = new FluidSimulator(size, size, timeStop, viscosity)
+    this.simulator = new FluidSimulator(size, size, timeStep, solverIterations)
     this.renderer = new FluidRenderer(
       this.simulator,
       this.ctx.canvasElement! /*, {
@@ -30,9 +30,9 @@ export default class Genuary18_Wind extends Sketch {
     const id = (i: number, j: number) => i + this.simulator.gridW * j
 
     // apply scene to simulator
-
+    /*
     this.simulator.reset()
-    const sourceVelocity = 4.0
+    const sourceVelocity = 10.0
     const pipeHeight = 0.05 * this.simulator.gridH
     const dyeHeight = 0.05 * this.simulator.gridH
 
@@ -73,44 +73,44 @@ export default class Genuary18_Wind extends Sketch {
       this.simulator.gDyeField[id(this.simulator.gridW - 3, j)] = g1 / 255
       this.simulator.bDyeField[id(this.simulator.gridW - 3, j)] = b1 / 255
     }
+      */
 
-    /*
     this.simulator.reset()
     const windVelocity = 2.0
     const pipeHeight = 0.1 * this.simulator.gridH
 
     // set obstacles
-    this.simulator.solidMask.fill(1.0)
+    this.simulator.solidMaskField.fill(1.0)
     for (let i = 0; i < this.simulator.gridW; i++) {
-      this.simulator.solidMask[id(i, 0)] = 0.0
-      this.simulator.solidMask[id(i, this.simulator.gridH - 1)] = 0.0
+      this.simulator.solidMaskField[id(i, 0)] = 0.0
+      this.simulator.solidMaskField[id(i, this.simulator.gridH - 1)] = 0.0
     }
     for (let j = 0; j < this.simulator.gridH; j++) {
-      this.simulator.solidMask[id(0, j)] = 0.0
+      this.simulator.solidMaskField[id(0, j)] = 0.0
     }
 
     // set velocity
-    for (let j = 0; j < this.simulator.gridH; j++) this.simulator.velocityX[id(1, j)] = windVelocity
+    for (let j = 0; j < this.simulator.gridH; j++)
+      this.simulator.velocityFieldX[id(1, j)] = windVelocity
 
     // set dye
     const jMin = Math.floor(0.5 * this.simulator.gridH - 0.5 * pipeHeight)
     const jMax = Math.floor(0.5 * this.simulator.gridH + 0.5 * pipeHeight)
     for (let j = jMin; j < jMax; j++) {
-      this.simulator.rDye[id(0, j)] = 0.0
-      this.simulator.gDye[id(0, j)] = 0.0
-      this.simulator.bDye[id(0, j)] = 0.0
-      this.simulator.rDye[id(1, j)] = 0.0
-      this.simulator.gDye[id(1, j)] = 0.0
-      this.simulator.bDye[id(1, j)] = 0.0
+      this.simulator.rDyeField[id(0, j)] = 0.0
+      this.simulator.gDyeField[id(0, j)] = 0.0
+      this.simulator.bDyeField[id(0, j)] = 0.0
+      this.simulator.rDyeField[id(1, j)] = 0.0
+      this.simulator.gDyeField[id(1, j)] = 0.0
+      this.simulator.bDyeField[id(1, j)] = 0.0
     }
 
     addCircularObstacle(this.simulator, 0.3, 0.5, 0.1)
-    */
   }
 
   draw(increment: number): void {
     //
-    debugger
+    // debugger
     this.simulator.simulate()
     this.renderer.draw({ showDye: true, showObstacle: false, showStreamline: true })
   }
