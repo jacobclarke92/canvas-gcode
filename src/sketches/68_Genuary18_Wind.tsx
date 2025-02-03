@@ -13,9 +13,12 @@ export default class Genuary18_Wind extends Sketch {
     this.addVar('solverIterations', { initialValue: 40, min: 8, max: 120, step: 1 })
     this.addVar('pipeHeight', { initialValue: 0.1, min: 0.01, max: 1, step: 0.01 })
     this.addVar('windVelocity', { initialValue: 1.3, min: 0.1, max: 10, step: 0.1 })
-    this.addVar('obstacleX', { initialValue: 0.15, min: 0.1, max: 0.9, step: 0.01 })
+    this.addVar('obstacleX', { initialValue: 0.18, min: 0.1, max: 0.9, step: 0.01 })
     this.addVar('obstacleY', { initialValue: 0.5, min: 0.1, max: 0.9, step: 0.01 })
-    this.addVar('obstacleRadius', { initialValue: 0.1, min: 0.01, max: 0.5, step: 0.01 })
+    this.addVar('obstacleRadius', { initialValue: 0.15, min: 0.01, max: 0.5, step: 0.01 })
+    this.addVar('streamlineDensity', { initialValue: 2, min: 1, max: 25, step: 1 })
+    this.addVar('maxStreamlineIterations', { initialValue: 100, min: 1, max: 500, step: 1 })
+    this.addVar('minPressureForStreamline', { initialValue: 0.1, min: 0, max: 1, step: 0.01 })
     this.vs.showDye = new BooleanRange({ disableRandomize: true, initialValue: true })
     this.vs.showStreamlines = new BooleanRange({ disableRandomize: true, initialValue: true })
   }
@@ -122,11 +125,23 @@ export default class Genuary18_Wind extends Sketch {
     }
 
     addCircularObstacle(this.simulator, obstacleX, obstacleY, obstacleRadius)
+    addCircularObstacle(
+      this.simulator,
+      obstacleX + obstacleRadius * 2,
+      obstacleY - obstacleRadius,
+      obstacleRadius * 0.7
+    )
+    addCircularObstacle(
+      this.simulator,
+      obstacleX + obstacleRadius * 2,
+      obstacleY + obstacleRadius,
+      obstacleRadius * 0.4
+    )
   }
 
   draw(increment: number): void {
-    //
-    // debugger
+    const { streamlineDensity, maxStreamlineIterations, minPressureForStreamline } = this.vars
+
     this.simulator.simulate()
     this.renderer.draw({
       showDye: !!this.vs.showDye.value,
@@ -136,7 +151,9 @@ export default class Genuary18_Wind extends Sketch {
 
     if (!!this.vs.showStreamlines.value) {
       this.renderer.drawStreamline({
-        nthPixel: 2,
+        nthPixel: streamlineDensity,
+        maxLineIterations: maxStreamlineIterations,
+        minPressure: minPressureForStreamline,
       })
     }
   }

@@ -46,7 +46,11 @@ export class FluidRenderer {
     this.dataPixels = this.dataImgData.data
   }
 
-  drawStreamline({ nthPixel = 1 }: { nthPixel?: number }) {
+  drawStreamline({
+    nthPixel = 1,
+    maxLineIterations = 100,
+    minPressure = 0.1,
+  }: { nthPixel?: number; maxLineIterations?: number; minPressure?: number } = {}) {
     const h = this.fluidSim.cellSize
     const segLen = h * 0.1
     // const numSegments = 50
@@ -71,9 +75,13 @@ export class FluidRenderer {
         this.ctx.moveTo(x / h, y / h)
 
         const pressure = fl.pressureField[i + fl.gridW * j]
-        const numSegments = Math.round(mapRange(pressure, pMax, pMin, -100, 100))
+        const numSegments = Math.round(
+          mapRange(pressure, pMax, pMin, -maxLineIterations, maxLineIterations)
+        )
 
-        for (let n = 0; n < numSegments; n++) {
+        if (numSegments < minPressure * maxLineIterations) continue
+
+        for (let n = minPressure * maxLineIterations; n < numSegments; n++) {
           const u = this.fluidSim.interpolateFromField(x, y, this.fluidSim.velocityFieldX)
           const v = this.fluidSim.interpolateFromField(x, y, this.fluidSim.velocityFieldY)
           const l = Math.sqrt(u * u + v * v)
