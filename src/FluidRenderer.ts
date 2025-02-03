@@ -1,5 +1,6 @@
 import type { FluidSimulator } from './FluidSimulator'
 import { hexToRgb, sciColor } from './utils/colorUtils'
+import { mapRange } from './utils/numberUtils'
 
 export class FluidRenderer {
   fluidSim: FluidSimulator
@@ -45,21 +46,32 @@ export class FluidRenderer {
     this.dataPixels = this.dataImgData.data
   }
 
-  drawStreamline() {
+  drawStreamline({ nthPixel = 1 }: { nthPixel?: number }) {
     const h = this.fluidSim.cellSize
-    const segLen = h * 0.2
-    const numSegments = 15
+    const segLen = h * 0.1
+    // const numSegments = 50
 
     this.ctx.strokeStyle = '#000000'
     this.ctx.lineWidth = 0.1
 
-    for (let i = 1; i < this.fluidSim.gridW - 1; i += 5) {
-      for (let j = 1; j < this.fluidSim.gridH - 1; j += 5) {
+    const fl = this.fluidSim
+    let pMin: number, pMax: number
+    pMin = pMax = fl.pressureField[0]
+    for (let i = 0; i < fl.gridW * fl.gridH; i++) {
+      pMin = Math.min(pMin, fl.pressureField[i])
+      pMax = Math.max(pMax, fl.pressureField[i])
+    }
+
+    for (let i = 1; i < this.fluidSim.gridW - 1; i += nthPixel) {
+      for (let j = 1; j < this.fluidSim.gridH - 1; j += nthPixel) {
         let x = (i + 0.5) * h
         let y = (j + 0.5) * h
 
         this.ctx.beginPath()
         this.ctx.moveTo(x / h, y / h)
+
+        const pressure = fl.pressureField[i + fl.gridW * j]
+        const numSegments = Math.round(mapRange(pressure, pMax, pMin, -100, 100))
 
         for (let n = 0; n < numSegments; n++) {
           const u = this.fluidSim.interpolateFromField(x, y, this.fluidSim.velocityFieldX)
@@ -130,6 +142,6 @@ export class FluidRenderer {
     // draw into original canvas
     this.ctx.drawImage(this.dataCanvas, 0, 0)
 
-    if (opts.showStreamline) this.drawStreamline()
+    if (opts.showStreamline) this.drawStreamline({})
   }
 }
