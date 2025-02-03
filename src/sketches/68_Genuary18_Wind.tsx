@@ -2,6 +2,7 @@ import { FluidRenderer } from '../FluidRenderer'
 import { addCircularObstacle, FluidSimulator } from '../FluidSimulator'
 import { Sketch } from '../Sketch'
 import { hexToRgb } from '../utils/colorUtils'
+import { BooleanRange } from './tools/Range'
 
 export default class Genuary18_Wind extends Sketch {
   static disableOverclock = true
@@ -15,6 +16,8 @@ export default class Genuary18_Wind extends Sketch {
     this.addVar('obstacleX', { initialValue: 0.15, min: 0.1, max: 0.9, step: 0.01 })
     this.addVar('obstacleY', { initialValue: 0.5, min: 0.1, max: 0.9, step: 0.01 })
     this.addVar('obstacleRadius', { initialValue: 0.1, min: 0.01, max: 0.5, step: 0.01 })
+    this.vs.showDye = new BooleanRange({ disableRandomize: true, initialValue: true })
+    this.vs.showStreamlines = new BooleanRange({ disableRandomize: true, initialValue: true })
   }
 
   renderer: FluidRenderer
@@ -125,6 +128,16 @@ export default class Genuary18_Wind extends Sketch {
     //
     // debugger
     this.simulator.simulate()
-    this.renderer.draw({ showDye: true, showObstacle: false, showStreamline: true })
+    this.renderer.draw({
+      showDye: !!this.vs.showDye.value,
+      showObstacle: false,
+      showStreamline: false,
+    })
+
+    if (!!this.vs.showStreamlines.value) {
+      this.renderer.drawStreamline({
+        nthPixel: 2,
+      })
+    }
   }
 }
