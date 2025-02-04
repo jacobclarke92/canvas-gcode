@@ -1,3 +1,5 @@
+import Point from './Point'
+import { isPointInQuadrilateral, isPointInTriangle } from './utils/geomUtils'
 import { clamp } from './utils/numberUtils'
 
 export class FluidSimulator {
@@ -283,19 +285,69 @@ export class FluidSimulator {
 }
 
 export function addCircularObstacle(sim: FluidSimulator, x: number, y: number, radius: number) {
-  const iFrom = clamp(Math.floor((x - radius - 1) / sim.cellSize), 0, sim.gridW - 1)
-  const ito = clamp(Math.ceil((x + radius + 2) / sim.cellSize), 0, sim.gridW - 1)
-  const jFrom = clamp(Math.floor((y - radius - 1) / sim.cellSize), 0, sim.gridH - 1)
-  const jto = clamp(Math.ceil((y + radius + 2) / sim.cellSize), 0, sim.gridH - 1)
-  for (let i = iFrom; i < ito; i++) {
-    for (let j = jFrom; j < jto; j++) {
-      const dx = (i + 0.5) * sim.cellSize - x
-      const dy = (j + 0.5) * sim.cellSize - y
+  const ixFrom = clamp(Math.floor((x - radius - 1) / sim.cellSize), 0, sim.gridW - 1)
+  const ixTo = clamp(Math.ceil((x + radius + 2) / sim.cellSize), 0, sim.gridW - 1)
+  const iyFrom = clamp(Math.floor((y - radius - 1) / sim.cellSize), 0, sim.gridH - 1)
+  const iyTo = clamp(Math.ceil((y + radius + 2) / sim.cellSize), 0, sim.gridH - 1)
+  for (let ix = ixFrom; ix < ixTo; ix++) {
+    for (let iy = iyFrom; iy < iyTo; iy++) {
+      const dx = (ix + 0.5) * sim.cellSize - x
+      const dy = (iy + 0.5) * sim.cellSize - y
       if (dx * dx + dy * dy < radius * radius) {
-        sim.solidMaskField[i + sim.gridW * j] = 0.0
-        sim.rDyeField[i + sim.gridW * j] = 1.0
-        sim.velocityFieldX[i + sim.gridW * j] = 0.0
-        sim.velocityFieldY[i + sim.gridW * j] = 0.0
+        sim.solidMaskField[ix + sim.gridW * iy] = 0.0
+        sim.rDyeField[ix + sim.gridW * iy] = 1.0
+        sim.velocityFieldX[ix + sim.gridW * iy] = 0.0
+        sim.velocityFieldY[ix + sim.gridW * iy] = 0.0
+      }
+    }
+  }
+}
+
+export function addTriangleObstacle(sim: FluidSimulator, pt1: Point, pt2: Point, pt3: Point) {
+  const minX = Math.min(pt1.x, pt2.x, pt3.x)
+  const minY = Math.min(pt1.y, pt2.y, pt3.y)
+  const maxX = Math.max(pt1.x, pt2.x, pt3.x)
+  const maxY = Math.max(pt1.y, pt2.y, pt3.y)
+  const ixFrom = clamp(Math.floor(minX / sim.cellSize - 1), 0, sim.gridW - 1)
+  const iyFrom = clamp(Math.floor(minY / sim.cellSize - 1), 0, sim.gridH - 1)
+  const ixTo = clamp(Math.ceil(maxX / sim.cellSize + 2), 0, sim.gridW - 1)
+  const iyTo = clamp(Math.ceil(maxY / sim.cellSize + 2), 0, sim.gridH - 1)
+  for (let ix = ixFrom; ix < ixTo; ix++) {
+    for (let iy = iyFrom; iy < iyTo; iy++) {
+      const p = new Point((ix + 0.5) * sim.cellSize, (iy + 0.5) * sim.cellSize)
+      if (isPointInTriangle(p, pt1, pt2, pt3)) {
+        sim.solidMaskField[ix + sim.gridW * iy] = 0.0
+        sim.rDyeField[ix + sim.gridW * iy] = 1.0
+        sim.velocityFieldX[ix + sim.gridW * iy] = 0.0
+        sim.velocityFieldY[ix + sim.gridW * iy] = 0.0
+      }
+    }
+  }
+}
+
+export function addQuadrilateralObstacle(
+  sim: FluidSimulator,
+  pt1: Point,
+  pt2: Point,
+  pt3: Point,
+  pt4: Point
+) {
+  const minX = Math.min(pt1.x, pt2.x, pt3.x, pt4.x)
+  const minY = Math.min(pt1.y, pt2.y, pt3.y, pt4.y)
+  const maxX = Math.max(pt1.x, pt2.x, pt3.x, pt4.x)
+  const maxY = Math.max(pt1.y, pt2.y, pt3.y, pt4.y)
+  const ixFrom = clamp(Math.floor(minX / sim.cellSize - 1), 0, sim.gridW - 1)
+  const iyFrom = clamp(Math.floor(minY / sim.cellSize - 1), 0, sim.gridH - 1)
+  const ixTo = clamp(Math.ceil(maxX / sim.cellSize + 2), 0, sim.gridW - 1)
+  const iyTo = clamp(Math.ceil(maxY / sim.cellSize + 2), 0, sim.gridH - 1)
+  for (let ix = ixFrom; ix < ixTo; ix++) {
+    for (let iy = iyFrom; iy < iyTo; iy++) {
+      const p = new Point((ix + 0.5) * sim.cellSize, (iy + 0.5) * sim.cellSize)
+      if (isPointInQuadrilateral(p, [pt1, pt2, pt3, pt4])) {
+        sim.solidMaskField[ix + sim.gridW * iy] = 0.0
+        sim.rDyeField[ix + sim.gridW * iy] = 1.0
+        sim.velocityFieldX[ix + sim.gridW * iy] = 0.0
+        sim.velocityFieldY[ix + sim.gridW * iy] = 0.0
       }
     }
   }
