@@ -167,6 +167,24 @@ export const getLineIntersectionPoints = <LineType extends Line | [IntPoint, Int
 
 /**
  * ---------------
+ * Triangle utils
+ * ---------------
+ */
+
+/** Determines if a point lies inside a triangle using barycentric coordinates */
+export const isPointInTriangle = (point: Point, v1: Point, v2: Point, v3: Point): boolean => {
+  const denominator = (v2.y - v3.y) * (v1.x - v3.x) + (v3.x - v2.x) * (v1.y - v3.y)
+
+  const a = ((v2.y - v3.y) * (point.x - v3.x) + (v3.x - v2.x) * (point.y - v3.y)) / denominator
+  const b = ((v3.y - v1.y) * (point.x - v3.x) + (v1.x - v3.x) * (point.y - v3.y)) / denominator
+  const c = 1 - a - b
+
+  // If all coordinates are between 0 and 1, the point is inside the triangle
+  return a >= 0 && a <= 1 && b >= 0 && b <= 1 && c >= 0 && c <= 1
+}
+
+/**
+ * ---------------
  * Rectangle (quadrilateral) utils
  * ---------------
  */
@@ -357,24 +375,6 @@ export const getCircleCircleIntersectionPoints = (
   const y3 = (h * (circle2Pos.x - circle1Pos.x)) / d
 
   return [new Point(p2.x + x3, p2.y - y3), new Point(p2.x - x3, p2.y + y3)]
-}
-
-/**
- * ---------------
- * Triangle utils
- * ---------------
- */
-
-/** Determines if a point lies inside a triangle using barycentric coordinates */
-export const isPointInTriangle = (point: Point, v1: Point, v2: Point, v3: Point): boolean => {
-  const denominator = (v2.y - v3.y) * (v1.x - v3.x) + (v3.x - v2.x) * (v1.y - v3.y)
-
-  const a = ((v2.y - v3.y) * (point.x - v3.x) + (v3.x - v2.x) * (point.y - v3.y)) / denominator
-  const b = ((v3.y - v1.y) * (point.x - v3.x) + (v1.x - v3.x) * (point.y - v3.y)) / denominator
-  const c = 1 - a - b
-
-  // If all coordinates are between 0 and 1, the point is inside the triangle
-  return a >= 0 && a <= 1 && b >= 0 && b <= 1 && c >= 0 && c <= 1
 }
 
 /**
