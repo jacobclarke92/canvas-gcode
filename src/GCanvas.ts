@@ -722,6 +722,7 @@ export default class GCanvas {
     this.moveTo(x1, y1)
     this.lineTo(x2, y2)
     this.lineTo(x3, y3)
+    this.lineTo(x1, y1)
     // this.endPath()
   }
 
