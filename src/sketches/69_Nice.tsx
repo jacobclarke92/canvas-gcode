@@ -23,11 +23,16 @@ export default class Nice69 extends Sketch {
     this.addVar('streamlineDensity', { initialValue: 2, min: 1, max: 25, step: 1 })
     this.addVar('maxStreamlineIterations', { initialValue: 100, min: 1, max: 500, step: 1 })
     this.addVar('minPressureForStreamline', { initialValue: 0.1, min: 0, max: 1, step: 0.01 })
+    this.addVar('waitBeforeSnapshot', { initialValue: 120, min: 0, max: 5000, step: 1 })
     this.vs.showDye = new BooleanRange({ disableRandomize: true, initialValue: true })
     this.vs.showStreamlines = new BooleanRange({ disableRandomize: true, initialValue: true })
     this.vs.showObstacles = new BooleanRange({ disableRandomize: true, initialValue: false })
+    this.vs.strokeObstacles = new BooleanRange({ disableRandomize: true, initialValue: false })
   }
 
+  done = false
+  linesDrawn = 0
+  lines: number[][][] = []
   renderer: FluidRenderer
   simulator: FluidSimulator
   rectangles: [Point, Point, Point, Point][] = []
@@ -35,6 +40,10 @@ export default class Nice69 extends Sketch {
 
   initDraw(): void {
     const { size, timeStep, solverIterations, pipeHeight, windVelocity } = this.vars
+
+    this.done = false
+    this.linesDrawn = 0
+    this.lines = []
 
     this.simulator = new FluidSimulator(
       Math.floor((this.cw / this.ch) * size),
@@ -120,7 +129,6 @@ export default class Nice69 extends Sketch {
         triangle[2].divide(normalizePt)
       )
     }
-    /*
     for (const rectangle of this.rectangles) {
       addQuadrilateralObstacle(
         this.simulator,
@@ -130,7 +138,6 @@ export default class Nice69 extends Sketch {
         rectangle[3].divide(normalizePt)
       )
     }
-    */
   }
 
   drawTree({ x, height, width }: { x: number; height: number; width: number }) {
@@ -146,7 +153,9 @@ export default class Nice69 extends Sketch {
       new Point(x - trunkWidth / 2, this.ch - height + 5),
     ]
     this.rectangles.push(rectangle)
-    this.ctx.strokeRect(x - trunkWidth / 2, this.ch, trunkWidth, -height + 5)
+    if (!!this.vs.strokeObstacles.value) {
+      this.ctx.strokeRect(x - trunkWidth / 2, this.ch, trunkWidth, -height + 5)
+    }
     let y = this.ch - height
     let w = width / 2
     for (let i = 0; i < branches; i++) {
@@ -157,14 +166,45 @@ export default class Nice69 extends Sketch {
         new Point(x - w / 2, y + foliageHeight),
       ]
       this.triangles.push(triangle)
-      this.ctx.strokeTriangle(...triangle)
+      if (!!this.vs.strokeObstacles.value) {
+        this.ctx.strokeTriangle(...triangle)
+      }
       y += canopyHeight / branches + randFloat(5)
       w += width / branches
     }
   }
 
   draw(increment: number): void {
-    const { streamlineDensity, maxStreamlineIterations, minPressureForStreamline } = this.vars
+    const {
+      size,
+      streamlineDensity,
+      maxStreamlineIterations,
+      minPressureForStreamline,
+      waitBeforeSnapshot,
+    } = this.vars
+
+    if (this.done) {
+      if (this.linesDrawn < this.lines.length) {
+        const modifier = 6
+        for (let i = 0; i < size; i++) {
+          if (this.linesDrawn >= this.lines.length) break
+          const line = this.lines[this.linesDrawn]
+          this.ctx.beginPath()
+          let lastPt = new Point(line[0][0] * modifier * this.cw, line[0][1] * modifier * this.ch)
+          this.ctx.moveTo(lastPt.x, lastPt.y)
+          for (let i = 1; i < line.length; i++) {
+            const pt = new Point(line[i][0] * modifier * this.cw, line[i][1] * modifier * this.ch)
+            if (lastPt.distanceTo(pt) > 0.8) {
+              this.ctx.lineTo(pt.x, pt.y)
+              lastPt = pt
+            }
+          }
+          this.ctx.stroke()
+          this.linesDrawn++
+        }
+      }
+      return
+    }
 
     this.simulator.simulate()
     this.renderer.draw({
@@ -174,11 +214,36 @@ export default class Nice69 extends Sketch {
     })
 
     if (!!this.vs.showStreamlines.value) {
-      this.renderer.drawStreamline({
+      const returnData = increment === waitBeforeSnapshot
+      const lines = this.renderer.drawStreamline({
         nthPixel: streamlineDensity,
         maxLineIterations: maxStreamlineIterations,
         minPressure: minPressureForStreamline,
+        returnData,
       })
+      if (returnData) {
+        this.done = true
+        this.ctx.reset()
+
+        console.log(lines)
+        this.lines = lines
+        const normalizePt = new Point(this.cw, this.ch)
+
+        if (!!this.vs.strokeObstacles.value) {
+          for (const rectPts of this.rectangles) {
+            this.ctx.beginPath()
+            this.ctx.path(rectPts.map((pt) => pt.multiply(normalizePt)))
+            this.ctx.closePath()
+            this.ctx.stroke()
+          }
+          for (const trianglePts of this.triangles) {
+            this.ctx.beginPath()
+            this.ctx.path(trianglePts.map((pt) => pt.multiply(normalizePt)))
+            this.ctx.closePath()
+            this.ctx.stroke()
+          }
+        }
+      }
     }
   }
 }

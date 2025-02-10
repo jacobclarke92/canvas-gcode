@@ -50,7 +50,13 @@ export class FluidRenderer {
     nthPixel = 1,
     maxLineIterations = 100,
     minPressure = 0.1,
-  }: { nthPixel?: number; maxLineIterations?: number; minPressure?: number } = {}) {
+    returnData = false,
+  }: {
+    nthPixel?: number
+    maxLineIterations?: number
+    minPressure?: number
+    returnData?: boolean
+  } = {}) {
     const h = this.fluidSim.cellSize
     const segLen = h * 0.1
     // const numSegments = 50
@@ -66,6 +72,8 @@ export class FluidRenderer {
       pMax = Math.max(pMax, fl.pressureField[i])
     }
 
+    const lines: number[][][] = []
+
     for (let i = 1; i < this.fluidSim.gridW - 1; i += nthPixel) {
       for (let j = 1; j < this.fluidSim.gridH - 1; j += nthPixel) {
         let x = (i + 0.5) * h
@@ -73,6 +81,8 @@ export class FluidRenderer {
 
         this.ctx.beginPath()
         this.ctx.moveTo(x / h, y / h)
+
+        const line = [[x / h / this.width, y / h / this.height]]
 
         const pressure = fl.pressureField[i + fl.gridW * j]
         const numSegments = Math.round(
@@ -89,10 +99,13 @@ export class FluidRenderer {
           y += (v / l) * segLen
           if (x > this.fluidSim.gridW * this.fluidSim.cellSize) break
           this.ctx.lineTo(x / h, y / h)
+          if (returnData) line.push([x / h / this.width, y / h / this.height])
         }
         this.ctx.stroke()
+        if (returnData) lines.push(line)
       }
     }
+    if (returnData) return lines
   }
 
   // TODO : buffer draw
