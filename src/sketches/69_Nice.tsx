@@ -15,15 +15,15 @@ export default class Nice69 extends Sketch {
   static disableOverclock = true
 
   init() {
-    this.addVar('size', { initialValue: 128, min: 16, max: 512, step: 1 })
+    this.addVar('size', { initialValue: 150, min: 16, max: 512, step: 1 })
     this.addVar('timeStep', { initialValue: 0.0122, min: 0.001, max: 0.05, step: 0.001 })
-    this.addVar('solverIterations', { initialValue: 40, min: 8, max: 120, step: 1 })
+    this.addVar('solverIterations', { initialValue: 50, min: 8, max: 120, step: 1 })
     this.addVar('pipeHeight', { initialValue: 0.15, min: 0.01, max: 1, step: 0.01 })
     this.addVar('windVelocity', { initialValue: 1.3, min: 0.1, max: 10, step: 0.1 })
     this.addVar('streamlineDensity', { initialValue: 2, min: 1, max: 25, step: 1 })
-    this.addVar('maxStreamlineIterations', { initialValue: 100, min: 1, max: 500, step: 1 })
+    this.addVar('maxStreamlineIterations', { initialValue: 150, min: 1, max: 500, step: 1 })
     this.addVar('minPressureForStreamline', { initialValue: 0.1, min: 0, max: 1, step: 0.01 })
-    this.addVar('waitBeforeSnapshot', { initialValue: 120, min: 0, max: 5000, step: 1 })
+    this.addVar('waitBeforeSnapshot', { initialValue: 64, min: 0, max: 500, step: 1 })
     this.vs.showDye = new BooleanRange({ disableRandomize: true, initialValue: true })
     this.vs.showStreamlines = new BooleanRange({ disableRandomize: true, initialValue: true })
     this.vs.showObstacles = new BooleanRange({ disableRandomize: true, initialValue: false })
@@ -93,8 +93,8 @@ export default class Nice69 extends Sketch {
 
     // set velocity
     for (let iy = 0; iy < iyMax; iy++) this.simulator.velocityFieldX[id(1, iy)] = windVelocity
-    // for (let iy = 0; iy < iyMax; iy++)
-    //   this.simulator.velocityFieldX[id(this.simulator.gridW, iy)] = -windVelocity
+    for (let iy = 0; iy < iyMax; iy++)
+      this.simulator.velocityFieldX[id(this.simulator.gridW - 1, iy)] = -windVelocity
     for (let ix = 0; ix < this.simulator.gridW; ix++) {
       this.simulator.velocityFieldY[id(ix, 1)] = windVelocity / 10
       this.simulator.velocityFieldY[id(ix, this.simulator.gridH - 1)] = -windVelocity / 5
@@ -177,6 +177,8 @@ export default class Nice69 extends Sketch {
   draw(increment: number): void {
     const {
       size,
+      pipeHeight,
+      windVelocity,
       streamlineDensity,
       maxStreamlineIterations,
       minPressureForStreamline,
@@ -185,8 +187,20 @@ export default class Nice69 extends Sketch {
 
     if (this.done) {
       if (this.linesDrawn < this.lines.length) {
-        const modifier = 6
-        for (let i = 0; i < size; i++) {
+        // size=32, / 1.35
+        // size=64, / 5.3
+        // size=96, / 12
+        // size=128, / 22
+        // size=136, / 24
+        // polynomial pls
+        // https://mycurvefit.com/
+        // y = 0.001528273 - 0.001328085*x + 0.001325747*x^2
+        // const divAmt = 0.001528273 - 0.001328085 * size + 0.001325747 * Math.pow(size, 2)
+        const divAmt = 0.00129 * Math.pow(size, 2)
+        const modifier = size / divAmt
+        // const modifierY = size / 44
+
+        for (let i = 0; i < size * 20; i++) {
           if (this.linesDrawn >= this.lines.length) break
           const line = this.lines[this.linesDrawn]
           this.ctx.beginPath()
@@ -205,6 +219,14 @@ export default class Nice69 extends Sketch {
       }
       return
     }
+
+    const id = (i: number, j: number) => i + this.simulator.gridW * j
+    const iyMax = Math.floor(this.simulator.gridH * (pipeHeight + 0.05))
+
+    // set velocity
+    // for (let iy = 0; iy < iyMax; iy++) this.simulator.velocityFieldX[id(1, iy)] = windVelocity
+    for (let iy = 0; iy < iyMax; iy++)
+      this.simulator.velocityFieldX[id(this.simulator.gridW - 2, iy)] = -windVelocity * 5
 
     this.simulator.simulate()
     this.renderer.draw({
