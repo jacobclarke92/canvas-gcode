@@ -68,4 +68,5 @@ export default [
   require('./67_Genuary16_Palette').default,
   require('./68_Genuary18_Wind').default,
   require('./69_Nice').default,
+  require('./70_Watercolour').default,
 ]
