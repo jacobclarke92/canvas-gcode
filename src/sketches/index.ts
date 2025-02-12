@@ -69,4 +69,5 @@ export default [
   require('./68_Genuary18_Wind').default,
   require('./69_Nice').default,
   require('./70_Watercolour').default,
+  require('./71_MandalaVariations').default,
 ]
