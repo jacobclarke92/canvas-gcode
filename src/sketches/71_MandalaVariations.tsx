@@ -14,6 +14,25 @@ function makeKey(a: number, b: number): string {
   return `${min}-${max}`
 }
 
+const getTotalLinesFromPts = (pts: number) => {
+  let lines = 0
+  for (let i = 1; i < pts + 1; i++) lines += pts - i
+  return lines
+}
+
+const shortestDistance = (index1: number, index2: number, totalPoints: number): number => {
+  // Ensure index1 is always the smaller one for simplicity
+  const minIndex = Math.min(index1, index2)
+  const maxIndex = Math.max(index1, index2)
+
+  // Compute the two possible distances
+  const directDistance = maxIndex - minIndex
+  const wrapAroundDistance = totalPoints - directDistance
+
+  // Return the shortest distance, including endpoints
+  return Math.min(directDistance, wrapAroundDistance) + 1
+}
+
 class Mandala {
   sketch: Sketch
   debug = false
@@ -36,7 +55,7 @@ class Mandala {
     center,
     points,
     radius,
-    sketch: ctx,
+    sketch,
     debug,
   }: {
     center: Point
@@ -45,16 +64,13 @@ class Mandala {
     sketch: Sketch
     debug?: boolean
   }) {
-    this.sketch = ctx
+    this.sketch = sketch
     this.debug = debug
     this.cPt = center
+    this.points = points
 
-    // For n points, each point connects to (n-1) other points
-    // This counts each line twice (once from each end)
-    // So we divide by 2 to get the actual number of unique lines
-    this.totalLines = points + (points * (points - 1)) / 2
+    this.totalLines = getTotalLinesFromPts(points)
 
-    // this.skipCount = 0
     this.done = false
     this.currentRadialIndex = 0
     this.currentTestIndex = 0
@@ -65,7 +81,7 @@ class Mandala {
     if (debug) {
       for (let i = 0; i < points; i++) {
         debugDot(
-          ctx.ctx,
+          sketch.ctx,
           center.x + Math.cos(this.segAng * i) * this.radius,
           center.y + Math.sin(this.segAng * i) * this.radius
         )
@@ -84,25 +100,23 @@ class Mandala {
       return
     }
 
-    const indexDiff = Math.abs(this.currentRadialIndex - this.currentTestIndex)
+    const indexDiff = shortestDistance(this.currentRadialIndex, this.currentTestIndex, this.points)
 
     const lineAlreadyDrawn = this.hasDrawn(this.currentRadialIndex, this.currentTestIndex)
-    const needToAvoid =
-      avoidUntil > 0 && (indexDiff < avoidUntil || indexDiff > this.points - avoidUntil)
+    const needToAvoid = avoidUntil > 0 && indexDiff <= avoidUntil
 
-    if (needToAvoid) {
-      // add it anyway so it can be easily skipped later
+    if (needToAvoid && this.currentRadialIndex !== this.currentTestIndex) {
       this.drawnLines.add(makeKey(this.currentRadialIndex, this.currentTestIndex))
     }
 
     if (lineAlreadyDrawn || needToAvoid || this.currentRadialIndex === this.currentTestIndex) {
       this.currentTestIndex++
-      if (this.currentTestIndex === this.points) {
-        this.currentRadialIndex++
+      if (this.currentTestIndex >= this.points) {
         this.currentTestIndex = 0
+        this.currentRadialIndex++
+        if (this.currentRadialIndex >= this.points) this.currentRadialIndex = 0
       }
-      // this.skipCount++
-      // continue
+      this.draw()
       return
     }
 
@@ -134,21 +148,6 @@ class Mandala {
     }
     this.sketch.ctx.stroke()
 
-    if (this.debug) {
-      this.sketch.ctx.strokeTriangle(
-        this.cPt.x + Math.cos(endAng) * this.radius,
-        this.cPt.y + Math.sin(endAng) * this.radius,
-        // direction:
-        Math.atan2(
-          Math.sin(startAng) * this.radius - Math.sin(endAng) * this.radius,
-          Math.cos(startAng) * this.radius - Math.cos(endAng) * this.radius
-        ),
-
-        // distance:
-        10
-      )
-    }
-
     this.drawnLines.add(makeKey(this.currentRadialIndex, this.currentTestIndex))
     this.currentRadialIndex = this.currentTestIndex
     this.currentTestIndex = 0
@@ -156,17 +155,33 @@ class Mandala {
 }
 
 export default class MandalaVariations extends Sketch {
+  // static disableOverclock = true
+
   init() {
     this.addVar('seed', { initialValue: 3994, min: 1000, max: 5000, step: 1 })
-    this.addVar('speedUp', { initialValue: 32, min: 1, max: 50, step: 1 })
-    this.addVar('gutter', { presentation: true, initialValue: 0.05, min: 0, max: 0.4, step: 0.001 })
+    this.addVar('speedUp', { initialValue: 0, min: 1, max: 50, step: 1 })
+    this.addVar('gutterX', {
+      presentation: true,
+      initialValue: 0.05,
+      min: 0,
+      max: 0.4,
+      step: 0.001,
+    })
+    this.addVar('gutterY', {
+      presentation: true,
+      initialValue: 0.05,
+      min: 0,
+      max: 0.4,
+      step: 0.001,
+    })
     this.addVar('rows', { initialValue: 3, min: 1, max: 10, step: 1 })
     this.addVar('cols', { initialValue: 4, min: 1, max: 10, step: 1 })
-    this.addVar('pointsMin', { initialValue: 32, min: 5, max: 128, step: 1 })
+    this.addVar('spacing', { initialValue: 0.2, min: 0, max: 1, step: 0.01 })
+    this.addVar('pointsMin', { initialValue: 5, min: 5, max: 128, step: 1 })
     this.addVar('pointsIncrement', { initialValue: 1, min: 1, max: 32, step: 1 })
     this.addVar('avoidUntil', { initialValue: 0, min: 0, max: 32, step: 1 })
     this.addVar('curveDistance', { initialValue: 0.01, min: -100, max: 100, step: 0.1 })
-    this.addVar('curveLean', { initialValue: 1, min: -1, max: 32, step: 0.01 })
+    this.addVar('curveLean', { initialValue: 1, min: -1, max: 3, step: 0.01 })
     this.vs.debug = new BooleanRange({ disableRandomize: true, initialValue: false })
   }
 
@@ -183,12 +198,13 @@ export default class MandalaVariations extends Sketch {
     this.mandalas = []
     this.currentMandalaIndex = 0
 
-    const { gutter, rows, cols, pointsMin, pointsIncrement } = this.vars
+    const { gutterX, gutterY, rows, cols, spacing, pointsMin, pointsIncrement } = this.vars
     const debug = !!this.vs.debug.value
 
-    const gutterWidth = this.cw * gutter
+    const gutterWidth = this.cw * gutterX
+    const gutterHeight = this.ch * gutterY
     const availableWidth = this.cw - gutterWidth * 2
-    const availableHeight = this.ch - gutterWidth * 2
+    const availableHeight = this.ch - gutterHeight * 2
     const cellWidth = availableWidth / cols
     const cellHeight = availableHeight / rows
 
@@ -197,9 +213,9 @@ export default class MandalaVariations extends Sketch {
       for (let c = 0; c < cols; c++) {
         const center = new Point(
           gutterWidth + cellWidth * c + cellWidth / 2,
-          gutterWidth + cellHeight * r + cellHeight / 2
+          gutterHeight + cellHeight * r + cellHeight / 2
         )
-        const radius = (Math.min(cellWidth, cellHeight) / 2) * 0.8
+        const radius = (Math.min(cellWidth, cellHeight) / 2) * (1 - spacing)
         this.mandalas.push(new Mandala({ center, points, radius, sketch: this, debug }))
         points += pointsIncrement
       }
