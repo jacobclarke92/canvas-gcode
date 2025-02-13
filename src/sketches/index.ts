@@ -70,4 +70,5 @@ export default [
   require('./69_Nice').default,
   require('./70_Watercolour').default,
   require('./71_MandalaVariations').default,
+  require('./72_MandalaSpiral').default,
 ]
