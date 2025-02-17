@@ -1,4 +1,5 @@
 import Point from '../Point'
+import type { SketchState } from '../Sketch'
 import { Sketch } from '../Sketch'
 import { perlin2 } from '../utils/noise'
 import {
@@ -16,6 +17,7 @@ import Range from './tools/Range'
 export default class CutoutTest extends Sketch {
   // static generateGCode = false
   static enableCutouts = true
+  static sketchState: SketchState = 'test'
 
   init() {
     //

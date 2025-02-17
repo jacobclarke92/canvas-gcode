@@ -1,5 +1,6 @@
 import { deg360 } from '../constants/angles'
 import Point from '../Point'
+import type { SketchState } from '../Sketch'
 import { Sketch } from '../Sketch'
 import { randInt } from '../utils/numberUtils'
 import Range from './tools/Range'
@@ -7,6 +8,8 @@ import Range from './tools/Range'
 export default class BezierScribbles extends Sketch {
   static generateGCode = false
   static enableCutouts = false
+  static sketchState: SketchState = 'test'
+
   // startPoint: Point
   lastPoint: Point
   lastAnchorPoint: Point

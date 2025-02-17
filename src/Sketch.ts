@@ -10,6 +10,8 @@ export interface SketchConfig {
   height: number
 }
 
+export type SketchState = 'done' | 'wip' | 'unfinished' | 'test' | 'broken'
+
 export class Sketch {
   public ctx: GCanvas
   public canvasWidth: number
@@ -31,6 +33,7 @@ export class Sketch {
   static generateGCode = true
   static enableCutouts = true
   static disableOverclock = false
+  static sketchState: SketchState = 'done'
 
   constructor(config: SketchConfig) {
     this.ctx = config.ctx

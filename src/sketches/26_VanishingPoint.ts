@@ -1,5 +1,6 @@
 import { deg45, deg90 } from '../constants/angles'
 import Point from '../Point'
+import type { SketchState } from '../Sketch'
 import { Sketch } from '../Sketch'
 import { randFloatRange, randInt, randIntRange } from '../utils/numberUtils'
 import { seedRandom } from '../utils/random'
@@ -7,6 +8,7 @@ import { BooleanRange } from './tools/Range'
 
 export default class VanishingPoint extends Sketch {
   // static generateGCode = false
+  static sketchState: SketchState = 'unfinished'
 
   stopDrawing = false
   increment = 0

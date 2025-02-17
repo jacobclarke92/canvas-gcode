@@ -25,7 +25,7 @@ const tendrilToLines = (tendril: Point[]): Line[] => {
   return lines
 }
 
-export default class Genuary8 extends Sketch {
+export default class Genuary8_Cosmos extends Sketch {
   init() {
     this.addVar('seed', { initialValue: 3994, min: 1000, max: 5000, step: 1 })
     this.addVar('speedUp', { initialValue: 128, min: 1, max: 256, step: 1 })

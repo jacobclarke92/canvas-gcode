@@ -2,6 +2,7 @@ import * as clipperLib from 'js-angusj-clipper/web'
 
 import { deg90 } from '../constants/angles'
 import Point from '../Point'
+import type { SketchState } from '../Sketch'
 import { Sketch } from '../Sketch'
 import type { Line } from '../types'
 import { getLineIntersectionPoint, getLineIntersectionPoints } from '../utils/geomUtils'
@@ -11,6 +12,8 @@ import type Osc from './tools/Osc'
 import { BooleanRange } from './tools/Range'
 
 export default class LazyStrokes extends Sketch {
+  static sketchState: SketchState = 'broken'
+
   sizeOsc: Osc
   init() {
     this.addVar('seed', {

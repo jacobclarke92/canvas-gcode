@@ -11,7 +11,7 @@ import { initPen } from '../utils/penUtils'
 import { random, seedRandom } from '../utils/random'
 import { BooleanRange } from './tools/Range'
 
-export default class Genuary6 extends Sketch {
+export default class Genuary6_Apartments extends Sketch {
   init() {
     this.addVar('seed', { initialValue: 3541, min: 1000, max: 5000, step: 1 })
     this.addVar('buildingWidth', {

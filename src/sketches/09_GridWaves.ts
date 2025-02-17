@@ -1,4 +1,5 @@
 import type Point from '../Point'
+import type { SketchState } from '../Sketch'
 import { Sketch } from '../Sketch'
 import Range from './tools/Range'
 
@@ -10,6 +11,7 @@ interface Circle {
 export default class GridWaves extends Sketch {
   // static generateGCode = false
   static enableCutouts = false
+  static sketchState: SketchState = 'test'
 
   effectiveWidth: number
   effectiveHeight: number

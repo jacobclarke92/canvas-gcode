@@ -1,4 +1,5 @@
 import Point from '../Point'
+import type { SketchState } from '../Sketch'
 import { Sketch } from '../Sketch'
 import { penUp } from '../utils/penUtils'
 
@@ -41,6 +42,8 @@ const batmanPath2 = `M97.722,187.713c0,0,12.078-142.239,67.179-70.068c5.553-3.48
 		C53.338,11.328,0,17.871,0,67.991c0.231,37.348,31.252,52.437,31.252,52.437S76.571,35.847,97.722,187.713z`
 
 export default class SVG extends Sketch {
+  static sketchState: SketchState = 'test'
+
   init() {
     //
   }
