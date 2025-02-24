@@ -179,7 +179,8 @@ export default class FlowAround extends Sketch {
       if (
         strand.pt.x > this.cw * (1 - gutterX) ||
         strand.pt.y < this.ch * gutterY ||
-        strand.pt.y > this.ch * (1 - gutterY)
+        strand.pt.y > this.ch * (1 - gutterY) ||
+        strand.pts.length > 1000
       ) {
         strand.done = true
         this.strandsDone++
