@@ -73,4 +73,5 @@ export default [
   require('./72_MandalaSpiral').default,
   require('./73_FlowAround').default,
   require('./74_CutMe').default,
+  require('./75_Butterfly').default,
 ]
