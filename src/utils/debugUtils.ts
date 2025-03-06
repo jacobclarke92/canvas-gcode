@@ -1,20 +1,20 @@
 import { deg30, deg360 } from '../constants/angles'
 import type GCanvas from '../GCanvas'
-import Point from '../Point'
+import { IntPoint } from '../packages/Clipper/IntPoint'
 import type { OverloadedFunctionWithOptionals } from '../types'
 
 export const debugDot: OverloadedFunctionWithOptionals<
-  [ctx: GCanvas, pt: Point] | [ctx: GCanvas, x: number, y: number],
+  [ctx: GCanvas, pt: IntPoint] | [ctx: GCanvas, x: number, y: number],
   [color: string]
 > = (...args) => {
   const ctx = args[0]
   const x =
     args.length === 2 || (args.length === 3 && typeof args[2] !== 'number')
-      ? (args[1] as Point).x
+      ? (args[1] as IntPoint).x
       : (args[1] as number)
   const y =
     args.length === 2 || (args.length === 3 && typeof args[2] !== 'number')
-      ? (args[1] as Point).y
+      ? (args[1] as IntPoint).y
       : (args[2] as number)
   const color = args.length === 3 && typeof args[2] === 'string' ? args[2] : args[3] || '#ff0000'
 
@@ -28,19 +28,19 @@ export const debugDot: OverloadedFunctionWithOptionals<
 }
 
 export const debugLine: OverloadedFunctionWithOptionals<
-  | [ctx: GCanvas, start: Point, end: Point]
+  | [ctx: GCanvas, start: IntPoint, end: IntPoint]
   | [ctx: GCanvas, x1: number, y1: number, x2: number, y2: number],
   [color: string]
 > = (...args) => {
   const ctx = args[0]
   const start =
     args.length === 3 || args.length === 4
-      ? (args[1] as Point)
-      : new Point(args[1] as number, args[2] as number)
+      ? (args[1] as IntPoint)
+      : new IntPoint(args[1] as number, args[2] as number)
   const end =
     args.length === 3 || args.length === 4
-      ? (args[2] as Point)
-      : new Point(args[3] as number, args[4] as number)
+      ? (args[2] as IntPoint)
+      : new IntPoint(args[3] as number, args[4] as number)
   const color = args.length === 4 ? args[3] : args.length === 6 ? args[5] : '#ff0000'
 
   const prevStrokeStyle = ctx.ctx.strokeStyle
@@ -63,11 +63,11 @@ const defaultDebugOptions = {
 export const debugText = (
   ctx: GCanvas,
   text: number | string,
-  pt: Point | [x: number, y: number],
+  pt: IntPoint | [x: number, y: number],
   options?: DebugOptions
 ) => {
   const { stroke, fill, size, decimals } = { ...defaultDebugOptions, ...options }
-  const point = Array.isArray(pt) ? pt : pt.toArray()
+  const point: [number, number] = Array.isArray(pt) ? pt : [pt.x, pt.y]
   if (typeof text === 'string' && text.indexOf('\n') !== -1) {
     const parts = text.split('\n')
     const lineHeight = size * 1.1
@@ -95,8 +95,8 @@ export const debugText = (
 
 export const debugArrow = (
   ctx: GCanvas,
-  start: Point,
-  end: Point,
+  start: IntPoint,
+  end: IntPoint,
   options?: { stroke?: string; fill?: string }
 ) => {
   const { stroke, fill } = { stroke: 'black', fill: 'white', ...options }

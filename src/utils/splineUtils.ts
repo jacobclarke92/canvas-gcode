@@ -1,12 +1,17 @@
-import Point from '../Point'
+import { IntPoint } from '../packages/Clipper/IntPoint'
 
-export function generateSpline(points: Point[], resolution = 10): Point[] {
+export function generateSplineWithEnds(points: IntPoint[], resolution = 10): IntPoint[] {
+  const pts = [points[points.length - 1], ...points, points[0]]
+  return generateSpline(pts, resolution || 12)
+}
+
+export function generateSpline(points: IntPoint[], resolution = 10): IntPoint[] {
   // If fewer than 4 points, we can't create a proper Catmull-Rom spline
   if (points.length < 4) {
     return points
   }
 
-  const splinePoints: Point[] = []
+  const splinePoints: IntPoint[] = []
 
   // Iterate through points to create spline segments
   for (let i = 1; i < points.length - 2; i++) {
@@ -25,7 +30,13 @@ export function generateSpline(points: Point[], resolution = 10): Point[] {
   return splinePoints
 }
 
-function catmullRomInterpolation(p0: Point, p1: Point, p2: Point, p3: Point, t: number): Point {
+function catmullRomInterpolation(
+  p0: IntPoint,
+  p1: IntPoint,
+  p2: IntPoint,
+  p3: IntPoint,
+  t: number
+): IntPoint {
   const t2 = t * t
   const t3 = t2 * t
 
@@ -43,7 +54,7 @@ function catmullRomInterpolation(p0: Point, p1: Point, p2: Point, p3: Point, t: 
       (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
       (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3)
 
-  return new Point(x, y)
+  return new IntPoint(x, y)
 }
 
 /**
