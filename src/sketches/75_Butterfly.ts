@@ -8,6 +8,8 @@ import { randFloat, randFloatRange } from '../utils/numberUtils'
 import { seedRandom } from '../utils/random'
 import { generateSpline, generateSplineWithEnds } from '../utils/splineUtils'
 
+const ip2p = (ip: IntPoint) => new Point(ip.x, ip.y)
+
 class Butterfly {
   ctx: GCanvas
   pt: Point
@@ -43,6 +45,8 @@ class Butterfly {
       new Point(this.pt.x + 1.2 * this.scale, this.pt.y + 26 * this.scale),
       new Point(this.pt.x - 1.2 * this.scale, this.pt.y + 26 * this.scale),
     ])
+    const headTopRight = headSplinePts[Math.floor(headSplinePts.length * 0.5)]
+    const headTopLeft = headSplinePts[Math.floor(headSplinePts.length * 0.75)]
     const bodyStartRight = bodySplinePts[Math.floor(bodySplinePts.length * 0.32)]
     const bodyEndRight = bodySplinePts[Math.floor(bodySplinePts.length * 0.42)]
     const bodyStartLeft = bodySplinePts[Math.floor(bodySplinePts.length * 0.94)]
@@ -50,6 +54,8 @@ class Butterfly {
     const thoraxEndRight = thoraxSplinePts[Math.floor(thoraxSplinePts.length * 0.42)]
     const thoraxEndLeft = thoraxSplinePts[Math.floor(thoraxSplinePts.length * 0.84)]
 
+    debugDot(this.ctx, headTopRight)
+    debugDot(this.ctx, headTopLeft)
     debugDot(this.ctx, bodyStartRight)
     debugDot(this.ctx, bodyEndRight)
     debugDot(this.ctx, bodyStartLeft)
@@ -86,6 +92,7 @@ class Butterfly {
       bottomWingFarRightPt,
       thoraxStartRightPt.clone().add(10 * this.scale, randFloatRange(30, 20) * this.scale),
       thoraxStartRightPt.clone().add(-15 * this.scale, randFloatRange(45, 35) * this.scale),
+      // thoraxEndRightPt.clone().moveAlongAngle(randFloatRange(Math.PI * 0.45, Math.PI * 0.3), 20 * this.scale),
       thoraxEndRightPt,
     ]
 
@@ -94,6 +101,8 @@ class Butterfly {
       debug: true,
       debugColor: 'yellow',
     })
+
+    // for (const pt of initialBottomWingSplinePts) debugDot(this.ctx, pt, 'pink')
 
     const droops = 2
     const droopIndexes: number[] = []
@@ -114,18 +123,28 @@ class Butterfly {
 
     bottomWingPts = [
       ...bottomWingPts.slice(0, 2),
-      initialBottomWingSplinePts[Math.floor(initialBottomWingSplinePts.length * indexRangeMin)],
+      // initialBottomWingSplinePts[Math.floor(initialBottomWingSplinePts.length * indexRangeMin)],
       ...droopIndexes.flatMap((index) => {
-        const pt1 = initialBottomWingSplinePts[index - 1]
-        const pt2 = initialBottomWingSplinePts[index + 1]
-        const adjacentAngle = Math.atan2(pt1.y - pt2.y, pt1.x - pt2.x) + Math.PI / 2
+        const pt1 = ip2p(initialBottomWingSplinePts[index - 1])
+        let pt2 = ip2p(initialBottomWingSplinePts[index + 1])
+        let gapDist = pt1.distanceTo(pt2)
+        if (gapDist * this.scale < 2) {
+          pt2 = ip2p(initialBottomWingSplinePts[index + 3])
+          gapDist = pt1.distanceTo(pt2)
+        }
+        let adjacentAngle = Math.atan2(pt1.y - pt2.y, pt1.x - pt2.x) + Math.PI / 2
+        adjacentAngle += (Math.PI / 2 - adjacentAngle) / 2 // orient downwards a bit
         const droopDist = randFloatRange(25, 15) * this.scale
+        const droopPt = ip2p(initialBottomWingSplinePts[index]).moveAlongAngle(
+          adjacentAngle,
+          droopDist
+        )
         return [
           pt1,
-          new Point(
-            initialBottomWingSplinePts[index].x + Math.cos(adjacentAngle) * droopDist,
-            initialBottomWingSplinePts[index].y + Math.sin(adjacentAngle) * droopDist
-          ),
+          // pt1.clone().moveTowards(droopPt, droopDist / 2),
+          droopPt.clone().moveAlongAngle(adjacentAngle - Math.PI / 2, gapDist / 6),
+          droopPt.clone().moveAlongAngle(adjacentAngle + Math.PI / 2, gapDist / 6),
+          // pt2.clone().moveTowards(droopPt, droopDist / 2),
           pt2,
         ]
       }),
@@ -133,18 +152,18 @@ class Butterfly {
       ...bottomWingPts.slice(4),
     ]
 
-    const bottomWingSplinePts = this.ctx.strokeSmoothPath(bottomWingPts, { debug: true })
+    const bottomWingSplinePts = this.ctx.strokeSmoothPath(bottomWingPts, { debug: false })
 
-    debugDot(
-      this.ctx,
-      initialBottomWingSplinePts[Math.floor(initialBottomWingSplinePts.length * indexRangeMin)],
-      'blue'
-    )
-    debugDot(
-      this.ctx,
-      initialBottomWingSplinePts[Math.floor(initialBottomWingSplinePts.length * indexRangeMax)],
-      'blue'
-    )
+    // debugDot(
+    //   this.ctx,
+    //   initialBottomWingSplinePts[Math.floor(initialBottomWingSplinePts.length * indexRangeMin)],
+    //   'blue'
+    // )
+    // debugDot(
+    //   this.ctx,
+    //   initialBottomWingSplinePts[Math.floor(initialBottomWingSplinePts.length * indexRangeMax)],
+    //   'blue'
+    // )
   }
 }
 
