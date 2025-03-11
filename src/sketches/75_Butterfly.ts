@@ -5,6 +5,13 @@ import type { IntPoint } from '../packages/Clipper/IntPoint'
 import Point from '../Point'
 import { Sketch } from '../Sketch'
 import { debugDot } from '../utils/debugUtils'
+import {
+  cyclePointsToStartWith,
+  getBottommostPoint,
+  getLeftmostPoint,
+  getMidPt,
+  getRightmostPoint,
+} from '../utils/geomUtils'
 import { seedNoise } from '../utils/noise'
 import { randFloat, randFloatRange } from '../utils/numberUtils'
 import { seedRandom } from '../utils/random'
@@ -78,7 +85,9 @@ class Butterfly {
     debugDot(this.ctx, thoraxEndRight)
     debugDot(this.ctx, thoraxEndLeft)
 
-    // top right wing
+    /**
+     * Generate top right wing from simplified shape
+     */
     const topWingSplinePts = this.ctx.strokeSmoothPath(
       [
         ip2p(bodyStartRight),
@@ -94,6 +103,84 @@ class Butterfly {
       { debug: false }
     )
 
+    /**
+     * Now we generate pattern inside top right wing
+     */
+
+    const topWingClosedPts = [
+      ...bodySplinePts.slice(bodyStartRightIndex, bodyEndRightIndex + 1).reverse(),
+      ...topWingSplinePts,
+    ].map(ip2p)
+
+    let topWingOffsetPath: Point[]
+    let topWingOffsetLeftmostPt: Point
+    for (let i = 1; i < 5 * this.scale; i += 1 * this.scale) {
+      topWingOffsetPath = this.ctx
+        .offsetPath(topWingOffsetPath || topWingClosedPts, -0.5, {
+          joinType: JoinType.Round,
+        })
+        .sort((a, b) => a.length - b.length)[0]
+      if (!topWingOffsetPath) continue
+      topWingOffsetLeftmostPt = topWingOffsetPath.reduce((acc, pt) => (pt.x < acc.x ? pt : acc))
+      topWingOffsetPath = cyclePointsToStartWith(topWingOffsetLeftmostPt, topWingOffsetPath)
+
+      debugDot(this.ctx, topWingOffsetLeftmostPt, 'red')
+      this.ctx.beginPath()
+      this.ctx.moveTo(topWingOffsetPath[0].x, topWingOffsetPath[0].y)
+      for (let i = 1; i < topWingOffsetPath.length; i++)
+        this.ctx.lineTo(topWingOffsetPath[i].x, topWingOffsetPath[i].y)
+      this.ctx.stroke()
+      this.ctx.endPath()
+    }
+
+    let topWingOffsetPath2 = this.ctx
+      .offsetPath(topWingOffsetPath, -5 * this.scale, { joinType: JoinType.Round })
+      .sort((a, b) => a.length - b.length)[0]
+    const topWingOffset2LeftmostPt = getLeftmostPoint(...topWingOffsetPath2)
+    topWingOffsetPath2 = cyclePointsToStartWith(topWingOffset2LeftmostPt, topWingOffsetPath2)
+
+    const offsetDiff = topWingOffset2LeftmostPt
+      .clone()
+      .subtract(topWingOffsetLeftmostPt.x / 1000, topWingOffsetLeftmostPt.y / 1000) // not sure why it's so large still
+
+    topWingOffsetPath2.forEach((pt) => pt.subtract(offsetDiff.x * 0.8, offsetDiff.y * 0.8))
+
+    this.ctx.beginPath()
+    this.ctx.moveTo(topWingOffsetPath2[0].x, topWingOffsetPath2[0].y)
+    for (let i = 1; i < topWingOffsetPath2.length; i++)
+      this.ctx.lineTo(topWingOffsetPath2[i].x, topWingOffsetPath2[i].y)
+    this.ctx.stroke()
+
+    const topWingOffset2RightmostPt = getRightmostPoint(...topWingOffsetPath2)
+    const topWingOffset2BottommostPt = getBottommostPoint(...topWingOffsetPath2)
+    const topWingOffset2RightmostPtIndex = topWingOffsetPath2.indexOf(topWingOffset2RightmostPt)
+    const topWingOffset2RightmostPtIndexPercent =
+      topWingOffset2RightmostPtIndex / topWingOffsetPath2.length
+    const topWingOffset2BottommostPtIndex = topWingOffsetPath2.indexOf(topWingOffset2BottommostPt)
+    const topWingOffset2BottommostPtIndexPercent =
+      topWingOffset2BottommostPtIndex / topWingOffsetPath2.length
+
+    debugDot(this.ctx, topWingOffsetPath2[0], 'blue') // leftmost -- cycled to start
+    debugDot(this.ctx, topWingOffset2RightmostPt, 'blue')
+    debugDot(this.ctx, topWingOffset2BottommostPt, 'blue')
+
+    const averagePos = getMidPt(...topWingOffsetPath2)
+    debugDot(this.ctx, averagePos)
+
+    for (let i = topWingOffset2RightmostPtIndex; i < topWingOffset2BottommostPtIndex; i += 2) {
+      const percent = i / topWingOffsetPath2.length
+      const pt1 = topWingOffsetPath2[i]
+      const pt2 = topWingOffsetPath[Math.floor(topWingOffsetPath.length * percent)]
+      this.ctx.beginPath()
+      this.ctx.moveTo(pt1.x, pt1.y)
+      this.ctx.lineTo(pt2.x / 1000, pt2.y / 1000)
+      this.ctx.stroke()
+    }
+
+    /**
+     * Generate bottom right wing from simplified shape
+     * 1st pass - to generate an initial shape first
+     */
     const thoraxStartRightIndex = Math.floor(topWingSplinePts.length * 0.8)
     const thoraxStartRight = topWingSplinePts[thoraxStartRightIndex]
     debugDot(this.ctx, thoraxStartRight)
@@ -121,6 +208,10 @@ class Butterfly {
 
     // for (const pt of initialBottomWingSplinePts) debugDot(this.ctx, pt, 'pink')
 
+    /**
+     * 2nd pass - to generate a more detailed shape with 'droops'
+     */
+
     const droopIndexes: number[] = []
     const indexRangeMin = randFloatRange(0.5, 0.4)
     const indexRangeMax = randFloatRange(0.9, 0.8)
@@ -132,10 +223,6 @@ class Butterfly {
       )
       droopIndexes.push(index)
     }
-    // const droopIndexRange = [
-    //   Math.floor(initialBottomWingSplinePts.length * 0.45),
-    //   Math.floor(initialBottomWingSplinePts.length * 0.9),
-    // ]
 
     bottomWingPts = [
       ...bottomWingPts.slice(0, 2),
@@ -170,24 +257,9 @@ class Butterfly {
 
     const bottomWingSplinePts = this.ctx.strokeSmoothPath(bottomWingPts, { debug: false })
 
-    const topWingClosedPts = [
-      ...bodySplinePts.slice(bodyStartRightIndex, bodyEndRightIndex + 1).reverse(),
-      ...topWingSplinePts,
-    ].map(ip2p)
-
-    const topWingOffsetPaths = this.ctx
-      .offsetPath(topWingClosedPts, -3 * this.scale, { joinType: JoinType.Round })
-      .sort((a, b) => a.length - b.length)
-
-    for (const offsetPath of topWingOffsetPaths) {
-      this.ctx.beginPath()
-      this.ctx.moveTo(offsetPath[0].x, offsetPath[0].y)
-      for (let i = 1; i < offsetPath.length; i++) {
-        this.ctx.lineTo(offsetPath[i].x, offsetPath[i].y)
-      }
-      this.ctx.closePath()
-      this.ctx.stroke()
-    }
+    /**
+     * Bottom wing pattern time
+     */
 
     const bottomWingClosedPts = [
       ...topWingSplinePts.slice(thoraxStartRightIndex).reverse(),
@@ -197,15 +269,22 @@ class Butterfly {
 
     // this.ctx.strokePath(bottomWingClosedPts, { debug: true, debugColor: 'red' })
 
-    const bottomWingOffsetPaths = this.ctx
-      .offsetPath(bottomWingClosedPts, -3 * this.scale, { joinType: JoinType.Round })
-      .sort((a, b) => a.length - b.length)
+    let bottomWingOffsetPath: Point[]
+    let bottomWingOffsetLeftmostPt: Point
+    for (let i = 1; i < 7 * this.scale; i += 1 * this.scale) {
+      bottomWingOffsetPath = this.ctx
+        .offsetPath(bottomWingOffsetPath || bottomWingClosedPts, -0.5, {
+          joinType: JoinType.Round,
+        })
+        .sort((a, b) => b.length - a.length)[0]
+      if (!bottomWingOffsetPath) continue
+      bottomWingOffsetLeftmostPt = getLeftmostPoint(...bottomWingOffsetPath)
 
-    for (const offsetPath of bottomWingOffsetPaths) {
+      debugDot(this.ctx, bottomWingOffsetPath[0], 'red')
       this.ctx.beginPath()
-      this.ctx.moveTo(offsetPath[0].x, offsetPath[0].y)
-      for (let i = 1; i < offsetPath.length; i++) {
-        this.ctx.lineTo(offsetPath[i].x, offsetPath[i].y)
+      this.ctx.moveTo(bottomWingOffsetPath[0].x, bottomWingOffsetPath[0].y)
+      for (let i = 1; i < bottomWingOffsetPath.length; i++) {
+        this.ctx.lineTo(bottomWingOffsetPath[i].x, bottomWingOffsetPath[i].y)
       }
       this.ctx.closePath()
       this.ctx.stroke()
@@ -273,8 +352,16 @@ export default class Butterfree extends Sketch {
       droops: 2,
     })
 
+    const butterfly3 = new Butterfly({
+      ctx: this.ctx,
+      pt: this.cp.clone().subtract(100, 0),
+      scale: 0.5,
+      droops: 2,
+    })
+
     butterfly1.draw()
     butterfly2.draw()
+    butterfly3.draw()
   }
 
   draw(): void {

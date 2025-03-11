@@ -71,6 +71,18 @@ export const getClosestButNotSamePoint = (pt: Point, ...pts: [Point] | Point[]):
   return ptsWithDist[0][0]
 }
 
+export const getLeftmostPoint = (...pts: Point[]): Point =>
+  pts.reduce((acc, pt) => (pt.x < acc.x ? pt : acc))
+
+export const getRightmostPoint = (...pts: Point[]): Point =>
+  pts.reduce((acc, pt) => (pt.x > acc.x ? pt : acc))
+
+export const getTopmostPoint = (...pts: Point[]): Point =>
+  pts.reduce((acc, pt) => (pt.y < acc.y ? pt : acc))
+
+export const getBottommostPoint = (...pts: Point[]): Point =>
+  pts.reduce((acc, pt) => (pt.y > acc.y ? pt : acc))
+
 /** Orders points in clockwise direction starting from the topmost point */
 export const orderPointsClockwise = (points: Point[]): Point[] => {
   const center = points.reduce(
@@ -86,6 +98,15 @@ export const orderPointsClockwise = (points: Point[]): Point[] => {
     const angleB = Math.atan2(b.y - center.y, b.x - center.x)
     return angleA - angleB
   })
+}
+
+export const cyclePointsToStartWith = (startingPt: Point, points: Point[]) => {
+  const index = points.indexOf(startingPt)
+  if (index < 0) {
+    console.warn('[reorderPointsStartingWith] pt not found in array')
+    return points
+  }
+  return [...points.slice(index), ...points.slice(0, index)]
 }
 
 /**
