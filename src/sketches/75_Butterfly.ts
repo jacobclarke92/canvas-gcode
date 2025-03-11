@@ -1,3 +1,5 @@
+import { EndType, JoinType } from 'js-angusj-clipper/web'
+
 import type GCanvas from '../GCanvas'
 import type { IntPoint } from '../packages/Clipper/IntPoint'
 import Point from '../Point'
@@ -14,15 +16,18 @@ class Butterfly {
   ctx: GCanvas
   pt: Point
   scale = 1
+  droops = 0
   constructor(opts: {
     ctx: GCanvas
     /** Head position */
     pt: Point
     scale?: number
+    droops?: number
   }) {
     this.ctx = opts.ctx
     this.pt = opts.pt
     if (opts.scale) this.scale = opts.scale
+    if (opts.droops) this.droops = opts.droops
     //
   }
 
@@ -45,14 +50,24 @@ class Butterfly {
       new Point(this.pt.x + 1.2 * this.scale, this.pt.y + 26 * this.scale),
       new Point(this.pt.x - 1.2 * this.scale, this.pt.y + 26 * this.scale),
     ])
-    const headTopRight = headSplinePts[Math.floor(headSplinePts.length * 0.5)]
-    const headTopLeft = headSplinePts[Math.floor(headSplinePts.length * 0.75)]
-    const bodyStartRight = bodySplinePts[Math.floor(bodySplinePts.length * 0.32)]
-    const bodyEndRight = bodySplinePts[Math.floor(bodySplinePts.length * 0.42)]
-    const bodyStartLeft = bodySplinePts[Math.floor(bodySplinePts.length * 0.94)]
-    const bodyEndLeft = bodySplinePts[Math.floor(bodySplinePts.length * 0.84)]
-    const thoraxEndRight = thoraxSplinePts[Math.floor(thoraxSplinePts.length * 0.42)]
-    const thoraxEndLeft = thoraxSplinePts[Math.floor(thoraxSplinePts.length * 0.84)]
+
+    const headTopRightIndex = Math.floor(headSplinePts.length * 0.5)
+    const headTopLeftIndex = Math.floor(headSplinePts.length * 0.75)
+    const bodyStartRightIndex = Math.floor(bodySplinePts.length * 0.32)
+    const bodyEndRightIndex = Math.floor(bodySplinePts.length * 0.42)
+    const bodyStartLeftIndex = Math.floor(bodySplinePts.length * 0.94)
+    const bodyEndLeftIndex = Math.floor(bodySplinePts.length * 0.84)
+    const thoraxEndRightIndex = Math.floor(thoraxSplinePts.length * 0.55)
+    const thoraxEndLeftIndex = Math.floor(thoraxSplinePts.length * 0.7)
+
+    const headTopRight = headSplinePts[headTopRightIndex]
+    const headTopLeft = headSplinePts[headTopLeftIndex]
+    const bodyStartRight = bodySplinePts[bodyStartRightIndex]
+    const bodyEndRight = bodySplinePts[bodyEndRightIndex]
+    const bodyStartLeft = bodySplinePts[bodyStartLeftIndex]
+    const bodyEndLeft = bodySplinePts[bodyEndLeftIndex]
+    const thoraxEndRight = thoraxSplinePts[thoraxEndRightIndex]
+    const thoraxEndLeft = thoraxSplinePts[thoraxEndLeftIndex]
 
     debugDot(this.ctx, headTopRight)
     debugDot(this.ctx, headTopLeft)
@@ -63,37 +78,39 @@ class Butterfly {
     debugDot(this.ctx, thoraxEndRight)
     debugDot(this.ctx, thoraxEndLeft)
 
-    const bodyStartRightPt = new Point(bodyStartRight.x, bodyStartRight.y)
-    const bodyEndRightPt = new Point(bodyEndRight.x, bodyEndRight.y)
+    // top right wing
     const topWingSplinePts = this.ctx.strokeSmoothPath(
       [
-        bodyStartRightPt,
-        bodyStartRightPt.clone().add((10 + randFloat(2)) * this.scale, -2 * this.scale),
-        bodyStartRightPt.clone().add((40 + randFloat(5)) * this.scale, -5 * this.scale),
-        bodyStartRightPt.clone().add((60 + randFloat(5)) * this.scale, 5 * this.scale),
-        bodyStartRightPt.clone().add((40 + randFloat(5)) * this.scale, 25 * this.scale),
-        bodyEndRightPt,
+        ip2p(bodyStartRight),
+        ip2p(bodyStartRight).add((10 + randFloat(2)) * this.scale, -2 * this.scale),
+        ip2p(bodyStartRight).add(
+          (40 + randFloat(25)) * this.scale,
+          randFloatRange(-5, -15) * this.scale
+        ),
+        ip2p(bodyStartRight).add((60 + randFloat(5)) * this.scale, 5 * this.scale),
+        ip2p(bodyStartRight).add((40 + randFloat(5)) * this.scale, 25 * this.scale),
+        ip2p(bodyEndRight),
       ],
-      { debug: true }
+      { debug: false }
     )
 
-    const thoraxStartRight = topWingSplinePts[Math.floor(topWingSplinePts.length * 0.8)]
-    const thoraxStartRightPt = new Point(thoraxStartRight.x, thoraxStartRight.y)
-    const thoraxEndRightPt = new Point(thoraxEndRight.x, thoraxEndRight.y)
+    const thoraxStartRightIndex = Math.floor(topWingSplinePts.length * 0.8)
+    const thoraxStartRight = topWingSplinePts[thoraxStartRightIndex]
     debugDot(this.ctx, thoraxStartRight)
 
-    const bottomWingFarRightPt = thoraxStartRightPt
+    // bottom right wing
+    const bottomWingFarRightPt = ip2p(thoraxStartRight)
       .clone()
-      .moveAlongAngle(bodyEndRightPt.angleTo(thoraxStartRightPt), 15 * this.scale)
+      .moveAlongAngle(ip2p(bodyEndRight).angleTo(ip2p(thoraxStartRight)), 15 * this.scale)
       .add(0, 2 * this.scale)
 
     let bottomWingPts: (Point | IntPoint)[] = [
-      thoraxStartRightPt,
+      ip2p(thoraxStartRight),
       bottomWingFarRightPt,
-      thoraxStartRightPt.clone().add(10 * this.scale, randFloatRange(30, 20) * this.scale),
-      thoraxStartRightPt.clone().add(-15 * this.scale, randFloatRange(45, 35) * this.scale),
-      // thoraxEndRightPt.clone().moveAlongAngle(randFloatRange(Math.PI * 0.45, Math.PI * 0.3), 20 * this.scale),
-      thoraxEndRightPt,
+      ip2p(thoraxStartRight).add(10 * this.scale, randFloatRange(30, 20) * this.scale),
+      ip2p(thoraxStartRight).add(-15 * this.scale, randFloatRange(45, 35) * this.scale),
+      // ip2p(thoraxEndRight).moveAlongAngle(randFloatRange(Math.PI * 0.45, Math.PI * 0.3), 20 * this.scale),
+      ip2p(thoraxEndRight),
     ]
 
     // const initialBottomWingSplinePts = generateSplineWithEnds(bottomWingPts)
@@ -104,13 +121,12 @@ class Butterfly {
 
     // for (const pt of initialBottomWingSplinePts) debugDot(this.ctx, pt, 'pink')
 
-    const droops = 2
     const droopIndexes: number[] = []
     const indexRangeMin = randFloatRange(0.5, 0.4)
     const indexRangeMax = randFloatRange(0.9, 0.8)
     const indexRange = indexRangeMax - indexRangeMin
-    const indexRangeSeg = indexRange / (droops + 1)
-    for (let i = 0; i < droops; i++) {
+    const indexRangeSeg = indexRange / (this.droops + 1)
+    for (let i = 0; i < this.droops; i++) {
       const index = Math.floor(
         initialBottomWingSplinePts.length * (indexRangeMin + indexRangeSeg / 2 + indexRangeSeg * i)
       )
@@ -128,7 +144,7 @@ class Butterfly {
         const pt1 = ip2p(initialBottomWingSplinePts[index - 1])
         let pt2 = ip2p(initialBottomWingSplinePts[index + 1])
         let gapDist = pt1.distanceTo(pt2)
-        if (gapDist * this.scale < 2) {
+        if (gapDist * this.scale < 3) {
           pt2 = ip2p(initialBottomWingSplinePts[index + 3])
           gapDist = pt1.distanceTo(pt2)
         }
@@ -154,16 +170,79 @@ class Butterfly {
 
     const bottomWingSplinePts = this.ctx.strokeSmoothPath(bottomWingPts, { debug: false })
 
-    // debugDot(
-    //   this.ctx,
-    //   initialBottomWingSplinePts[Math.floor(initialBottomWingSplinePts.length * indexRangeMin)],
-    //   'blue'
-    // )
-    // debugDot(
-    //   this.ctx,
-    //   initialBottomWingSplinePts[Math.floor(initialBottomWingSplinePts.length * indexRangeMax)],
-    //   'blue'
-    // )
+    const topWingClosedPts = [
+      ...bodySplinePts.slice(bodyStartRightIndex, bodyEndRightIndex + 1).reverse(),
+      ...topWingSplinePts,
+    ].map(ip2p)
+
+    const topWingOffsetPaths = this.ctx
+      .offsetPath(topWingClosedPts, -3 * this.scale, { joinType: JoinType.Round })
+      .sort((a, b) => a.length - b.length)
+
+    for (const offsetPath of topWingOffsetPaths) {
+      this.ctx.beginPath()
+      this.ctx.moveTo(offsetPath[0].x, offsetPath[0].y)
+      for (let i = 1; i < offsetPath.length; i++) {
+        this.ctx.lineTo(offsetPath[i].x, offsetPath[i].y)
+      }
+      this.ctx.closePath()
+      this.ctx.stroke()
+    }
+
+    const bottomWingClosedPts = [
+      ...topWingSplinePts.slice(thoraxStartRightIndex).reverse(),
+      ...thoraxSplinePts.slice(thoraxStartRightIndex, thoraxEndRightIndex + 1).reverse(),
+      ...bottomWingSplinePts,
+    ].map(ip2p)
+
+    // this.ctx.strokePath(bottomWingClosedPts, { debug: true, debugColor: 'red' })
+
+    const bottomWingOffsetPaths = this.ctx
+      .offsetPath(bottomWingClosedPts, -3 * this.scale, { joinType: JoinType.Round })
+      .sort((a, b) => a.length - b.length)
+
+    for (const offsetPath of bottomWingOffsetPaths) {
+      this.ctx.beginPath()
+      this.ctx.moveTo(offsetPath[0].x, offsetPath[0].y)
+      for (let i = 1; i < offsetPath.length; i++) {
+        this.ctx.lineTo(offsetPath[i].x, offsetPath[i].y)
+      }
+      this.ctx.closePath()
+      this.ctx.stroke()
+    }
+
+    // this.ctx.strokePath(topWingClosedPts, { debug: true, debugColor: 'blue' })
+
+    /*
+    debugDot(
+      this.ctx,
+      initialBottomWingSplinePts[Math.floor(initialBottomWingSplinePts.length * indexRangeMin)],
+      'blue'
+    )
+    debugDot(
+      this.ctx,
+      initialBottomWingSplinePts[Math.floor(initialBottomWingSplinePts.length * indexRangeMax)],
+      'blue'
+    )
+    */
+
+    this.ctx.beginPath()
+    for (let i = 0; i < topWingSplinePts.length; i++) {
+      const pt = topWingSplinePts[i]
+      const x = bodyStartLeft.x - (pt.x - bodyStartRight.x)
+      if (i === 0) this.ctx.moveTo(x, pt.y)
+      else this.ctx.lineTo(x, pt.y)
+    }
+    this.ctx.stroke()
+
+    this.ctx.beginPath()
+    for (let i = 0; i < bottomWingSplinePts.length; i++) {
+      const pt = bottomWingSplinePts[i]
+      const x = bodyStartLeft.x - (pt.x - bodyStartRight.x)
+      if (i === 0) this.ctx.moveTo(x, pt.y)
+      else this.ctx.lineTo(x, pt.y)
+    }
+    this.ctx.stroke()
   }
 }
 
@@ -180,68 +259,18 @@ export default class Butterfree extends Sketch {
     seedRandom(this.vs.seed.value)
     seedNoise(this.vs.seed.value)
 
-    // const points: Point[] = []
-    // for (let i = 0; i < 10; i++) {
-    //   points.push(new Point(randFloatRange(this.cw, 0), randFloatRange(this.ch, 0)))
-    // }
-
-    const pointsTop = [
-      new Point(40, 75),
-      new Point(50, 75),
-      new Point(100, 50),
-      new Point(120, 70),
-      new Point(110, 72),
-      new Point(108, 95),
-      new Point(106, 95),
-      new Point(105, 75),
-      new Point(90, 90),
-      new Point(75, 100), // use this as starting point for next one
-      new Point(50, 85),
-      new Point(40, 85),
-    ]
-
-    const pointsBottom = [
-      new Point(50, 85),
-      new Point(75, 100),
-      new Point(100, 140),
-      new Point(90, 160),
-      new Point(65, 180),
-
-      new Point(50, 100),
-      new Point(40, 100),
-    ]
-
-    for (const point of pointsTop) debugDot(this.ctx, point)
-    for (const point of pointsBottom) debugDot(this.ctx, point)
-
-    const splinePtsTop = generateSpline(pointsTop, 12)
-    this.ctx.beginPath()
-    for (let i = 0; i < splinePtsTop.length; i++) {
-      const pt = splinePtsTop[i]
-      if (i === 0) this.ctx.moveTo(pt.x, pt.y)
-      else this.ctx.lineTo(pt.x, pt.y)
-    }
-    this.ctx.stroke()
-
-    const splinePtsBottom = generateSpline(pointsBottom, 12)
-    this.ctx.beginPath()
-    for (let i = 0; i < splinePtsBottom.length; i++) {
-      const pt = splinePtsBottom[i]
-      if (i === 0) this.ctx.moveTo(pt.x, pt.y)
-      else this.ctx.lineTo(pt.x, pt.y)
-    }
-    this.ctx.stroke()
-
     const butterfly1 = new Butterfly({
       ctx: this.ctx,
       pt: this.cp.clone(),
       scale: 1,
+      droops: 1,
     })
 
     const butterfly2 = new Butterfly({
       ctx: this.ctx,
       pt: this.cp.clone().add(100, 0),
       scale: 0.5,
+      droops: 2,
     })
 
     butterfly1.draw()

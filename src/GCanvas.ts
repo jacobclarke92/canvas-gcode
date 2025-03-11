@@ -1223,8 +1223,9 @@ export default class GCanvas {
   public offsetPath(
     path: SubPath | Point[],
     offset: number,
-    { joinType, endType, precision }: OffsetOptions = defaultOffsetOptions
+    opts: Partial<OffsetOptions> = defaultOffsetOptions
   ) {
+    const { joinType, endType, precision } = { ...defaultOffsetOptions, ...opts }
     const pathPts = (path instanceof SubPath ? path.getPoints() : path).map((pt) =>
       pt.scale(precision)
     )
