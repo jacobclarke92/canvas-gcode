@@ -21,6 +21,7 @@ class Strand {
   pts: Point[]
   bezierPts: Point[]
   angle: number
+  lineSegCount = 0
   constructor({
     pt,
     ctx,
@@ -224,21 +225,22 @@ export default class FlowAround extends Sketch {
       }
 
       const distFromLast = strand.pts[strand.pts.length - 1].distanceTo(strand.pt)
+      strand.lineSegCount++
       if (distFromLast > 1) {
         strand.pts.push(strand.pt.clone())
         strand.angle /= initialAngleFade
         this.ctx.strokeLine(strand.pts[strand.pts.length - 1], strand.pts[strand.pts.length - 2])
-        if (
-          strand.pt.x > this.cw * (1 - gutterX) ||
-          strand.pt.y < this.ch * gutterY ||
-          strand.pt.y > this.ch * (1 - gutterY) ||
-          strand.pts.length > 2500
-        ) {
-          strand.done = true
-          this.strandsDone++
-          if (this.strandsDone === this.strands.length) {
-            this.drawFinal()
-          }
+      }
+      if (
+        strand.pt.x > this.cw * (1 - gutterX) ||
+        strand.pt.y < this.ch * gutterY ||
+        strand.pt.y > this.ch * (1 - gutterY) ||
+        strand.lineSegCount > 2500
+      ) {
+        strand.done = true
+        this.strandsDone++
+        if (this.strandsDone === this.strands.length) {
+          this.drawFinal()
         }
       }
     }
