@@ -3,6 +3,7 @@ import { EndType, JoinType } from 'js-angusj-clipper/web'
 import type GCanvas from '../GCanvas'
 import type { IntPoint } from '../packages/Clipper/IntPoint'
 import Point from '../Point'
+import type { SketchState } from '../Sketch'
 import { Sketch } from '../Sketch'
 import { debugDot } from '../utils/debugUtils'
 import {
@@ -326,7 +327,7 @@ class Butterfly {
 }
 
 export default class Butterfree extends Sketch {
-  // static generateGCode = false
+  static sketchState: SketchState = 'unfinished'
   static enableCutouts = false
 
   init() {

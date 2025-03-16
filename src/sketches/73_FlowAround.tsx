@@ -43,8 +43,7 @@ class Strand {
 }
 
 export default class FlowAround extends Sketch {
-  // static disableOverclock = true
-  static sketchState: SketchState = 'unfinished'
+  static sketchState: SketchState = 'done'
 
   init() {
     this.addVar('seed', { initialValue: 3994, min: 1000, max: 5000, step: 1 })
