@@ -74,4 +74,5 @@ export default [
   require('./73_FlowAround').default,
   require('./74_CutMe').default,
   require('./75_Butterfly').default,
+  require('./76_WiggleShapeWrap').default,
 ]
