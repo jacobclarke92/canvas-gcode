@@ -109,6 +109,22 @@ export const cyclePointsToStartWith = (startingPt: Point, points: Point[]) => {
   return [...points.slice(index), ...points.slice(0, index)]
 }
 
+export const isPointInPolygon = (point: Point, polygon: Point[]): boolean => {
+  const { x: px, y: py } = point
+  let isInside = false
+
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const { x: x1, y: y1 } = polygon[i]
+    const { x: x2, y: y2 } = polygon[j]
+
+    const intersect = y1 > py !== y2 > py && px < ((x2 - x1) * (py - y1)) / (y2 - y1) + x1
+
+    if (intersect) isInside = !isInside
+  }
+
+  return isInside
+}
+
 /**
  * ---------------
  * Line utils
@@ -439,6 +455,17 @@ export const getBoundsFromCircles = (
     ys.push(pos.y + rad)
   }
   return [Math.min(...ys), Math.max(...xs), Math.max(...ys), Math.min(...xs)]
+}
+
+export const getBoundsFromPath = (path: Point[]): Bounds => {
+  if (!path.length) throw new Error('Path is empty')
+  const xs = path.map((p) => p.x)
+  const ys = path.map((p) => p.y)
+  const top = Math.min(...ys)
+  const right = Math.max(...xs)
+  const bottom = Math.max(...ys)
+  const left = Math.min(...xs)
+  return [top, right, bottom, left]
 }
 
 /**

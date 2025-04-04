@@ -1,5 +1,6 @@
 import { EndType, JoinType } from 'js-angusj-clipper/web'
 
+import { deg90 } from '../constants/angles'
 import type GCanvas from '../GCanvas'
 import type { IntPoint } from '../packages/Clipper/IntPoint'
 import Point from '../Point'
@@ -9,34 +10,47 @@ import { debugDot } from '../utils/debugUtils'
 import {
   cyclePointsToStartWith,
   getBottommostPoint,
+  getBoundsFromPath,
   getLeftmostPoint,
+  getLineIntersectionPoints,
   getMidPt,
   getRightmostPoint,
+  isPointInPolygon,
+  pointsToLines,
 } from '../utils/geomUtils'
 import { seedNoise } from '../utils/noise'
 import { randFloat, randFloatRange } from '../utils/numberUtils'
 import { seedRandom } from '../utils/random'
 import { generateSpline, generateSplineWithEnds } from '../utils/splineUtils'
+import { relaxSites, sortEdges } from '../utils/voronoiUtils'
+import type { BoundingBox, Diagram, Edge, Site } from '../Voronoi'
+import { Voronoi } from '../Voronoi'
 
 const ip2p = (ip: IntPoint) => new Point(ip.x, ip.y)
 
 class Butterfly {
+  sketch: Sketch
   ctx: GCanvas
   pt: Point
   scale = 1
   droops = 0
   constructor(opts: {
-    ctx: GCanvas
+    sketch: Sketch
     /** Head position */
     pt: Point
     scale?: number
     droops?: number
   }) {
-    this.ctx = opts.ctx
+    this.sketch = opts.sketch
+    this.ctx = opts.sketch.ctx
     this.pt = opts.pt
     if (opts.scale) this.scale = opts.scale
     if (opts.droops) this.droops = opts.droops
     //
+  }
+
+  get vars() {
+    return this.sketch.vars
   }
 
   draw() {
@@ -269,7 +283,73 @@ class Butterfly {
     ].map(ip2p)
 
     // this.ctx.strokePath(bottomWingClosedPts, { debug: true, debugColor: 'red' })
+    const bottomWingVoronoi = new Voronoi()
+    let bottomWingDiagram: Diagram | null = null
+    let bottomWingSites: Site[] = []
+    const [top, right, bottom, left] = getBoundsFromPath(bottomWingClosedPts)
+    const boundingBox: BoundingBox = { top: 0, left: 0, width: right - left, height: bottom - top }
+    for (let i = 0; i < this.vars.voronoiPts; i++) {
+      const pt = new Point(
+        randFloatRange(boundingBox.width, 0),
+        randFloatRange(boundingBox.height, 0)
+      )
+      const absolutePt = pt.clone().add(left, top)
+      if (isPointInPolygon(absolutePt, bottomWingClosedPts)) {
+        bottomWingSites.push({ x: pt.x, y: pt.y })
+        // debugDot(this.ctx, absolutePt, 'green')
+      }
+    }
 
+    const compute = (sites: Site[]) => {
+      bottomWingSites = sites
+      bottomWingVoronoi.recycle(bottomWingDiagram)
+      bottomWingDiagram = bottomWingVoronoi.compute(bottomWingSites, boundingBox)
+    }
+
+    compute(bottomWingSites)
+
+    for (let i = 0; i < this.vars.loosenIterations; i++) {
+      const sites = relaxSites({
+        diagram: bottomWingDiagram,
+        apoptosisMitosis: this.vars.apoptosisMitosis,
+        loosenStrength: this.vars.loosenStrength,
+        loosenDistCutoff: this.vars.loosenDistCutoff,
+      })
+      compute(sites)
+    }
+
+    const bottomWingVoronoiEdges = sortEdges(bottomWingDiagram.edges)
+    const bottomWingShapeLines = pointsToLines(bottomWingClosedPts)
+    let iEdge = bottomWingVoronoiEdges.length
+    let edge: Edge
+    this.ctx.beginPath()
+    while (iEdge--) {
+      edge = bottomWingVoronoiEdges[iEdge]
+      let pt1 = new Point(left + edge.vertex1.x, top + edge.vertex1.y)
+      let pt2 = new Point(left + edge.vertex2.x, top + edge.vertex2.y)
+      const intersectionPts = getLineIntersectionPoints([pt1, pt2], ...bottomWingShapeLines)
+      const pt1inside = isPointInPolygon(pt1, bottomWingClosedPts)
+      const pt2inside = isPointInPolygon(pt2, bottomWingClosedPts)
+      if (!pt1inside && !pt2inside) continue
+      if (intersectionPts.length === 2) {
+        pt1 = intersectionPts[0][0]
+        pt2 = intersectionPts[1][0]
+      } else if (intersectionPts.length > 0) {
+        if (pt1inside) pt2 = intersectionPts[intersectionPts.length - 1][0]
+        else pt1 = intersectionPts[intersectionPts.length - 1][0]
+      }
+      this.ctx.moveTo(...pt1.toArray())
+      this.ctx.lineTo(...pt2.toArray())
+    }
+    this.ctx.stroke()
+    this.ctx.endPath()
+
+    // bottomWingSites.forEach((site) => {
+    //   debugDot(this.ctx, new Point(left + site.x, top + site.y), 'green')
+    // })
+
+    /*
+    // this draws offset paths for the bottom wing
     let bottomWingOffsetPath: Point[]
     let bottomWingOffsetLeftmostPt: Point
     for (let i = 1; i < 7 * this.scale; i += 1 * this.scale) {
@@ -290,6 +370,7 @@ class Butterfly {
       this.ctx.closePath()
       this.ctx.stroke()
     }
+      */
 
     // this.ctx.strokePath(topWingClosedPts, { debug: true, debugColor: 'blue' })
 
@@ -333,6 +414,36 @@ export default class Butterfree extends Sketch {
   init() {
     this.addVar('seed',{ name: 'seed', initialValue: 1010, min: 1000, max: 5000, step: 1 }) // prettier-ignore
     this.addVar('dist', { name: 'dist', initialValue: 80, min: 0, max: 200, step: 0.5 })
+    this.addVar('voronoiPts', {
+      initialValue: 30,
+      min: 4,
+      max: 250,
+      step: 1,
+    })
+    this.addVar('loosenIterations', {
+      initialValue: 2,
+      min: 0,
+      max: 250,
+      step: 1,
+    })
+    this.addVar('loosenDistCutoff', {
+      initialValue: 2,
+      min: 0,
+      max: 12,
+      step: 0.1,
+    })
+    this.addVar('loosenStrength', {
+      initialValue: 2,
+      min: 1,
+      max: 10,
+      step: 0.001,
+    })
+    this.addVar('apoptosisMitosis', {
+      initialValue: 0.1,
+      min: 0.0001,
+      max: 50,
+      step: 0.0001,
+    })
   }
 
   initDraw(): void {
@@ -340,21 +451,21 @@ export default class Butterfree extends Sketch {
     seedNoise(this.vs.seed.value)
 
     const butterfly1 = new Butterfly({
-      ctx: this.ctx,
+      sketch: this,
       pt: this.cp.clone(),
       scale: 1,
       droops: 1,
     })
 
     const butterfly2 = new Butterfly({
-      ctx: this.ctx,
+      sketch: this,
       pt: this.cp.clone().add(100, 0),
       scale: 0.5,
       droops: 2,
     })
 
     const butterfly3 = new Butterfly({
-      ctx: this.ctx,
+      sketch: this,
       pt: this.cp.clone().subtract(100, 0),
       scale: 0.5,
       droops: 2,
