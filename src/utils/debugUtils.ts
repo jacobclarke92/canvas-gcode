@@ -27,6 +27,10 @@ export const debugDot: OverloadedFunctionWithOptionals<
   ctx.ctx.fillStyle = prevFillStyle
 }
 
+export const debugDots = (ctx: GCanvas, pts: IntPoint[], color = '#ff0000') => {
+  for (const pt of pts) debugDot(ctx, pt, color)
+}
+
 export const debugLine: OverloadedFunctionWithOptionals<
   | [ctx: GCanvas, start: IntPoint, end: IntPoint]
   | [ctx: GCanvas, x1: number, y1: number, x2: number, y2: number],
