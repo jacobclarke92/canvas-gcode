@@ -1227,7 +1227,7 @@ export default class GCanvas {
   ) {
     const { joinType, endType, precision } = { ...defaultOffsetOptions, ...opts }
     const pathPts = (path instanceof SubPath ? path.getPoints() : path).map((pt) =>
-      pt.scale(precision)
+      pt.clone().scale(precision)
     )
     const offsetPaths = clipper.offsetToPaths({
       delta: offset * precision,
