@@ -1,28 +1,24 @@
-import { EndType, JoinType } from 'js-angusj-clipper/web'
+import { JoinType } from 'js-angusj-clipper/web'
 
-import { deg90 } from '../constants/angles'
 import type GCanvas from '../GCanvas'
 import type { IntPoint } from '../packages/Clipper/IntPoint'
 import Point from '../Point'
 import type { SketchState } from '../Sketch'
 import { Sketch } from '../Sketch'
-import { debugDot, debugDots } from '../utils/debugUtils'
 import {
   cyclePointsToStartWith,
   getBottommostPoint,
   getBoundsFromPath,
   getLeftmostPoint,
   getLineIntersectionPoints,
-  getMidPt,
   getRightmostPoint,
   isPointInPolygon,
-  lerp,
   pointsToLines,
 } from '../utils/geomUtils'
 import { seedNoise } from '../utils/noise'
 import { randFloat, randFloatRange } from '../utils/numberUtils'
-import { seedRandom } from '../utils/random'
-import { generateSpline, generateSplineWithEnds } from '../utils/splineUtils'
+import { random, seedRandom } from '../utils/random'
+import { generateSplineWithEnds } from '../utils/splineUtils'
 import { relaxSites, sortEdges } from '../utils/voronoiUtils'
 import type { BoundingBox, Diagram, Edge, Site } from '../Voronoi'
 import { Voronoi } from '../Voronoi'
@@ -128,7 +124,7 @@ class Butterfly {
       ...topWingSplinePts,
     ].map(ip2p)
 
-    this.drawTopWing(topWingClosedPts)
+    this.drawWingPart(topWingClosedPts)
 
     /**
      * Generate bottom right wing from simplified shape
@@ -214,7 +210,7 @@ class Butterfly {
      * Draw the bottom wing shape
      */
 
-    this.drawBottomWing(bottomWingClosedPts)
+    this.drawWingPart(bottomWingClosedPts)
 
     /** Draw outlines! */
 
@@ -251,18 +247,22 @@ class Butterfly {
     this.ctx.stroke()
   }
 
-  drawTopWing(pts: Point[]) {
+  drawWingPart(pts: Point[]) {
+    let layers = 0
     pts = this.drawOffsets(pts)
-    pts = this.drawLadder(pts)
-    // pts = this.drawOffsets(pts)
-    pts = this.drawLadder(pts)
-    this.drawVoronoi(pts)
-  }
-
-  drawBottomWing(pts: Point[]) {
-    pts = this.drawOffsets(pts)
-    pts = this.drawOffsets(pts)
-    this.drawVoronoi(pts)
+    while (layers < this.vars.minWingLayers) {
+      layers++
+      if (!pts || !pts.length) break
+      if (layers === this.vars.minWingLayers && random() > 0.25) {
+        this.drawVoronoi(pts)
+        break
+      }
+      const options = [this.drawOffsets, this.drawLadder, this.drawVoronoi]
+      const index = Math.floor(random() * options.length)
+      const result = options[index].call(this, pts)
+      if (result) pts = result
+      else break
+    }
   }
 
   drawOffsets(pts: Point[]) {
@@ -365,8 +365,8 @@ class Butterfly {
     return offsetPath
   }
 
-  drawVoronoi(pts: Point[]) {
-    if (!pts || !pts.length) return
+  drawVoronoi(pts: Point[]): null {
+    if (!pts || !pts.length) return null
 
     const voronoi = new Voronoi()
     let diagram: Diagram | null = null
@@ -425,6 +425,7 @@ class Butterfly {
     }
     this.ctx.stroke()
     this.ctx.endPath()
+    return null
   }
 }
 
@@ -435,6 +436,7 @@ export default class Butterfree extends Sketch {
   init() {
     this.addVar('seed',{ name: 'seed', initialValue: 1010, min: 1000, max: 5000, step: 1 }) // prettier-ignore
 
+    this.addVar('minWingLayers', { initialValue: 3, min: 0, max: 5, step: 1 })
     this.addVar('wingBorderWidth', { initialValue: 1, min: 0, max: 5, step: 0.1 })
     this.addVar('wingBorderIterations', { initialValue: 1, min: 0, max: 10, step: 1 })
 
