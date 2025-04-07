@@ -235,16 +235,20 @@ class Butterfly {
 
   drawAntenna(leftPt: Point, rightPt: Point) {
     const length = randFloatRange(30, 15) * this.scale
-    const leftAngle = randFloatRange(Math.PI * 0.3, Math.PI * 0.05)
-    const rightAngle = randFloatRange(Math.PI * 0.3, Math.PI * 0.05)
-    const leftEndPt = leftPt.clone().moveAlongAngle(-Math.PI / 2 + -leftAngle, length)
-    const rightEndPt = rightPt.clone().moveAlongAngle(-Math.PI / 2 + rightAngle, length)
+    const leftAngle = -Math.PI / 2 + -randFloatRange(Math.PI * 0.3, Math.PI * 0.05)
+    const rightAngle = -Math.PI / 2 + randFloatRange(Math.PI * 0.3, Math.PI * 0.05)
+    const leftEndPt = leftPt.clone().moveAlongAngle(leftAngle, length)
+    const rightEndPt = rightPt.clone().moveAlongAngle(rightAngle, length)
     this.ctx.beginPath()
     this.ctx.moveTo(leftPt.x, leftPt.y)
     this.ctx.quadraticCurveTo(leftPt.x, leftPt.y - length / 2, leftEndPt.x, leftEndPt.y)
     this.ctx.moveTo(rightPt.x, rightPt.y)
     this.ctx.quadraticCurveTo(rightPt.x, rightPt.y - length / 2, rightEndPt.x, rightEndPt.y)
     this.ctx.stroke()
+
+    const nibSize = randFloatRange(1.2, 0.4) * this.scale
+    this.ctx.strokeCircle(leftEndPt.clone().moveAlongAngle(leftAngle, nibSize), nibSize)
+    this.ctx.strokeCircle(rightEndPt.clone().moveAlongAngle(rightAngle, nibSize), nibSize)
   }
 
   drawWingPart(pts: Point[]) {
@@ -257,7 +261,13 @@ class Butterfly {
         this.drawVoronoi(pts)
         break
       }
-      const options = [this.drawOffsets, this.drawLadder, this.drawVoronoi]
+      const options = [
+        this.drawOffsets,
+        this.drawOffsets,
+        this.drawLadder,
+        this.drawLadder,
+        this.drawVoronoi,
+      ]
       const index = Math.floor(random() * options.length)
       const result = options[index].call(this, pts)
       if (result) pts = result
@@ -436,7 +446,7 @@ export default class Butterfree extends Sketch {
   init() {
     this.addVar('seed',{ name: 'seed', initialValue: 1010, min: 1000, max: 5000, step: 1 }) // prettier-ignore
 
-    this.addVar('minWingLayers', { initialValue: 3, min: 0, max: 5, step: 1 })
+    this.addVar('minWingLayers', { initialValue: 3, min: 0, max: 10, step: 1 })
     this.addVar('wingBorderWidth', { initialValue: 1, min: 0, max: 5, step: 0.1 })
     this.addVar('wingBorderIterations', { initialValue: 1, min: 0, max: 10, step: 1 })
 
