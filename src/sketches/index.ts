@@ -76,4 +76,5 @@ export default [
   require('./75_Butterfly').default,
   require('./76_WiggleShapeWrap').default,
   require('./77_Runway').default,
+  require('./78_CellularAutomata').default,
 ]
