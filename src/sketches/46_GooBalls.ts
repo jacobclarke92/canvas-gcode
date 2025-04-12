@@ -1,5 +1,6 @@
 import { deg360 } from '../constants/angles'
 import Point from '../Point'
+import type { SketchState } from '../Sketch'
 import { Sketch } from '../Sketch'
 import { Line } from '../types'
 import { debugDot, debugText } from '../utils/debugUtils'
@@ -22,6 +23,7 @@ import { BooleanRange } from './tools/Range'
 export default class GooBalls extends Sketch {
   // static generateGCode = false
   static enableCutouts = false
+  static sketchState: SketchState = 'test'
 
   init() {
     this.addVar('speedUp', {

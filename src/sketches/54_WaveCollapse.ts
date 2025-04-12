@@ -1,5 +1,6 @@
 import { deg90 } from '../constants/angles'
 import Point from '../Point'
+import type { SketchState } from '../Sketch'
 import { Sketch } from '../Sketch'
 import { shuffle } from '../utils/arrayUtils'
 import { debugArrow, debugDot, debugText } from '../utils/debugUtils'
@@ -131,6 +132,8 @@ const isCellCompletelyDrawn = (cell: Cell): boolean =>
   (cell.connectLeft ? cell.drawnLeft : true)
 
 export default class WaveCollapse extends Sketch {
+  static sketchState: SketchState = 'unfinished'
+
   init() {
     this.addVar('seed', { initialValue: 3994, min: 1000, max: 5000, step: 1 })
     this.addVar('speedUp', { initialValue: 32, min: 1, max: 50, step: 1 })

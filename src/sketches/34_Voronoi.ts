@@ -5,6 +5,7 @@ import { seedNoise } from '../utils/noise'
 import { randFloatRange } from '../utils/numberUtils'
 import { initPen, penUp, plotBounds } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
+import { relaxSites, sortEdges } from '../utils/voronoiUtils'
 import type { BoundingBox, Cell, Diagram, Edge, HalfEdge, Site, Vertex } from '../Voronoi'
 import { Voronoi } from '../Voronoi'
 import { BooleanRange } from './tools/Range'
@@ -101,8 +102,13 @@ export default class VoronoiBoi extends Sketch {
     this.compute(this.sites)
 
     for (let i = 0; i < loosenIterations; i++) {
-      this.relaxSites()
-      // this.render()
+      const sites = relaxSites({
+        diagram: this.diagram,
+        apoptosisMitosis: this.vars.apoptosisMitosis,
+        loosenStrength: this.vars.loosenStrength,
+        loosenDistCutoff: this.vars.loosenDistCutoff,
+      })
+      this.compute(sites)
     }
 
     this.render()
@@ -116,141 +122,12 @@ export default class VoronoiBoi extends Sketch {
     this.diagram = this.voronoi.compute(sites, this.boundingBox)
   }
 
-  relaxSites() {
-    if (!this.diagram) return
-
-    const { apoptosisMitosis, loosenStrength, loosenDistCutoff } = this.vars
-
-    const cells = this.diagram.cells
-    const sites: Site[] = []
-    let iCell = cells.length,
-      site: Site,
-      cell: Cell,
-      again = false,
-      dist: number
-
-    const p = (1 / cells.length) * apoptosisMitosis
-    while (iCell--) {
-      const rand = randFloatRange(1)
-      cell = cells[iCell]
-
-      // probability of apoptosis
-      if (rand < p) continue
-
-      site = this.cellCentroid(cell)
-      dist = Point.distance(site as Point, cell.site as Point)
-      again = again || dist > 1
-
-      // don't relax too fast
-      if (dist > loosenDistCutoff) {
-        site.x = site.x + (cell.site.x - site.x) / loosenStrength
-        site.y = site.y + (cell.site.y - site.y) / loosenStrength
-      }
-
-      // probability of mitosis
-      if (rand > 1 - p) {
-        dist /= 2
-        sites.push({
-          x: site.x + (site.x - cell.site.x) / dist,
-          y: site.y + (site.y - cell.site.y) / dist,
-        })
-      }
-      sites.push(site)
-    }
-    this.compute(sites)
-  }
-
-  cellArea(cell: Cell) {
-    const halfEdges = cell.halfEdges
-    let area = 0,
-      iHalfEdge = halfEdges.length,
-      halfEdge: HalfEdge,
-      p1: Vertex,
-      p2: Vertex
-
-    while (iHalfEdge--) {
-      halfEdge = halfEdges[iHalfEdge]
-      p1 = halfEdge.getStartPoint()
-      p2 = halfEdge.getEndPoint()
-      area += p1.x * p2.y
-      area -= p1.y * p2.x
-    }
-    area /= 2
-    return area
-  }
-
-  cellCentroid(cell: Cell) {
-    const halfEdges = cell.halfEdges
-    let x = 0,
-      y = 0,
-      iHalfEdge = halfEdges.length,
-      halfEdge: HalfEdge,
-      v: number,
-      p1: Vertex,
-      p2: Vertex
-
-    while (iHalfEdge--) {
-      halfEdge = halfEdges[iHalfEdge]
-      p1 = halfEdge.getStartPoint()
-      p2 = halfEdge.getEndPoint()
-      v = p1.x * p2.y - p2.x * p1.y
-      x += (p1.x + p2.x) * v
-      y += (p1.y + p2.y) * v
-    }
-    v = this.cellArea(cell) * 6
-    return { x: x / v, y: y / v }
-  }
-
-  sortEdges(edges: Edge[]): Edge[] {
-    // Create a graph representation
-    const graph = new Map<Vertex, Set<Edge>>()
-
-    for (const edge of edges) {
-      if (!graph.has(edge.vertex1)) graph.set(edge.vertex1, new Set())
-      if (!graph.has(edge.vertex2)) graph.set(edge.vertex2, new Set())
-      graph.get(edge.vertex1)!.add(edge)
-      graph.get(edge.vertex2)!.add(edge)
-    }
-
-    const sortedEdges: Edge[] = []
-    const visited = new Set<Edge>()
-
-    function dfs(currentVertex: Vertex) {
-      const adjacentEdges = graph.get(currentVertex)!
-      for (const edge of adjacentEdges) {
-        if (!visited.has(edge)) {
-          visited.add(edge)
-          sortedEdges.push(edge)
-          const nextVertex = edge.vertex1 === currentVertex ? edge.vertex2 : edge.vertex1
-          dfs(nextVertex)
-        }
-      }
-    }
-
-    // Start DFS from the first vertex of the first edge
-    if (edges.length > 0) {
-      dfs(edges[0].vertex1)
-    }
-
-    // Handle any disconnected components
-    for (const edge of edges) {
-      if (!visited.has(edge)) {
-        visited.add(edge)
-        sortedEdges.push(edge)
-        dfs(edge.vertex1)
-        dfs(edge.vertex2)
-      }
-    }
-
-    return sortedEdges
-  }
-
   iEdge = 0
   edges: Edge[] = []
   render(): void {
     if (!this.diagram) return
 
-    this.edges = this.sortEdges(this.diagram.edges)
+    this.edges = sortEdges(this.diagram.edges)
     this.iEdge = this.edges.length
     let edge: Edge
     this.ctx.beginPath()

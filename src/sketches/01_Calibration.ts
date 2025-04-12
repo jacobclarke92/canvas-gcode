@@ -1,3 +1,4 @@
+import type { SketchState } from '../Sketch'
 import { Sketch } from '../Sketch'
 import type { Vector } from '../types'
 import { randFloat, randInt, randIntRange, wrap } from '../utils/numberUtils'
@@ -8,6 +9,7 @@ export default class Calibration extends Sketch {
   pos: Vector
   static generateGCode = true
   static enableCutouts = false
+  static sketchState: SketchState = 'test'
 
   init() {
     //

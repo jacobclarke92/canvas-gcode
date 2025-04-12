@@ -96,7 +96,7 @@ export default class StringArt extends Sketch {
       const needToAvoid =
         avoidUntil > 0 && (indexDiff < avoidUntil || indexDiff > points - avoidUntil)
 
-      if (needToAvoid) {
+      if (needToAvoid && this.currentRadialIndex !== this.currentTestIndex) {
         // add it anyway so it can be easily skipped later
         this.drawnLines.add(makeKey(this.currentRadialIndex, this.currentTestIndex))
       }

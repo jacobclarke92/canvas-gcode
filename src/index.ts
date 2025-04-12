@@ -3,7 +3,7 @@ import throttle from 'lodash-es/throttle'
 import GCode from './drivers/GCodeDriver'
 import GCanvas from './GCanvas'
 import { renderSketchSaveSlots, saveNewPreset } from './saveSlots'
-import type { Sketch } from './Sketch'
+import type { Sketch, SketchState } from './Sketch'
 import sketches from './sketches'
 import { renderSketchSliders, updateSliderValues } from './sliders'
 import { loadValue, saveValue } from './utils/localStorageUtils'
@@ -26,6 +26,14 @@ let currentSketchIndex = loadValue('sketchIndex', 0)
 let CurrentSketch: Sketch
 let rafRef = 0
 let animateIncrement = 0
+
+const sketchTypeColors: { [key in SketchState]: string } = {
+  test: '#d6d9dc',
+  unfinished: '#fbdbc1',
+  wip: '#babcee',
+  done: '#94ccae',
+  broken: '#f8b3b3',
+}
 
 const init = () => {
   // initialize canvas
@@ -97,6 +105,8 @@ const init = () => {
     const button = document.createElement('button')
     button.type = 'button'
     button.innerText = `${index + 1} ${sketch.name}`
+    const sketchState = (sketch.prototype.constructor.sketchState as SketchState) || 'done'
+    button.style.backgroundColor = sketchTypeColors[sketchState]
     if (downloadLink) downloadLink.setAttribute('download', `${sketch.name}.png`)
     if (currentSketchIndex === index) button.classList.add('active')
     button.addEventListener('click', () => {

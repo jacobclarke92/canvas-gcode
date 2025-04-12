@@ -4,6 +4,7 @@ import { deg90, deg360 } from '../constants/angles'
 import { clipper } from '../GCanvas'
 import Path from '../Path'
 import Point from '../Point'
+import type { SketchState } from '../Sketch'
 import { Sketch } from '../Sketch'
 import type SubPath from '../SubPath'
 import type { Line } from '../types'
@@ -23,6 +24,7 @@ import Range from './tools/Range'
 export default class Housies extends Sketch {
   // static generateGCode = false
   static enableCutouts = false
+  static sketchState: SketchState = 'unfinished'
 
   init() {
     this.addVar('speedUp', { name: 'speedUp', initialValue: 10, min: 1, max: 100, step: 1, disableRandomize: true }) // prettier-ignore

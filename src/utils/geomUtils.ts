@@ -7,13 +7,25 @@ import { sign } from './numberUtils'
 export type Circle = [point: Point, radius: number]
 export type Bounds = [top: number, right: number, bottom: number, left: number]
 
-export const radToDeg = (rad: number): number => (rad * 180) / Math.PI
-export const degToRad = (deg: number): number => (deg * Math.PI) / 180
+/**
+ * ---------------
+ * General utils
+ * ---------------
+ */
 
 export const fade = (t: number) => t * t * t * (t * (t * 6 - 15) + 10)
 export const lerp = (a: number, b: number, t: number) => (1 - t) * a + t * b
 
 export const mod = (a: number, n: number) => a - Math.floor(a / n) * n
+
+/**
+ * ---------------
+ * Angle utils
+ * ---------------
+ */
+
+export const radToDeg = (rad: number): number => (rad * 180) / Math.PI
+export const degToRad = (deg: number): number => (deg * Math.PI) / 180
 
 // https://stackoverflow.com/a/1878936/13326984
 // export const smallestSignedAngleDiff = (angle1: number, angle2: number): number => {
@@ -27,6 +39,114 @@ export const smallestSignedAngleDiff = (angle1: number, angle2: number): number 
   let diff = Math.abs(angle1 - angle2) % deg360
   if (diff > Math.PI) diff = deg360 - diff
   return diff
+}
+
+export const normalizeAngle = (angle: number) => {
+  while (angle > Math.PI) angle -= 2 * Math.PI
+  while (angle < -Math.PI) angle += 2 * Math.PI
+  return angle
+}
+
+/**
+ * ---------------
+ * Point utils
+ * ---------------
+ */
+
+export const getMidPt = (...pts: Point[]): Point =>
+  pts.reduce((acc, pt) => acc.add(pt), new Point(0, 0)).divide(pts.length)
+
+export const getDistancesToPoint = (pt: Point, ...pts: [Point] | Point[]): [Point, number][] =>
+  pts.map((p) => [p, pt.distanceTo(p)])
+
+export const getClosestPoint = (pt: Point, ...pts: [Point] | Point[]): Point =>
+  getDistancesToPoint(pt, ...pts).sort((a, b) => a[1] - b[1])[0][0]
+
+export const getClosestButNotSamePoint = (pt: Point, ...pts: [Point] | Point[]): Point | null => {
+  if (!pts.length) throw new Error('No points to compare')
+  const ptsWithDist = getDistancesToPoint(pt, ...pts)
+    .sort((a, b) => a[1] - b[1])
+    .filter((p) => p[1] > 0.0001)
+  if (!ptsWithDist.length) return null
+  return ptsWithDist[0][0]
+}
+
+export const getLeftmostPoint = (...pts: Point[]): Point =>
+  pts.reduce((acc, pt) => (pt.x < acc.x ? pt : acc))
+
+export const getRightmostPoint = (...pts: Point[]): Point =>
+  pts.reduce((acc, pt) => (pt.x > acc.x ? pt : acc))
+
+export const getTopmostPoint = (...pts: Point[]): Point =>
+  pts.reduce((acc, pt) => (pt.y < acc.y ? pt : acc))
+
+export const getBottommostPoint = (...pts: Point[]): Point =>
+  pts.reduce((acc, pt) => (pt.y > acc.y ? pt : acc))
+
+/** Orders points in clockwise direction starting from the topmost point */
+export const orderPointsClockwise = (points: Point[]): Point[] => {
+  const center = points.reduce(
+    (acc, point) => ({
+      x: acc.x + point.x / points.length,
+      y: acc.y + point.y / points.length,
+    }),
+    { x: 0, y: 0 }
+  )
+
+  return [...points].sort((a, b) => {
+    const angleA = Math.atan2(a.y - center.y, a.x - center.x)
+    const angleB = Math.atan2(b.y - center.y, b.x - center.x)
+    return angleA - angleB
+  })
+}
+
+export const cyclePointsToStartWith = (startingPt: Point, points: Point[]) => {
+  const index = points.indexOf(startingPt)
+  if (index < 0) {
+    console.warn('[reorderPointsStartingWith] pt not found in array')
+    return points
+  }
+  return [...points.slice(index), ...points.slice(0, index)]
+}
+
+export const isPointInPolygon = (point: Point, polygon: Point[]): boolean => {
+  const { x: px, y: py } = point
+  let isInside = false
+
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const { x: x1, y: y1 } = polygon[i]
+    const { x: x2, y: y2 } = polygon[j]
+
+    const intersect = y1 > py !== y2 > py && px < ((x2 - x1) * (py - y1)) / (y2 - y1) + x1
+
+    if (intersect) isInside = !isInside
+  }
+
+  return isInside
+}
+
+/**
+ * ---------------
+ * Line utils
+ * ---------------
+ */
+
+export const pointsToLines = (points: Point[], unclosed = false): Line[] => {
+  const lines: Line[] = []
+  for (let i = 0; i < points.length - 1; i++) {
+    lines.push([points[i], points[i + 1]])
+  }
+  if (unclosed) {
+    lines.push([points[points.length - 1], points[0]])
+  }
+  return lines
+}
+
+export const trimLineToIntersectionPoints = (line: Line, lines: Line[]): Line => {
+  const intersectionPoints = getLineIntersectionPoints(line, ...lines)
+  if (intersectionPoints.length > 2) console.log('more than 2 intersection points')
+  else if (intersectionPoints.length < 2) return line
+  return [intersectionPoints[0][0], intersectionPoints[1][0]]
 }
 
 export const linesIntersect = (line1: LooseLine, line2: LooseLine): boolean => {
@@ -82,20 +202,29 @@ export const getLineIntersectionPoints = <LineType extends Line | [IntPoint, Int
   return pointsAndLines
 }
 
-export const getDistancesToPoint = (pt: Point, ...pts: [Point] | Point[]): [Point, number][] =>
-  pts.map((p) => [p, pt.distanceTo(p)])
+/**
+ * ---------------
+ * Triangle utils
+ * ---------------
+ */
 
-export const getClosestPoint = (pt: Point, ...pts: [Point] | Point[]): Point =>
-  getDistancesToPoint(pt, ...pts).sort((a, b) => a[1] - b[1])[0][0]
+/** Determines if a point lies inside a triangle using barycentric coordinates */
+export const isPointInTriangle = (point: Point, v1: Point, v2: Point, v3: Point): boolean => {
+  const denominator = (v2.y - v3.y) * (v1.x - v3.x) + (v3.x - v2.x) * (v1.y - v3.y)
 
-export const getClosestButNotSamePoint = (pt: Point, ...pts: [Point] | Point[]): Point | null => {
-  if (!pts.length) throw new Error('No points to compare')
-  const ptsWithDist = getDistancesToPoint(pt, ...pts)
-    .sort((a, b) => a[1] - b[1])
-    .filter((p) => p[1] > 0.0001)
-  if (!ptsWithDist.length) return null
-  return ptsWithDist[0][0]
+  const a = ((v2.y - v3.y) * (point.x - v3.x) + (v3.x - v2.x) * (point.y - v3.y)) / denominator
+  const b = ((v3.y - v1.y) * (point.x - v3.x) + (v1.x - v3.x) * (point.y - v3.y)) / denominator
+  const c = 1 - a - b
+
+  // If all coordinates are between 0 and 1, the point is inside the triangle
+  return a >= 0 && a <= 1 && b >= 0 && b <= 1 && c >= 0 && c <= 1
 }
+
+/**
+ * ---------------
+ * Rectangle (quadrilateral) utils
+ * ---------------
+ */
 
 /**
  * Liang-Barsky function by Daniel White
@@ -150,6 +279,35 @@ export const getPointsWhereLineIntersectsRectangle = (
     new Point(p1.x + t1 * dx, p1.y + t1 * dy),
   ]
 }
+
+export const isPointInQuadrilateral = (point: Point, quad: Point[]): boolean => {
+  if (quad.length !== 4) throw new Error('Quadrilateral must be defined by exactly 4 points')
+
+  const sortedPoints = orderPointsClockwise(quad)
+
+  // Ray casting algorithm
+  let inside = false
+  for (let i = 0, j = sortedPoints.length - 1; i < sortedPoints.length; j = i++) {
+    const xi = sortedPoints[i].x
+    const yi = sortedPoints[i].y
+    const xj = sortedPoints[j].x
+    const yj = sortedPoints[j].y
+
+    const intersect =
+      yi > point.y !== yj > point.y && point.x < ((xj - xi) * (point.y - yi)) / (yj - yi) + xi
+
+    if (intersect) inside = !inside
+  }
+
+  return inside
+}
+export const isPointInRectangle = isPointInQuadrilateral
+
+/**
+ * ---------------
+ * Circle utils
+ * ---------------
+ */
 
 export const lineIntersectsCircle = ([p1, p2]: Line, pt: Point, radius: number): boolean => {
   const x1 = p1.clone().subtract(pt)
@@ -256,19 +414,11 @@ export const getCircleCircleIntersectionPoints = (
   return [new Point(p2.x + x3, p2.y - y3), new Point(p2.x - x3, p2.y + y3)]
 }
 
-export const getBoundsFromCircles = (
-  ...circles: [pos: Point, rad: number][]
-): [top: number, right: number, bottom: number, left: number] => {
-  const xs: number[] = []
-  const ys: number[] = []
-  for (const [pos, rad] of circles) {
-    xs.push(pos.x - rad)
-    xs.push(pos.x + rad)
-    ys.push(pos.y - rad)
-    ys.push(pos.y + rad)
-  }
-  return [Math.min(...ys), Math.max(...xs), Math.max(...ys), Math.min(...xs)]
-}
+/**
+ * ---------------
+ * Boundary utils
+ * ---------------
+ */
 
 export const boundsOverlap = (bound1: Bounds, bound2: Bounds): boolean => {
   const [top1, right1, bottom1, left1] = bound1
@@ -293,23 +443,36 @@ export const isInBounds = (pt: Point, bounds: Bounds, gutter = 0): boolean => {
   return pt.x >= left && pt.x <= right && pt.y >= top && pt.y <= bottom
 }
 
-export const pointsToLines = (points: Point[], unclosed = false): Line[] => {
-  const lines: Line[] = []
-  for (let i = 0; i < points.length - 1; i++) {
-    lines.push([points[i], points[i + 1]])
+export const getBoundsFromCircles = (
+  ...circles: [pos: Point, rad: number][]
+): [top: number, right: number, bottom: number, left: number] => {
+  const xs: number[] = []
+  const ys: number[] = []
+  for (const [pos, rad] of circles) {
+    xs.push(pos.x - rad)
+    xs.push(pos.x + rad)
+    ys.push(pos.y - rad)
+    ys.push(pos.y + rad)
   }
-  if (unclosed) {
-    lines.push([points[points.length - 1], points[0]])
-  }
-  return lines
+  return [Math.min(...ys), Math.max(...xs), Math.max(...ys), Math.min(...xs)]
 }
 
-export const trimLineToIntersectionPoints = (line: Line, lines: Line[]): Line => {
-  const intersectionPoints = getLineIntersectionPoints(line, ...lines)
-  if (intersectionPoints.length > 2) console.log('more than 2 intersection points')
-  else if (intersectionPoints.length < 2) return line
-  return [intersectionPoints[0][0], intersectionPoints[1][0]]
+export const getBoundsFromPath = (path: Point[]): Bounds => {
+  if (!path.length) throw new Error('Path is empty')
+  const xs = path.map((p) => p.x)
+  const ys = path.map((p) => p.y)
+  const top = Math.min(...ys)
+  const right = Math.max(...xs)
+  const bottom = Math.max(...ys)
+  const left = Math.min(...xs)
+  return [top, right, bottom, left]
 }
+
+/**
+ * ---------------
+ * Curve utils
+ * ---------------
+ */
 
 export const getBezierPoint = (
   start: Point,
@@ -354,6 +517,7 @@ export const getBezierPoints = (
   return points
 }
 
+/** @deprecated This is some LLM generated garbage that infinitely recurses */
 export const getContinuousBezierApproximation = (
   controlPoints: Point[],
   outputSegmentCount: number
@@ -364,6 +528,7 @@ export const getContinuousBezierApproximation = (
   })
 }
 
+/** @deprecated This is some LLM generated garbage that infinitely recurses */
 export const getContinuousBezierPoint = (
   t: number,
   controlPoints: Point[],
@@ -394,15 +559,6 @@ export const getTangentsToCircle = (pt: Point, circlePt: Point, radius: number):
     radius * Math.cos(tangentAngle2)
   ).add(circlePt)
   return [tangent1, tangent2]
-}
-
-export const getMidPt = (...pts: Point[]): Point =>
-  pts.reduce((acc, pt) => acc.add(pt), new Point(0, 0)).divide(pts.length)
-
-function normalizeAngle(angle: number) {
-  while (angle > Math.PI) angle -= 2 * Math.PI
-  while (angle < -Math.PI) angle += 2 * Math.PI
-  return angle
 }
 
 function getArcRange(arc: [start: number, end: number]) {

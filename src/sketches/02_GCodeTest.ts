@@ -1,4 +1,5 @@
 import Point from '../Point'
+import type { SketchState } from '../Sketch'
 import { Sketch } from '../Sketch'
 import { debugDot, debugText } from '../utils/debugUtils'
 import { getContinuousBezierApproximation } from '../utils/geomUtils'
@@ -6,6 +7,8 @@ import { randIntRange } from '../utils/numberUtils'
 import { initPen, penUp, plotBounds } from '../utils/penUtils'
 
 export default class GCodeTest extends Sketch {
+  static sketchState: SketchState = 'test'
+
   init() {
     initPen(this)
     plotBounds(this)

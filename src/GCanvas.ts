@@ -22,9 +22,11 @@ import {
   type QuadraticCurveToAction,
 } from './SubPath'
 import type { OverloadedFunctionWithOptionals } from './types'
+import { debugDot } from './utils/debugUtils'
 import type { SimplifiedSvgPathSegment } from './utils/pathToCanvasCommands'
 import { pathToCanvasCommands } from './utils/pathToCanvasCommands'
 import { arcToPoints, convertPointsToEdges, ellipseToPoints, pointsToArc } from './utils/pathUtils'
+import { generateSpline, generateSplineWithEnds } from './utils/splineUtils'
 
 export interface GCanvasConfig {
   width: number
@@ -613,6 +615,57 @@ export default class GCanvas {
     this.stroke(options)
   }
 
+  public strokeSmoothClosedPath(
+    path: IntPoint[],
+    options?: StrokeOptions & { resolution?: number }
+  ) {
+    if (path.length < 3) {
+      console.warn('Not enough points to smooth path')
+      this.strokePath(path, options)
+      return
+    }
+    const pts = [path[path.length - 1], ...path, path[0], path[1]]
+    const splinePts = generateSpline(pts, options?.resolution || 12)
+
+    this.beginPath()
+    for (let i = 0; i < splinePts.length; i++) {
+      const pt = splinePts[i]
+      if (i === 0) this.ctx.moveTo(pt.x, pt.y)
+      else this.ctx.lineTo(pt.x, pt.y)
+    }
+    this.stroke(options)
+
+    if (options?.debug) {
+      for (const pt of path) debugDot(this, pt)
+    }
+
+    return splinePts
+  }
+
+  public strokeSmoothPath(path: IntPoint[], options?: StrokeOptions & { resolution?: number }) {
+    if (path.length < 3) {
+      console.warn('Not enough points to smooth path')
+      this.strokePath(path, options)
+      return
+    }
+
+    const splinePts = generateSplineWithEnds(path, options?.resolution || 12)
+
+    this.beginPath()
+    for (let i = 0; i < splinePts.length; i++) {
+      const pt = splinePts[i]
+      if (i === 0) this.ctx.moveTo(pt.x, pt.y)
+      else this.ctx.lineTo(pt.x, pt.y)
+    }
+    this.stroke(options)
+
+    if (options?.debug) {
+      for (const pt of path) debugDot(this, pt)
+    }
+
+    return splinePts
+  }
+
   public fillRect(
     ...args: [pt: Point, w: number, h: number] | [x: number, y: number, w: number, h: number]
   ) {
@@ -722,6 +775,7 @@ export default class GCanvas {
     this.moveTo(x1, y1)
     this.lineTo(x2, y2)
     this.lineTo(x3, y3)
+    this.lineTo(x1, y1)
     // this.endPath()
   }
 
@@ -1169,10 +1223,11 @@ export default class GCanvas {
   public offsetPath(
     path: SubPath | Point[],
     offset: number,
-    { joinType, endType, precision }: OffsetOptions = defaultOffsetOptions
+    opts: Partial<OffsetOptions> = defaultOffsetOptions
   ) {
+    const { joinType, endType, precision } = { ...defaultOffsetOptions, ...opts }
     const pathPts = (path instanceof SubPath ? path.getPoints() : path).map((pt) =>
-      pt.scale(precision)
+      pt.clone().scale(precision)
     )
     const offsetPaths = clipper.offsetToPaths({
       delta: offset * precision,

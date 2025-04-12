@@ -31,6 +31,17 @@ export const wrap = (value: number, max: number, min = 0): number => {
   return val === min && value > min ? min + range : val
 }
 
+/** maps a value from one range to another */
+export const mapRange = (
+  value: number,
+  inMin: number,
+  inMax: number,
+  outMin: number,
+  outMax: number
+): number => {
+  return ((value - inMin) * (outMax - outMin)) / (inMax - inMin) + outMin
+}
+
 /** if splitting a total into segments, this offers a quick way to get the value at a certain index */
 export const segmentValue = (index: number, segments: number, max: number, min = 0): number =>
   ((max - min) / segments) * index
