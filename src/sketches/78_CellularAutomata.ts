@@ -2,6 +2,7 @@ import type GCanvas from '../GCanvas'
 import Point from '../Point'
 import type { SketchState } from '../Sketch'
 import { Sketch } from '../Sketch'
+import type { Line } from '../types'
 import { shuffle } from '../utils/arrayUtils'
 import { smallestSignedAngleDiff } from '../utils/geomUtils'
 import { seedNoise } from '../utils/noise'
@@ -31,7 +32,7 @@ const createWolframRule = (ruleNumber: number): ((left: Bit, center: Bit, right:
 export default class CellularAutomata extends Sketch {
   static sketchState: SketchState = 'unfinished'
   static enableCutouts = false
-  static disableOverclock = true
+  // static disableOverclock = true
 
   init() {
     this.addVar('seed', { name: 'seed', initialValue: 1010, min: 1000, max: 5000, step: 1 })
@@ -39,6 +40,7 @@ export default class CellularAutomata extends Sketch {
     this.addVar('gutterY', { name: 'gutterY', initialValue: 28, min: 1, max: 100, step: 1 })
     this.addVar('gridSize', { name: 'gridSize', initialValue: 1, min: 0.1, max: 25, step: 0.02 })
     this.addVar('rule', { name: 'rule', initialValue: 30, min: 0, max: 255, step: 1 })
+    this.addVar('bifurcate', { name: 'bifurcate', initialValue: 0, min: 0, max: 1, step: 1 })
     this.addVar('startOffset', {
       name: 'startOffset',
       initialValue: 0.1,
@@ -55,6 +57,9 @@ export default class CellularAutomata extends Sketch {
     })
   }
 
+  mode: 'plan' | 'draw' = 'plan'
+  lines: Line[] = []
+  lastDrawLine: Line | null = null
   state = new Int8Array()
   xCells = 0
   yCells = 0
@@ -66,7 +71,9 @@ export default class CellularAutomata extends Sketch {
   initDraw(): void {
     seedRandom(this.vars.seed)
     seedNoise(this.vars.seed)
-    const { gridSize, gutterX, gutterY, rule, startingPoints, startOffset } = this.vars
+    const { gridSize, gutterX, gutterY, rule, startingPoints, startOffset, bifurcate } = this.vars
+    this.mode = 'plan'
+    this.lines = []
     this.applyRule = createWolframRule(rule)
     this.yIndex = 0
     this.xCells = Math.floor((this.cw - gutterX * 2) / gridSize)
@@ -75,19 +82,33 @@ export default class CellularAutomata extends Sketch {
     this.yOffset = (this.ch - this.yCells * gridSize) / 2
     this.state = new Int8Array(this.xCells * this.yCells)
 
+    const middleIndex = Math.floor(this.yCells / 2)
+    const startingRowsOffset = bifurcate ? middleIndex * this.xCells : 0
+
     const indexSpacing = Math.floor(this.xCells / (startingPoints + 1))
     for (let i = 0; i < startingPoints; i++) {
       const index = Math.floor(startOffset + (i + 1) * indexSpacing)
-      if (index >= 0 && index <= this.xCells) this.state[index] = 1
+      if (index >= 0 && index <= this.xCells) this.state[startingRowsOffset + index] = 1
     }
 
-    for (let y = 1; y < this.yCells; y++) {
+    for (let y = bifurcate ? middleIndex + 1 : 1; y < this.yCells; y++) {
       for (let x = 1; x < this.xCells - 1; x++) {
         this.state[y * this.xCells + x] = this.applyRule(
           this.state[(y - 1) * this.xCells + x - 1] as Bit,
           this.state[(y - 1) * this.xCells + x] as Bit,
           this.state[(y - 1) * this.xCells + x + 1] as Bit
         )
+      }
+    }
+    if (bifurcate) {
+      for (let y = middleIndex - 1; y >= 0; y--) {
+        for (let x = 1; x < this.xCells - 1; x++) {
+          this.state[y * this.xCells + x] = this.applyRule(
+            this.state[(y + 1) * this.xCells + x - 1] as Bit,
+            this.state[(y + 1) * this.xCells + x] as Bit,
+            this.state[(y + 1) * this.xCells + x + 1] as Bit
+          )
+        }
       }
     }
   }
@@ -112,46 +133,64 @@ export default class CellularAutomata extends Sketch {
 
   draw(): void {
     //
-    if (this.yIndex >= this.yCells - 1) return
+    if (this.mode === 'plan') {
+      if (this.yIndex >= this.yCells - 1) {
+        this.mode = 'draw'
+        this.lastDrawLine = this.lines[0]
+        this.lines.shift()
+        return
+      }
 
-    for (let xIndex = 1; xIndex < this.xCells - 1; xIndex++) {
-      const [b1, p1] = this.getCell(xIndex - 1, this.yIndex)
-      const [b2, p2] = this.getCell(xIndex, this.yIndex)
-      const [b3, p3] = this.getCell(xIndex + 1, this.yIndex)
-      const [b4, p4] = this.getCell(xIndex - 1, this.yIndex + 1)
-      const [b5, p5] = this.getCell(xIndex, this.yIndex + 1)
-      const [b6, p6] = this.getCell(xIndex + 1, this.yIndex + 1)
+      for (let xIndex = 1; xIndex < this.xCells - 1; xIndex++) {
+        const [b1, p1] = this.getCell(xIndex - 1, this.yIndex)
+        const [b2, p2] = this.getCell(xIndex, this.yIndex)
+        const [b3, p3] = this.getCell(xIndex + 1, this.yIndex)
+        const [b4, p4] = this.getCell(xIndex - 1, this.yIndex + 1)
+        const [b5, p5] = this.getCell(xIndex, this.yIndex + 1)
+        const [b6, p6] = this.getCell(xIndex + 1, this.yIndex + 1)
 
-      if (!b2) continue
+        if (!b2) continue
 
-      if (b3) this.ctx.strokeLine(p2, p3)
-      if (b4) this.ctx.strokeLine(p2, p4)
-      if (b6) this.ctx.strokeLine(p2, p6)
-      // if (b5) this.ctx.strokeLine(p2, p5)
-      if (b5 && !(b4 && b6)) this.ctx.strokeLine(p2, p5)
+        // if (b3) this.ctx.strokeLine(p2, p3)
+        // if (b4) this.ctx.strokeLine(p2, p4)
+        // if (b6) this.ctx.strokeLine(p2, p6)
+        // // if (b5) this.ctx.strokeLine(p2, p5)
+        // if (b5 && !(b4 && b6)) this.ctx.strokeLine(p2, p5)
 
-      // const [b3, p3] = this.getCell(xIndex - 1, this.yIndex)
-      // const [b4, p4] = this.getCell(xIndex, this.yIndex)
-      // const sum = b1 + b2 + b3 + b4
-      // const pts = [b1 && p1, b2 && p2, b3 && p3, b4 && p4].filter(Boolean) as Point[]
-      // if (sum === 4) {
-      //   this.ctx.strokeRect(p1, gridSize, gridSize)
-      // } else if (sum === 3) {
-      //   if (!b4) {
-      //     this.ctx.strokeTriangle(pts[0], pts[1], pts[2])
-      //   } else {
-      //     if (b1 && b2) this.ctx.strokeLine(p1, p2)
-      //     if (b1 && b3) this.ctx.strokeLine(p1, p3)
-      //     if (b2 && b3) this.ctx.strokeLine(p2, p3)
-      //     if (b1 && b4) this.ctx.strokeLine(p1, p4)
-      //   }
-      // } else if (sum === 2) {
-      //   if (!((b3 && b4) || (b2 && b4))) {
-      //     this.ctx.strokeLine(pts[0], pts[1])
-      //   }
-      // }
+        if (b3) this.lines.push([p2, p3])
+        if (b4) this.lines.push([p2, p4])
+        if (b6) this.lines.push([p2, p6])
+        if (b5 && !(b4 && b6)) this.lines.push([p2, p5])
+      }
+
+      this.yIndex++
+    } else {
+      if (this.lines.length <= 0) return
+
+      const closestLine = this.lines.reduce(
+        (closest, line) => {
+          const dist = Math.min(
+            line[0].distanceTo(this.lastDrawLine![1]),
+            line[1].distanceTo(this.lastDrawLine![1])
+          )
+          return dist < closest.dist ? { dist, line } : closest
+        },
+        { dist: Infinity, line: this.lines[0] }
+      ).line
+
+      if (
+        this.lastDrawLine[1].distanceTo(closestLine[1]) <
+        this.lastDrawLine[1].distanceTo(closestLine[0])
+      ) {
+        this.lastDrawLine = [closestLine[1], closestLine[0]]
+      } else {
+        this.lastDrawLine = closestLine
+      }
+
+      this.ctx.strokeLine(this.lastDrawLine[0], this.lastDrawLine[1])
+
+      const index = this.lines.indexOf(closestLine)
+      this.lines.splice(index, 1)
     }
-
-    this.yIndex++
   }
 }
