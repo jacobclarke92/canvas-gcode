@@ -35,9 +35,24 @@ export default class CellularAutomata extends Sketch {
 
   init() {
     this.addVar('seed', { name: 'seed', initialValue: 1010, min: 1000, max: 5000, step: 1 })
-    this.addVar('gutter', { name: 'gutter', initialValue: 10, min: 1, max: 100, step: 1 })
-    this.addVar('gridSize', { name: 'gridSize', initialValue: 1, min: 0.1, max: 25, step: 0.1 })
+    this.addVar('gutterX', { name: 'gutterX', initialValue: 2, min: 1, max: 100, step: 1 })
+    this.addVar('gutterY', { name: 'gutterY', initialValue: 28, min: 1, max: 100, step: 1 })
+    this.addVar('gridSize', { name: 'gridSize', initialValue: 1, min: 0.1, max: 25, step: 0.02 })
     this.addVar('rule', { name: 'rule', initialValue: 30, min: 0, max: 255, step: 1 })
+    this.addVar('startOffset', {
+      name: 'startOffset',
+      initialValue: 0.1,
+      min: -100,
+      max: 100,
+      step: 1,
+    })
+    this.addVar('startingPoints', {
+      name: 'startingPoints',
+      initialValue: 1,
+      min: 0,
+      max: 10,
+      step: 1,
+    })
   }
 
   state = new Int8Array()
@@ -51,16 +66,21 @@ export default class CellularAutomata extends Sketch {
   initDraw(): void {
     seedRandom(this.vars.seed)
     seedNoise(this.vars.seed)
-    const { gridSize, gutter, rule } = this.vars
+    const { gridSize, gutterX, gutterY, rule, startingPoints, startOffset } = this.vars
     this.applyRule = createWolframRule(rule)
     this.yIndex = 0
-    this.xCells = Math.floor((this.cw - gutter * 2) / gridSize)
-    this.yCells = Math.floor((this.ch - gutter * 2) / gridSize)
+    this.xCells = Math.floor((this.cw - gutterX * 2) / gridSize)
+    this.yCells = Math.floor((this.ch - gutterY * 2) / gridSize)
     this.xOffset = (this.cw - this.xCells * gridSize) / 2
     this.yOffset = (this.ch - this.yCells * gridSize) / 2
     this.state = new Int8Array(this.xCells * this.yCells)
-    const middleIndex = Math.floor(this.xCells / 2)
-    this.state[middleIndex] = 1
+
+    const indexSpacing = Math.floor(this.xCells / (startingPoints + 1))
+    for (let i = 0; i < startingPoints; i++) {
+      const index = Math.floor(startOffset + (i + 1) * indexSpacing)
+      if (index >= 0 && index <= this.xCells) this.state[index] = 1
+    }
+
     for (let y = 1; y < this.yCells; y++) {
       for (let x = 1; x < this.xCells - 1; x++) {
         this.state[y * this.xCells + x] = this.applyRule(
@@ -73,10 +93,10 @@ export default class CellularAutomata extends Sketch {
   }
 
   getCell(x: number, y: number): [Bit, Point] {
-    const { gutter, gridSize } = this.vars
+    const { gridSize } = this.vars
     return [
       this.state[y * this.xCells + x] as Bit,
-      new Point(gutter + this.xOffset + x * gridSize, gutter + this.yOffset + y * gridSize),
+      new Point(this.xOffset + x * gridSize, this.yOffset + y * gridSize),
     ]
   }
 
@@ -92,7 +112,6 @@ export default class CellularAutomata extends Sketch {
 
   draw(): void {
     //
-    const { gutter, gridSize } = this.vars
     if (this.yIndex >= this.yCells - 1) return
 
     for (let xIndex = 1; xIndex < this.xCells - 1; xIndex++) {
