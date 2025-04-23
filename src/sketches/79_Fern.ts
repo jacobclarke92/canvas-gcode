@@ -33,6 +33,7 @@ export default class Ferns extends Sketch {
     this.addVar('angleRange', { name: 'angleRange', initialValue:   deg30, min: 0, max: deg90, step: 0.01 }) // prettier-ignore
     this.addVar('baseSegments', { name: 'baseSegments', initialValue: 15, min: 1, max: 100, step: 1 }) // prettier-ignore
     this.addVar('segmentsVariation', { name: 'segmentsVariation', initialValue: 5, min: 0, max: 20, step: 1 }) // prettier-ignore
+    this.addVar('segQuality', { name: 'segQuality', initialValue: 36, min: 3, max: 72, step: 1 }) // prettier-ignore
     this.addVar('bendRange', { name: 'bendRange', initialValue: deg2, min: 0, max: deg30, step: 0.01 }) // prettier-ignore
     this.addVar('baseStemLength', { name: 'baseStemLength', initialValue: 7, min: 2, max: 20, step: 0.2 }) // prettier-ignore
     this.addVar('stemLengthVariation', { name: 'stemLengthVariation', initialValue: 2.5, min: 0, max: 10, step: 0.2 }) // prettier-ignore
@@ -63,12 +64,12 @@ export default class Ferns extends Sketch {
   }
 
   getLeafPts(pt: Point, initialAngle: number, size: number): [Point[], Point] {
+    const { segQuality } = this.vars
     const midPt = pt.clone().moveAlongAngle(initialAngle, size)
     const pts: Point[] = [pt.clone()]
-    const numPts = 36
     const rotateAngle = initialAngle + deg90
-    const angleStep = deg360 / numPts
-    for (let i = 0; i < numPts; i++) {
+    const angleStep = deg360 / segQuality
+    for (let i = 0; i < segQuality; i++) {
       const angle = deg90 + i * angleStep
       const untransformedPt = new Point(Math.cos(angle) * (size * 4), Math.sin(angle) * size)
       pts.push(untransformedPt.clone().rotate(rotateAngle).add(midPt))
