@@ -6,6 +6,7 @@ import { debugDot, debugDots, debugLine } from '../utils/debugUtils'
 import { getDistancesToPoint } from '../utils/geomUtils'
 import { seedNoise } from '../utils/noise'
 import { smallestAngleDiff } from '../utils/numberUtils'
+import { plotBounds } from '../utils/penUtils'
 import { seedRandom } from '../utils/random'
 import { BooleanRange } from './tools/Range'
 
@@ -44,16 +45,19 @@ class Quadrant {
 
 class Quadrants {
   quadrants: Quadrant[][]
+  size: number
   cols: number
   rows: number
 
   constructor({ size, width, height }: { size: number; width: number; height: number }) {
     this.quadrants = []
+    this.size = size
     this.cols = Math.ceil(width / size)
     this.rows = Math.ceil(height / size)
-    for (let y = 0; y < this.rows; y++) {
+    console.info('Quadrants', this.cols, this.rows)
+    for (let y = 0; y <= this.rows; y++) {
       this.quadrants[y] = []
-      for (let x = 0; x < this.cols; x++) {
+      for (let x = 0; x <= this.cols; x++) {
         this.quadrants[y][x] = new Quadrant()
       }
     }
@@ -64,8 +68,8 @@ class Quadrants {
   }
 
   getQuadrantForPt(pt: Point): [quadrant: Quadrant | null, col: number, row: number] {
-    const x = Math.floor(pt.x / this.cols)
-    const y = Math.floor(pt.y / this.rows)
+    const x = Math.floor(pt.x / this.size)
+    const y = Math.floor(pt.y / this.size)
     if (x < 0 || x >= this.cols || y < 0 || y >= this.rows) return [null, x, y]
     return [this.quadrants[y][x], x, y]
   }
@@ -131,8 +135,7 @@ export default class Cranial extends Sketch {
     this.addVar('gutter', { name: 'gutter', initialValue: 10, min: 1, max: 100, step: 1 })
     this.addVar('startingSpawns', { name: 'startingSpawns', initialValue: 5, min: 1, max: 12, step: 1 }) // prettier-ignore
     this.addVar('startingSteps', { name: 'startingSteps', initialValue: 10, min: 1, max: 100, step: 1 }) // prettier-ignore
-    this.addVar('maxTurnDeg', { name: 'maxTurnDeg', initialValue: deg5, min: deg1, max: deg90, step: deg1 }) // prettier-ignore
-    this.addVar('drawDist', { name: 'maxTurnDeg', initialValue: 0.5, min: 0.1, max: 10, step: 0.1 }) // prettier-ignore
+    this.addVar('drawDist', { name: 'drawDist', initialValue: 0.5, min: 0.1, max: 10, step: 0.1 }) // prettier-ignore
     this.addVar('attractionForce', { name: 'attractionForce', initialValue: 0.5, min: 0, max: 1, step: 0.01 }) // prettier-ignore
     this.addVar('repulsionForce', { name: 'repulsionForce', initialValue: 0.6, min: 0, max: 1, step: 0.01 }) // prettier-ignore
     this.addVar('centerForce', { name: 'centerForce', initialValue: 0.1, min: 0, max: 1, step: 0.01 }) // prettier-ignore
@@ -141,29 +144,22 @@ export default class Cranial extends Sketch {
     this.addVar('lookaheadAngle', { name: 'lookaheadAngle', initialValue: deg35, min: 0, max: deg90, step: deg1 }) // prettier-ignore
     this.addVar('splitAfter', { name: 'splitAfter', initialValue: 15, min: 1, max: 1000, step: 1 }) // prettier-ignore
     this.addVar('splitAngle', { name: 'splitAngle', initialValue: deg30, min: deg5, max: deg180, step: deg1 }) // prettier-ignore
-    this.addVar('overcrowdedThreshold', { name: 'overcrowdedThreshold', initialValue: 30, min: 10, max: 100, step: 1 }) // prettier-ignore
+    this.addVar('overcrowdedThreshold', { name: 'overcrowdedThreshold', initialValue: 30, min: 5, max: 200, step: 1 }) // prettier-ignore
     this.addVar('simulationSteps', { name: 'simulationSteps', initialValue: 250, min: 1, max: 1000, step: 1 }) // prettier-ignore
     this.vs.debugSurroundings = new BooleanRange({ name: 'debugSurroundings', initialValue: false })
     this.vs.debugAhead = new BooleanRange({ name: 'debugAhead', initialValue: false })
-    // TODO: split after a certain number of points
   }
 
   mode: 'plan' | 'draw' = 'plan'
   quadrants: Quadrants | null = null
-  // lastPts: Point[] = []
 
   initDraw(): void {
-    const {
-      seed,
-      visionRadius,
-      avoidRadius,
-      startingSpawns,
-      startingSteps,
-      drawDist,
-      simulationSteps,
-    } = this.vars
+    const { seed, visionRadius, startingSpawns, startingSteps, drawDist, simulationSteps } =
+      this.vars
     seedRandom(seed)
     seedNoise(seed)
+
+    plotBounds(this)
 
     this.mode = 'plan'
     this.quadrants = new Quadrants({
@@ -171,7 +167,6 @@ export default class Cranial extends Sketch {
       width: this.cw,
       height: this.ch,
     })
-    // this.lastPts = []
 
     const initialDist = drawDist * startingSteps
     const angleSeg = deg360 / startingSpawns
@@ -182,6 +177,7 @@ export default class Cranial extends Sketch {
         this.cp.x + Math.cos(angle) * initialDist,
         this.cp.y + Math.sin(angle) * initialDist
       )
+      vector.readyToSplit = true
       this.quadrants.registerVector(vector)
       const [quadrant] = this.quadrants.getQuadrantForPt(vector)
       for (let n = 0; n < startingSteps; n++) {
@@ -245,7 +241,12 @@ export default class Cranial extends Sketch {
     const moveTowardsPts = neighboringPts.filter((v) => v.distanceTo(vector) <= visionRadius)
     const moveAwayPts = neighboringPts.filter((v) => v.distanceTo(vector) <= avoidRadius)
 
-    if (moveTowardsPts.length === 0) return console.warn('no close neighbors')
+    if (moveTowardsPts.length === 0) {
+      console.warn('no close neighbors')
+      vector.dead = true
+      debugDot(this.ctx, vector, 'purple')
+      return
+    }
     const moveTowardsForce = moveTowardsPts
       .reduce(
         (acc, v) =>
@@ -292,7 +293,7 @@ export default class Cranial extends Sketch {
         ([, a], [, b]) => a - b
       )
       if (this.vs.debugAhead.value) {
-        debugDots(this.ctx, ptsNotDirectlyAhead, 'yellow')
+        // debugDots(this.ctx, ptsNotDirectlyAhead, 'yellow')
         debugDots(this.ctx, ptsDirectlyAhead, 'orange')
       }
 
