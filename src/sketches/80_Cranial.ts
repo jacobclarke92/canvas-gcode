@@ -1,8 +1,19 @@
-import { deg1, deg5, deg30, deg35, deg90, deg180, deg360 } from '../constants/angles'
+import {
+  deg1,
+  deg5,
+  deg30,
+  deg35,
+  deg90,
+  deg135,
+  deg137p5,
+  deg180,
+  deg360,
+} from '../constants/angles'
 import Point from '../Point'
 import type { SketchState } from '../Sketch'
 import { Sketch } from '../Sketch'
 import { debugDot, debugDots, debugLine } from '../utils/debugUtils'
+import type { Circle } from '../utils/geomUtils'
 import { getDistancesToPoint } from '../utils/geomUtils'
 import { seedNoise } from '../utils/noise'
 import { smallestAngleDiff } from '../utils/numberUtils'
@@ -135,7 +146,7 @@ export default class Cranial extends Sketch {
     this.addVar('gutter', { name: 'gutter', initialValue: 10, min: 1, max: 100, step: 1 })
     this.addVar('startingSpawns', { name: 'startingSpawns', initialValue: 5, min: 1, max: 12, step: 1 }) // prettier-ignore
     this.addVar('startingSteps', { name: 'startingSteps', initialValue: 10, min: 1, max: 100, step: 1 }) // prettier-ignore
-    this.addVar('drawDist', { name: 'drawDist', initialValue: 0.5, min: 0.1, max: 10, step: 0.1 }) // prettier-ignore
+    this.addVar('drawDist', { name: 'drawDist', initialValue: 0.5, min: 0.1, max: 10, step: 0.01 }) // prettier-ignore
     this.addVar('attractionForce', { name: 'attractionForce', initialValue: 0.5, min: 0, max: 1, step: 0.01 }) // prettier-ignore
     this.addVar('repulsionForce', { name: 'repulsionForce', initialValue: 0.6, min: 0, max: 1, step: 0.01 }) // prettier-ignore
     this.addVar('centerForce', { name: 'centerForce', initialValue: 0.1, min: 0, max: 1, step: 0.01 }) // prettier-ignore
@@ -146,26 +157,88 @@ export default class Cranial extends Sketch {
     this.addVar('splitAngle', { name: 'splitAngle', initialValue: deg30, min: deg5, max: deg180, step: deg1 }) // prettier-ignore
     this.addVar('overcrowdedThreshold', { name: 'overcrowdedThreshold', initialValue: 30, min: 5, max: 200, step: 1 }) // prettier-ignore
     this.addVar('simulationSteps', { name: 'simulationSteps', initialValue: 250, min: 1, max: 1000, step: 1 }) // prettier-ignore
+    this.addVar('obstacleStartSize', { name: 'obstacleStartSize', initialValue: 3.6, min: 1, max: 32, step: 0.1 }) // prettier-ignore
+    this.addVar('obstacleGrowRate', { name: 'obstacleGrowRate', initialValue: 0.2, min: 0.1, max: 5, step: 0.1 }) // prettier-ignore
+    this.addVar('obstacleExpandRate', { name: 'obstacleExpandRate', initialValue: 2, min: 1, max: 20, step: 0.5 }) // prettier-ignore
+    this.vs.createObstacles = new BooleanRange({ name: 'createObstacles', initialValue: true })
+    this.vs.containInCircle = new BooleanRange({ name: 'containInCircle', initialValue: true })
     this.vs.debugSurroundings = new BooleanRange({ name: 'debugSurroundings', initialValue: false })
     this.vs.debugAhead = new BooleanRange({ name: 'debugAhead', initialValue: false })
   }
 
   mode: 'plan' | 'draw' = 'plan'
   quadrants: Quadrants | null = null
+  obstacles: Circle[] = []
 
   initDraw(): void {
-    const { seed, visionRadius, startingSpawns, startingSteps, drawDist, simulationSteps } =
-      this.vars
+    const {
+      seed,
+      gutter,
+      visionRadius,
+      startingSpawns,
+      startingSteps,
+      drawDist,
+      simulationSteps,
+      obstacleExpandRate,
+      obstacleStartSize,
+      obstacleGrowRate,
+    } = this.vars
     seedRandom(seed)
     seedNoise(seed)
 
     plotBounds(this)
 
     this.mode = 'plan'
+
+    this.obstacles = []
     this.quadrants = new Quadrants({
       size: visionRadius * 2,
       width: this.cw,
       height: this.ch,
+    })
+
+    const obstaclePts: Point[] = []
+    const containRadius = (this.ch - gutter * 2) / 2
+    if (this.vs.createObstacles.value) {
+      let obstacleAngle = 0
+      let obstacleSize = obstacleStartSize
+      let obstacleDist = drawDist * startingSteps + obstacleStartSize * 2
+      let obstaclePt = this.cp.clone()
+      while (this.cp.distanceTo(obstaclePt) < containRadius + obstacleSize) {
+        obstaclePt = new Point(
+          this.cp.x + Math.cos(obstacleAngle) * obstacleDist,
+          this.cp.y + Math.sin(obstacleAngle) * obstacleDist
+        )
+        this.obstacles.push([obstaclePt.clone(), obstacleSize])
+        const detail = Math.floor(obstacleSize * 10)
+        for (let p = 0; p < detail; p++) {
+          const angle = deg360 * (p / detail)
+          obstaclePts.push(obstaclePt.clone().moveAlongAngle(angle, obstacleSize))
+        }
+        if (this.vs.debugSurroundings.value)
+          this.ctx.strokeCircle(obstaclePt, obstacleSize, { debug: true })
+        obstacleSize += obstacleGrowRate
+        obstacleAngle += deg137p5
+        obstacleDist += obstacleExpandRate
+      }
+    }
+    if (this.vs.containInCircle.value) {
+      if (this.vs.debugSurroundings.value)
+        this.ctx.strokeCircle(this.cp, containRadius, { debug: true })
+      const detail = Math.floor(containRadius * 8)
+      for (let p = 0; p < detail; p++) {
+        const angle = deg360 * (p / detail)
+        obstaclePts.push(
+          new Point(
+            this.cp.x + Math.cos(angle) * containRadius,
+            this.cp.y + Math.sin(angle) * containRadius
+          )
+        )
+      }
+    }
+    obstaclePts.forEach((pt) => {
+      const [quadrant] = this.quadrants.getQuadrantForPt(pt)
+      if (quadrant) quadrant.prevPts.push(pt)
     })
 
     const initialDist = drawDist * startingSteps
@@ -364,6 +437,23 @@ export default class Cranial extends Sketch {
       vector.dead = true
       if (this.vs.debugAhead.value) debugDot(this.ctx, vector)
       return
+    }
+    if (this.vs.containInCircle.value) {
+      const containRadius = (this.ch - gutter * 2) / 2
+      if (this.cp.distanceTo(vector) > containRadius) {
+        vector.dead = true
+        if (this.vs.debugAhead.value) debugDot(this.ctx, vector)
+        return
+      }
+    }
+    if (this.vs.createObstacles.value) {
+      for (const [obstaclePt, obstacleSize] of this.obstacles) {
+        if (obstaclePt.distanceTo(vector) < obstacleSize) {
+          vector.dead = true
+          if (this.vs.debugAhead.value) debugDot(this.ctx, vector)
+          return
+        }
+      }
     }
   }
 

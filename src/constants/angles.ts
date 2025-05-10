@@ -3,6 +3,7 @@ export const deg270 = (3 * Math.PI) / 2
 export const deg180 = Math.PI
 export const deg150 = (5 * Math.PI) / 6
 export const deg135 = (3 * Math.PI) / 4
+export const deg137p5 = (137.5 / 360) * (Math.PI * 2)
 export const deg120 = (2 * Math.PI) / 3
 export const deg90 = Math.PI / 2
 export const deg60 = Math.PI / 3
