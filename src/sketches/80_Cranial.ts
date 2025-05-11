@@ -1,6 +1,7 @@
 import {
   deg1,
   deg5,
+  deg10,
   deg30,
   deg35,
   deg90,
@@ -143,27 +144,28 @@ export default class Cranial extends Sketch {
 
   init() {
     this.addVar('seed', { name: 'seed', initialValue: 1010, min: 1000, max: 5000, step: 1 })
-    this.addVar('gutter', { name: 'gutter', initialValue: 10, min: 1, max: 100, step: 1 })
+    this.addVar('gutter', { name: 'gutter', initialValue: 10, min: 1, max: 100, step: 1, disableRandomize: true }) // prettier-ignore
     this.addVar('startingSpawns', { name: 'startingSpawns', initialValue: 5, min: 1, max: 12, step: 1 }) // prettier-ignore
-    this.addVar('startingSteps', { name: 'startingSteps', initialValue: 10, min: 1, max: 100, step: 1 }) // prettier-ignore
-    this.addVar('drawDist', { name: 'drawDist', initialValue: 0.5, min: 0.1, max: 10, step: 0.01 }) // prettier-ignore
+    this.addVar('startingSteps', { name: 'startingSteps', initialValue: 10, min: 1, max: 25, step: 1 }) // prettier-ignore
+    this.addVar('drawDist', { name: 'drawDist', initialValue: 0.5, min: 0.1, max: 2, step: 0.01, disableRandomize: true }) // prettier-ignore
     this.addVar('attractionForce', { name: 'attractionForce', initialValue: 0.5, min: 0, max: 1, step: 0.01 }) // prettier-ignore
     this.addVar('repulsionForce', { name: 'repulsionForce', initialValue: 0.6, min: 0, max: 1, step: 0.01 }) // prettier-ignore
     this.addVar('centerForce', { name: 'centerForce', initialValue: 0.1, min: 0, max: 1, step: 0.01 }) // prettier-ignore
     this.addVar('visionRadius', { name: 'visionRadius', initialValue: 9, min: 0.1, max: 20, step: 0.1 }) // prettier-ignore
     this.addVar('avoidRadius', { name: 'avoidRadius', initialValue: 4.2, min: 0.1, max: 20, step: 0.1 }) // prettier-ignore
     this.addVar('lookaheadAngle', { name: 'lookaheadAngle', initialValue: deg35, min: 0, max: deg90, step: deg1 }) // prettier-ignore
-    this.addVar('splitAfter', { name: 'splitAfter', initialValue: 15, min: 1, max: 1000, step: 1 }) // prettier-ignore
+    this.addVar('splitAfter', { name: 'splitAfter', initialValue: 15, min: 4, max: 1000, step: 1 }) // prettier-ignore
     this.addVar('splitAngle', { name: 'splitAngle', initialValue: deg30, min: deg5, max: deg180, step: deg1 }) // prettier-ignore
     this.addVar('overcrowdedThreshold', { name: 'overcrowdedThreshold', initialValue: 30, min: 5, max: 200, step: 1 }) // prettier-ignore
-    this.addVar('simulationSteps', { name: 'simulationSteps', initialValue: 250, min: 1, max: 1000, step: 1 }) // prettier-ignore
     this.addVar('obstacleStartSize', { name: 'obstacleStartSize', initialValue: 3.6, min: 1, max: 32, step: 0.1 }) // prettier-ignore
     this.addVar('obstacleGrowRate', { name: 'obstacleGrowRate', initialValue: 0.2, min: 0.1, max: 5, step: 0.1 }) // prettier-ignore
     this.addVar('obstacleExpandRate', { name: 'obstacleExpandRate', initialValue: 2, min: 1, max: 20, step: 0.5 }) // prettier-ignore
-    this.vs.createObstacles = new BooleanRange({ name: 'createObstacles', initialValue: true })
-    this.vs.containInCircle = new BooleanRange({ name: 'containInCircle', initialValue: true })
-    this.vs.debugSurroundings = new BooleanRange({ name: 'debugSurroundings', initialValue: false })
-    this.vs.debugAhead = new BooleanRange({ name: 'debugAhead', initialValue: false })
+    this.addVar('simulationSteps', { name: 'simulationSteps', initialValue: 250, min: 1, max: 1000, step: 1, disableRandomize: true }) // prettier-ignore
+    this.vs.createObstacles = new BooleanRange({ name: 'createObstacles', initialValue: false, disableRandomize: true }) // prettier-ignore
+    this.vs.createSpiral = new BooleanRange({ name: 'createSpiral', initialValue: true, disableRandomize: true }) // prettier-ignore
+    this.vs.containInCircle = new BooleanRange({ name: 'containInCircle', initialValue: true, disableRandomize: true }) // prettier-ignore
+    this.vs.debugSurroundings = new BooleanRange({ name: 'debugSurroundings', initialValue: false, disableRandomize: true }) // prettier-ignore
+    this.vs.debugAhead = new BooleanRange({ name: 'debugAhead', initialValue: false, disableRandomize: true }) // prettier-ignore
   }
 
   mode: 'plan' | 'draw' = 'plan'
@@ -220,6 +222,34 @@ export default class Cranial extends Sketch {
         obstacleSize += obstacleGrowRate
         obstacleAngle += deg137p5
         obstacleDist += obstacleExpandRate
+      }
+    }
+    if (this.vs.createSpiral.value) {
+      this.vs.lookaheadAngle.value = Math.min(
+        this.vs.lookaheadAngle.value,
+        deg360 / (startingSpawns * 2) - deg10
+      )
+
+      let lastPt = new Point(this.cp.x, this.cp.y)
+      const spiralAngle = deg360 / startingSpawns
+      let angle = 0
+      let dist = 0
+
+      while (lastPt.distanceTo(this.cp) < containRadius) {
+        const percentDone = lastPt.distanceTo(this.cp) / containRadius
+        for (let i = 0; i < startingSpawns; i++) {
+          const pt = new Point(
+            this.cp.x + Math.cos(angle + spiralAngle * (i + 0.33)) * dist,
+            this.cp.y + Math.sin(angle + spiralAngle * (i + 0.33)) * dist
+          )
+          if (lastPt.distanceTo(this.cp) > startingSteps * drawDist) {
+            obstaclePts.push(pt.clone())
+            if (this.vs.debugSurroundings.value) debugDot(this.ctx, pt)
+          }
+          if (i === 0) lastPt = pt
+        }
+        angle += deg1 * (1 - percentDone / 2)
+        dist += drawDist / 2
       }
     }
     if (this.vs.containInCircle.value) {
