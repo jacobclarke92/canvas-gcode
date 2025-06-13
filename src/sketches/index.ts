@@ -79,4 +79,5 @@ export default [
   require('./78_CellularAutomata').default,
   require('./79_Fern').default,
   require('./80_Cranial').default,
+  require('./81_LatticeDesintegration').default,
 ]
