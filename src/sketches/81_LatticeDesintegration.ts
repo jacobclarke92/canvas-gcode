@@ -15,7 +15,7 @@ export default class LatticeDesintegration extends Sketch {
     this.addVar('seed', { name: 'seed', initialValue: 1010, min: 1000, max: 5000, step: 1 })
     this.addVar('gutter', { name: 'gutter', initialValue: 10, min: 1, max: 100, step: 1, disableRandomize: true }) // prettier-ignore
     this.addVar('segments', { name: 'segments', initialValue: 8, min: 1, max: 128, step: 1 })
-    this.addVar('dissolutionStrength', { name: 'dissolutionStrength', initialValue: 0.5, min: 0, max: 1, step: 0.01 }) // prettier-ignore
+    this.addVar('dissolutionStrength', { name: 'dissolutionStrength', initialValue: 0.5, min: 0, max: 15, step: 0.01 }) // prettier-ignore
     this.addVar('distortDistMult', { name: 'distortDistMult', initialValue: 0.5, min: 0, max: 1, step: 0.01, disableRandomize: true }) // prettier-ignore
     this.addVar('inverseResolution', { name: 'inverseResolution', initialValue: 0.25, min: 0.05, max: 2, step: 0.01, disableRandomize: true }) // prettier-ignore
     this.addVar('perlinDiv', {name: 'perlinDiv', initialValue: 25, min: 1, max: 100, step: 1, disableRandomize: true }) // prettier-ignore
