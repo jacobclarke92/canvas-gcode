@@ -19,8 +19,8 @@ export default class LatticeDesintegration extends Sketch {
     this.addVar('distortDistMult', { name: 'distortDistMult', initialValue: 0.5, min: 0, max: 1, step: 0.01, disableRandomize: true }) // prettier-ignore
     this.addVar('inverseResolution', { name: 'inverseResolution', initialValue: 0.25, min: 0.05, max: 2, step: 0.01, disableRandomize: true }) // prettier-ignore
     this.addVar('perlinDiv', {name: 'perlinDiv', initialValue: 25, min: 1, max: 100, step: 1, disableRandomize: true }) // prettier-ignore
-    this.addVar('offsetX', { name: 'offsetX', initialValue: 0, min: -100, max: 100, step: 1 })
-    this.addVar('offsetY', { name: 'offsetY', initialValue: 0, min: -100, max: 100, step: 1 })
+    this.addVar('offsetX', { name: 'offsetX', initialValue: 0, min: -500, max: 500, step: 1 })
+    this.addVar('offsetY', { name: 'offsetY', initialValue: 0, min: -500, max: 500, step: 1 })
   }
 
   segSize = 0
@@ -58,11 +58,15 @@ export default class LatticeDesintegration extends Sketch {
 
     for (let xI = 1; xI < segments; xI++) {
       const x = startX + xI * this.segSize
-      const pt = new Point(x, gutter)
+      const pt = new Point(x, xI % 2 ? gutter : gutter + this.gridSize)
       let strength = pt.distanceTo(endPt) / gridHypot
       this.ctx.beginPath()
       this.ctx.moveTo(...this.getDistortedPt(pt, strength).toArray())
-      for (; pt.y < gutter + this.gridSize; pt.y += inverseResolution) {
+      for (
+        ;
+        xI % 2 ? pt.y < gutter + this.gridSize : pt.y > gutter;
+        pt.y += inverseResolution * (xI % 2 ? 1 : -1)
+      ) {
         strength = pt.distanceTo(endPt) / gridHypot
         const distortedPt = this.getDistortedPt(pt, strength)
         this.ctx.lineTo(...distortedPt.toArray())
@@ -73,11 +77,15 @@ export default class LatticeDesintegration extends Sketch {
 
     for (let yI = 1; yI < segments; yI++) {
       const y = gutter + yI * this.segSize
-      const pt = new Point(startX, y)
+      const pt = new Point(yI % 2 ? startX : startX + this.gridSize, y)
       let strength = pt.distanceTo(endPt) / gridHypot
       this.ctx.beginPath()
       this.ctx.moveTo(...this.getDistortedPt(pt, strength).toArray())
-      for (; pt.x < startX + this.gridSize; pt.x += inverseResolution) {
+      for (
+        ;
+        yI % 2 ? pt.x < startX + this.gridSize : pt.x > startX;
+        pt.x += inverseResolution * (yI % 2 ? 1 : -1)
+      ) {
         strength = pt.distanceTo(endPt) / gridHypot
         const distortedPt = this.getDistortedPt(pt, strength)
         this.ctx.lineTo(...distortedPt.toArray())
